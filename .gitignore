@@ -26,3 +26,10 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Laravel Boost & AI Agents Rules
+.agents/
+.gemini/
+AGENTS.md
+GEMINI.md
+boost.json

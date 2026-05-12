@@ -1,0 +1,62 @@
+<?php
+
+namespace App\Models;
+
+use App\Models\Param\ParamModalidadesForm;
+use App\Models\Param\ParamNivelesCiclo;
+use App\Models\Param\ParamRegimenEduc;
+use App\Models\Param\ParamTipoInstEduc;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class InstitucionesEduc extends Model
+{
+    protected $table = 't_institucionesEduc';
+
+    public $timestamps = false;
+
+    protected $fillable = [
+        'entidadUgel_id',
+        'entidadAdmin_id',
+        'codigoInstitucion',
+        'codigoModular',
+        'nombreLegal',
+        'regimenEduc_id',
+        'tipoInstEduc_id',
+        'modalidadFormativa_id',
+        'nivelCiclo_id',
+        'fechaInicio',
+        'fechaFin',
+        'created_by',
+    ];
+
+    public function modalidadFormativa(): BelongsTo
+    {
+        return $this->belongsTo(ParamModalidadesForm::class, 'modalidadFormativa_id');
+    }
+
+    public function nivelCiclo(): BelongsTo
+    {
+        return $this->belongsTo(ParamNivelesCiclo::class, 'nivelCiclo_id');
+    }
+
+    public function regimenEduc(): BelongsTo
+    {
+        return $this->belongsTo(ParamRegimenEduc::class, 'regimenEduc_id');
+    }
+
+    public function tipoInstEduc(): BelongsTo
+    {
+        return $this->belongsTo(ParamTipoInstEduc::class, 'tipoInstEduc_id');
+    }
+
+    public function entidadUgel(): BelongsTo
+    {
+        return $this->belongsTo(Entidades::class, 'entidadUgel_id');
+    }
+
+    public function entidadAdmin(): BelongsTo
+    {
+        return $this->belongsTo(Entidades::class, 'entidadAdmin_id');
+    }
+}
