@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { Plus, Pencil, Trash2, Eye, User, Phone, Mail, MapPin } from 'lucide-vue-next';
+import { Plus, Pencil, Trash2, Eye, User, Phone, Mail, MapPin, ChevronDown } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+    DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -227,15 +231,30 @@ const tabs = [
                             <StatusBadge :active="persona.activo" />
                         </TableCell>
                         <TableCell class="text-right">
-                            <Button variant="ghost" size="icon" @click="openDetailModal(persona)">
-                                <Eye class="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" @click="openEditModal(persona)">
-                                <Pencil class="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" class="text-destructive" @click="confirmDelete(persona)">
-                                <Trash2 class="h-4 w-4" />
-                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger as-child>
+                                    <Button variant="outline" size="sm" class="h-8 data-[state=open]:bg-muted">
+                                        Acciones
+                                        <ChevronDown class="ml-2 h-4 w-4 text-muted-foreground" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                                    <DropdownMenuItem @click="openDetailModal(persona)">
+                                        <Eye class="mr-2 h-4 w-4" />
+                                        <span>Ver Detalles</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem @click="openEditModal(persona)">
+                                        <Pencil class="mr-2 h-4 w-4" />
+                                        <span>Editar</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem @click="confirmDelete(persona)" class="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer">
+                                        <Trash2 class="mr-2 h-4 w-4" />
+                                        <span>Eliminar</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </TableCell>
                     </TableRow>
                     <TableRow v-if="props.personas.data.length === 0">

@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { Plus, Pencil, Trash2 } from 'lucide-vue-next';
+import { Plus, Pencil, Trash2, ChevronDown } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+    DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -80,8 +84,26 @@ function executeDelete() {
                         <TableCell class="font-medium">{{ cargo.nombre }}</TableCell>
                         <TableCell>{{ cargo.abreviatura || '-' }}</TableCell>
                         <TableCell class="text-right">
-                            <Button variant="ghost" size="icon" @click="openEditModal(cargo)"><Pencil class="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" class="text-destructive" @click="confirmDelete(cargo)"><Trash2 class="h-4 w-4" /></Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger as-child>
+                                    <Button variant="outline" size="sm" class="h-8 data-[state=open]:bg-muted">
+                                        Acciones
+                                        <ChevronDown class="ml-2 h-4 w-4 text-muted-foreground" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                                    <DropdownMenuItem @click="openEditModal(cargo)">
+                                        <Pencil class="mr-2 h-4 w-4" />
+                                        <span>Editar</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem @click="confirmDelete(cargo)" class="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer">
+                                        <Trash2 class="mr-2 h-4 w-4" />
+                                        <span>Eliminar</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </TableCell>
                     </TableRow>
                     <TableRow v-if="props.cargos.data.length === 0">
