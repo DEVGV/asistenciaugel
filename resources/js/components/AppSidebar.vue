@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import EntidadController from '@/actions/App/Http/Controllers/Entidad/EntidadController';
+import PersonaController from '@/actions/App/Http/Controllers/Persona/PersonaController';
 import AreaController from '@/actions/App/Http/Controllers/Configuracion/AreaController';
 import CargoController from '@/actions/App/Http/Controllers/Configuracion/CargoController';
 import CondicionLaboralController from '@/actions/App/Http/Controllers/Configuracion/CondicionLaboralController';
@@ -41,7 +42,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Personas',
-        href: '#', // TODO: Reemplazar con ruta real
+        href: PersonaController.index().url,
         icon: Users,
     },
     {

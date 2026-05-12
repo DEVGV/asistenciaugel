@@ -32,4 +32,4 @@ EXPOSE 8000
 EXPOSE 5190
 
 # En entornos de desarrollo, ejecutamos las instalaciones y levantamos los servicios
-CMD composer install && npm install && php artisan migrate && composer dev
+CMD composer install && npm install && (php artisan migrate || true) && composer dev
