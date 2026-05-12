@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { Plus, Pencil, Trash2 } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
@@ -54,6 +54,14 @@ const form = useForm({
     activo: true,
 });
 
+// Limpiar el formulario al cerrar el modal
+watch(showModal, (val) => {
+    if (!val) {
+        form.reset();
+        form.clearErrors();
+    }
+});
+
 function openCreateModal() {
     isEditing.value = false;
     editingId.value = null;
@@ -80,12 +88,14 @@ function submitForm() {
         form.put(EntidadController.update({ entidade: editingId.value }).url, {
             onSuccess: () => {
                 showModal.value = false;
+                form.reset();
             },
         });
     } else {
         form.post(EntidadController.store().url, {
             onSuccess: () => {
                 showModal.value = false;
+                form.reset();
             },
         });
     }
@@ -198,7 +208,10 @@ function executeDelete() {
             :processing="form.processing"
             @submit="submitForm"
         >
-            <EntidadForm :form="form" />
+            <EntidadForm
+                :form="form"
+                @ruc-data="(data) => { form.razonSocial = data.razonSocial; }"
+            />
         </FormModal>
 
         <ConfirmModal
