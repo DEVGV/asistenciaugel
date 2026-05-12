@@ -28,6 +28,9 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import EntidadController from '@/actions/App/Http/Controllers/Entidad/EntidadController';
+import AreaController from '@/actions/App/Http/Controllers/Configuracion/AreaController';
+import CargoController from '@/actions/App/Http/Controllers/Configuracion/CargoController';
+import CondicionLaboralController from '@/actions/App/Http/Controllers/Configuracion/CondicionLaboralController';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -61,9 +64,9 @@ const mainNavItems: NavItem[] = [
         href: '#',
         icon: Settings,
         items: [
-            { title: 'Áreas', href: '#' },
-            { title: 'Cargos', href: '#' },
-            { title: 'Cond. Laborales', href: '#' },
+            { title: 'Áreas', href: AreaController.index().url },
+            { title: 'Cargos', href: CargoController.index().url },
+            { title: 'Cond. Laborales', href: CondicionLaboralController.index().url },
         ],
     },
     {

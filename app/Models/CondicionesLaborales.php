@@ -4,11 +4,14 @@ namespace App\Models;
 
 use App\Models\Param\ParamRegimenLaboral;
 use App\Models\Param\ParamTipoTrabajador;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CondicionesLaborales extends Model
 {
+    use HasFactory;
+
     protected $table = 't_condicionesLaborales';
 
     public $timestamps = false;
