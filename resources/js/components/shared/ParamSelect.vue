@@ -18,6 +18,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: 'update:modelValue', value: number | string | null): void;
+    (e: 'update:item', item: ParamSimple | null): void;
 }>();
 
 const data = ref<ParamSimple[]>([]);
@@ -41,6 +42,12 @@ async function fetchData() {
         if (!response.ok) throw new Error('Network response was not ok');
         const json = await response.json();
         data.value = json.data;
+        if (props.modelValue) {
+            const initialItem = data.value.find(i => String(i.id) === String(props.modelValue));
+            if (initialItem) {
+                emit('update:item', initialItem);
+            }
+        }
     } catch (e) {
         console.error(`Error loading params for ${props.type}`, e);
     } finally {
@@ -55,6 +62,16 @@ onMounted(() => {
 watch(() => props.parentId, () => {
     fetchData();
     emit('update:modelValue', null); // Limpiar si cambia el padre
+    emit('update:item', null);
+});
+
+watch(() => props.modelValue, (newVal) => {
+    if (!newVal) {
+        emit('update:item', null);
+    } else if (data.value.length > 0) {
+        const item = data.value.find(i => String(i.id) === String(newVal));
+        if (item) emit('update:item', item);
+    }
 });
 
 // Altamente optimizado para miles de registros: filtra localmente y renderiza máximo 100
@@ -86,8 +103,9 @@ function toggleDropdown() {
     }
 }
 
-function selectItem(id: number) {
-    emit('update:modelValue', id);
+function selectItem(item: ParamSimple) {
+    emit('update:modelValue', item.id);
+    emit('update:item', item);
     isOpen.value = false;
     searchQuery.value = '';
 }
@@ -140,7 +158,7 @@ function selectItem(id: number) {
                     <div
                         v-for="item in filteredData"
                         :key="item.id"
-                        @click="selectItem(item.id)"
+                        @click="selectItem(item)"
                         :class="cn(
                             'relative flex w-full cursor-pointer select-none items-center rounded-sm py-2 pl-8 pr-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground transition-colors',
                             String(item.id) === String(modelValue) ? 'bg-primary/10 text-primary font-medium' : ''

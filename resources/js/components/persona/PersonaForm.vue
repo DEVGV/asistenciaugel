@@ -1,11 +1,65 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Search, Loader2 } from 'lucide-vue-next';
 import ParamSelect from '@/components/shared/ParamSelect.vue';
+import type { ParamSimple } from '@/types/models/params';
 
-defineProps<{
+const props = defineProps<{
     form: any;
 }>();
+
+const selectedDocTypeAbrev = ref<string | null>(null);
+const isSearchingReniec = ref(false);
+const searchError = ref<string | null>(null);
+
+function onDocTypeChange(item: ParamSimple | null) {
+    selectedDocTypeAbrev.value = item?.abreviatura || null;
+}
+
+async function buscarReniec() {
+    if (!props.form.docIdentidad || props.form.docIdentidad.length !== 8) return;
+    if (selectedDocTypeAbrev.value !== 'DNI') return;
+
+    isSearchingReniec.value = true;
+    searchError.value = null;
+
+    try {
+        const response = await fetch('/api/sunat/dni', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ dni: props.form.docIdentidad })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || 'Error al buscar el DNI');
+        }
+
+        if (result.data) {
+            props.form.nombre = result.data.nombres || '';
+            props.form.paterno = result.data.apellido_paterno || '';
+            props.form.materno = result.data.apellido_materno || '';
+            props.form.clearErrors('nombre', 'paterno', 'materno');
+        }
+    } catch (e: any) {
+        searchError.value = e.message;
+    } finally {
+        isSearchingReniec.value = false;
+    }
+}
+
+watch(() => props.form.docIdentidad, (newVal) => {
+    if (newVal?.length === 8 && selectedDocTypeAbrev.value === 'DNI') {
+        buscarReniec();
+    }
+});
 </script>
 
 <template>
@@ -16,16 +70,33 @@ defineProps<{
                 type="tipos-doc-identidad"
                 label="Tipo Doc. *"
                 :error="form.errors.tipoDocIdentidad_id"
+                @update:item="onDocTypeChange"
             />
 
             <div class="grid gap-2">
                 <Label for="docIdentidad">N° Documento *</Label>
-                <Input
-                    id="docIdentidad"
-                    v-model="form.docIdentidad"
-                    placeholder="N° documento"
-                    maxlength="20"
-                />
+                <div class="relative flex items-center">
+                    <Input
+                        id="docIdentidad"
+                        v-model="form.docIdentidad"
+                        placeholder="N° documento"
+                        maxlength="20"
+                        :class="{ 'pr-10': selectedDocTypeAbrev === 'DNI' }"
+                    />
+                    <Button
+                        v-if="selectedDocTypeAbrev === 'DNI'"
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        class="absolute right-0 h-full px-3 py-2 hover:bg-transparent"
+                        @click="buscarReniec"
+                        :disabled="isSearchingReniec || form.docIdentidad?.length !== 8"
+                    >
+                        <Loader2 v-if="isSearchingReniec" class="h-4 w-4 animate-spin text-muted-foreground" />
+                        <Search v-else class="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                </div>
+                <p v-if="searchError" class="text-sm text-amber-500">{{ searchError }}</p>
                 <p v-if="form.errors.docIdentidad" class="text-sm text-destructive">{{ form.errors.docIdentidad }}</p>
             </div>
         </div>
