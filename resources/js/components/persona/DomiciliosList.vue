@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/table';
 import FormModal from '@/components/shared/FormModal.vue';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
+import StatusBadge from '@/components/shared/StatusBadge.vue';
 import type { Domicilio } from '@/types/models/persona';
 import DomicilioController from '@/actions/App/Http/Controllers/Persona/DomicilioController';
 
@@ -38,6 +39,7 @@ function openCreate() {
     editingId.value = null;
     form.reset();
     form.clearErrors();
+    form.fechaInicio = new Date().toISOString().split('T')[0];
     showModal.value = true;
 }
 
@@ -95,6 +97,7 @@ function executeDelete() {
                     <TableRow>
                         <TableHead>Dirección</TableHead>
                         <TableHead>Zona</TableHead>
+                        <TableHead>Estado</TableHead>
                         <TableHead class="text-right">Acciones</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -107,6 +110,9 @@ function executeDelete() {
                             </div>
                         </TableCell>
                         <TableCell>{{ item.zona?.nombre || '-' }}</TableCell>
+                        <TableCell>
+                            <StatusBadge :active="!item.fechaFin" />
+                        </TableCell>
                         <TableCell class="text-right">
                             <Button variant="ghost" size="icon" class="h-7 w-7" @click="openEdit(item)">
                                 <Pencil class="h-3.5 w-3.5" />
@@ -117,7 +123,7 @@ function executeDelete() {
                         </TableCell>
                     </TableRow>
                     <TableRow v-if="domicilios.length === 0">
-                        <TableCell colspan="3" class="h-16 text-center text-muted-foreground text-sm">
+                        <TableCell colspan="4" class="h-16 text-center text-muted-foreground text-sm">
                             Sin domicilios registrados.
                         </TableCell>
                     </TableRow>
@@ -149,8 +155,9 @@ function executeDelete() {
                         <Input v-model="form.fechaInicio" type="date" />
                     </div>
                     <div class="grid gap-2">
-                        <Label>Fecha Fin</Label>
+                        <Label>Fecha de Baja</Label>
                         <Input v-model="form.fechaFin" type="date" />
+                        <p class="text-xs text-muted-foreground">Establece una fecha para marcarlo como inactivo.</p>
                     </div>
                 </div>
             </div>

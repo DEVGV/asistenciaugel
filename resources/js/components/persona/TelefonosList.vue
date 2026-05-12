@@ -11,6 +11,7 @@ import {
 import FormModal from '@/components/shared/FormModal.vue';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import ParamSelect from '@/components/shared/ParamSelect.vue';
+import StatusBadge from '@/components/shared/StatusBadge.vue';
 import type { Telefono } from '@/types/models/persona';
 import TelefonoController from '@/actions/App/Http/Controllers/Persona/TelefonoController';
 
@@ -41,6 +42,7 @@ function openCreate() {
     editingId.value = null;
     form.reset();
     form.clearErrors();
+    form.fechaInicio = new Date().toISOString().split('T')[0];
     showModal.value = true;
 }
 
@@ -101,6 +103,7 @@ function executeDelete() {
                         <TableHead>Tipo</TableHead>
                         <TableHead>Número</TableHead>
                         <TableHead>Operador</TableHead>
+                        <TableHead>Estado</TableHead>
                         <TableHead class="text-right">Acciones</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -115,6 +118,9 @@ function executeDelete() {
                         </TableCell>
                         <TableCell class="font-medium">{{ tel.codigoPais }} {{ tel.numero }}</TableCell>
                         <TableCell>{{ tel.operador?.nombre || '-' }}</TableCell>
+                        <TableCell>
+                            <StatusBadge :active="!tel.fechaFin" />
+                        </TableCell>
                         <TableCell class="text-right">
                             <Button variant="ghost" size="icon" class="h-7 w-7" @click="openEdit(tel)">
                                 <Pencil class="h-3.5 w-3.5" />
@@ -125,7 +131,7 @@ function executeDelete() {
                         </TableCell>
                     </TableRow>
                     <TableRow v-if="telefonos.length === 0">
-                        <TableCell colspan="4" class="h-16 text-center text-muted-foreground text-sm">
+                        <TableCell colspan="5" class="h-16 text-center text-muted-foreground text-sm">
                             Sin teléfonos registrados.
                         </TableCell>
                     </TableRow>
@@ -162,8 +168,9 @@ function executeDelete() {
                         <Input v-model="form.fechaInicio" type="date" />
                     </div>
                     <div class="grid gap-2">
-                        <Label>Fecha Fin</Label>
+                        <Label>Fecha de Baja</Label>
                         <Input v-model="form.fechaFin" type="date" />
+                        <p class="text-xs text-muted-foreground">Establece una fecha para marcarlo como inactivo.</p>
                     </div>
                 </div>
             </div>
