@@ -94,7 +94,7 @@ class ParamService
 
         $cacheKey = "param.{$tipo}".($parentId !== null ? ".{$parentId}" : '');
 
-        return Cache::remember($cacheKey, now()->addHour(), function () use ($tipo, $modelClass, $parentId) {
+        $cached = Cache::remember($cacheKey, now()->addHour(), function () use ($tipo, $modelClass, $parentId) {
             $query = $modelClass::query();
             $model = new $modelClass;
 
@@ -108,8 +108,10 @@ class ParamService
 
             $orderColumn = $this->resolverColumnaOrden($model);
 
-            return $query->orderBy($orderColumn)->get();
+            return $query->orderBy($orderColumn)->get()->toArray();
         });
+
+        return collect($cached);
     }
 
     /**
