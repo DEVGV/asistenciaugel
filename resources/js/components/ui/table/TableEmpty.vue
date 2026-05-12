@@ -4,14 +4,17 @@ import { cn } from '@/lib/utils'
 
 const props = defineProps<{
   class?: HTMLAttributes['class']
+  colspan?: number
 }>()
 </script>
 
 <template>
-  <div
-    data-slot="alert-description"
-    :class="cn('text-sm [&_p]:leading-relaxed [&_p]:mb-2', props.class)"
-  >
-    <slot />
-  </div>
+  <tr data-slot="table-empty">
+    <td
+      :colspan="colspan"
+      :class="cn('text-muted-foreground p-4 text-center text-sm', props.class)"
+    >
+      <slot />
+    </td>
+  </tr>
 </template>

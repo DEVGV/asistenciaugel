@@ -22,6 +22,10 @@ class Entidades extends Model
         'activo',
     ];
 
+    protected $casts = [
+        'activo' => 'boolean',
+    ];
+
     public function tipoEntidad(): BelongsTo
     {
         return $this->belongsTo(ParamTipoEntidad::class, 'tipoEntidad_id');

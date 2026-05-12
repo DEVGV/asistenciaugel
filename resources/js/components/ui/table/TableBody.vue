@@ -8,10 +8,7 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div
-    data-slot="alert-description"
-    :class="cn('text-sm [&_p]:leading-relaxed [&_p]:mb-2', props.class)"
-  >
+  <tbody data-slot="table-body" :class="cn('[&_tr:last-child]:border-0', props.class)">
     <slot />
-  </div>
+  </tbody>
 </template>

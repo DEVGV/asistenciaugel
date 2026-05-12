@@ -8,10 +8,12 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div
-    data-slot="alert-description"
-    :class="cn('text-sm [&_p]:leading-relaxed [&_p]:mb-2', props.class)"
-  >
-    <slot />
+  <div class="relative w-full overflow-auto">
+    <table
+      data-slot="table"
+      :class="cn('w-full caption-bottom text-sm', props.class)"
+    >
+      <slot />
+    </table>
   </div>
 </template>

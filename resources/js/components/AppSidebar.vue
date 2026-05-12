@@ -1,6 +1,18 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, FolderGit2, LayoutGrid } from 'lucide-vue-next';
+import {
+    BookOpen,
+    FolderGit2,
+    LayoutGrid,
+    Users,
+    UserCheck,
+    School,
+    Building2,
+    Settings,
+    Server,
+    CalendarCheck,
+    FileText,
+} from 'lucide-vue-next';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -15,6 +27,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import EntidadController from '@/actions/App/Http/Controllers/Entidad/EntidadController';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -22,6 +35,66 @@ const mainNavItems: NavItem[] = [
         title: 'Panel de Control',
         href: dashboard(),
         icon: LayoutGrid,
+    },
+    {
+        title: 'Personas',
+        href: '#', // TODO: Reemplazar con ruta real
+        icon: Users,
+    },
+    {
+        title: 'Trabajadores',
+        href: '#', // TODO: Reemplazar con ruta real
+        icon: UserCheck,
+    },
+    {
+        title: 'Instituciones Educativas',
+        href: '#', // TODO: Reemplazar con ruta real
+        icon: School,
+    },
+    {
+        title: 'Entidades',
+        href: EntidadController.index().url,
+        icon: Building2,
+    },
+    {
+        title: 'Configuración',
+        href: '#',
+        icon: Settings,
+        items: [
+            { title: 'Áreas', href: '#' },
+            { title: 'Cargos', href: '#' },
+            { title: 'Cond. Laborales', href: '#' },
+        ],
+    },
+    {
+        title: 'Infraestructura',
+        href: '#',
+        icon: Server,
+        items: [
+            { title: 'Locales', href: '#' },
+            { title: 'Relojes', href: '#' },
+            { title: 'Dispositivos', href: '#' },
+        ],
+    },
+    {
+        title: 'Asistencia',
+        href: '#',
+        icon: CalendarCheck,
+        items: [
+            { title: 'Marcaciones', href: '#' },
+            { title: 'Mensual', href: '#' },
+            { title: 'Consolidación', href: '#' },
+        ],
+    },
+    {
+        title: 'Trámites',
+        href: '#',
+        icon: FileText,
+        items: [
+            { title: 'Expedientes', href: '#' },
+            { title: 'Justificaciones', href: '#' },
+            { title: 'Suspensiones', href: '#' },
+        ],
     },
 ];
 
