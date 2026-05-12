@@ -35,21 +35,38 @@ function onUpdateOpen(value: boolean) {
 
 <template>
     <Dialog :open="show" @update:open="onUpdateOpen">
-        <DialogContent class="sm:max-w-md p-0 overflow-hidden flex flex-col font-sans max-h-[min(800px,_80vh)] gap-0 duration-300">
-            <DialogHeader class="sticky top-0 bg-background border-b pt-6 pb-5 px-6 z-10 shrink-0">
-                <DialogTitle class="text-2xl font-semibold tracking-[-0.029375rem]">{{ title || 'Confirmar acción' }}</DialogTitle>
-                <DialogDescription class="text-base text-muted-foreground mt-2">
-                    {{ description || '¿Estás seguro de que deseas continuar con esta acción? Esta acción no se puede deshacer.' }}
+        <DialogContent
+            class="flex max-h-[min(800px,_80vh)] flex-col gap-0 overflow-hidden p-0 font-sans duration-300 sm:max-w-md"
+        >
+            <DialogHeader
+                class="sticky top-0 z-10 shrink-0 border-b bg-background px-6 pt-6 pb-5"
+            >
+                <DialogTitle
+                    class="text-2xl font-semibold tracking-[-0.029375rem]"
+                    >{{ title || 'Confirmar acción' }}</DialogTitle
+                >
+                <DialogDescription class="mt-2 text-base text-muted-foreground">
+                    {{
+                        description ||
+                        '¿Estás seguro de que deseas continuar con esta acción? Esta acción no se puede deshacer.'
+                    }}
                 </DialogDescription>
             </DialogHeader>
 
-            <DialogFooter class="sticky bottom-0 p-4 flex flex-row justify-between sm:justify-between shrink-0 bg-muted/30 border-t rounded-b-xl z-10">
-                <Button type="button" variant="outline" @click="onUpdateOpen(false)" :disabled="processing">
+            <DialogFooter
+                class="sticky bottom-0 z-10 flex shrink-0 flex-row justify-between rounded-b-xl border-t bg-muted/30 p-4 sm:justify-between"
+            >
+                <Button
+                    type="button"
+                    variant="outline"
+                    @click="onUpdateOpen(false)"
+                    :disabled="processing"
+                >
                     {{ cancelText || 'Cancelar' }}
                 </Button>
-                <Button 
-                    type="button" 
-                    :variant="destructive ? 'destructive' : 'default'" 
+                <Button
+                    type="button"
+                    :variant="destructive ? 'destructive' : 'default'"
                     :disabled="processing"
                     @click="emit('confirm')"
                 >

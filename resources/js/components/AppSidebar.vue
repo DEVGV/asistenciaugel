@@ -67,7 +67,10 @@ const mainNavItems: NavItem[] = [
         items: [
             { title: 'Áreas', href: AreaController.index().url },
             { title: 'Cargos', href: CargoController.index().url },
-            { title: 'Cond. Laborales', href: CondicionLaboralController.index().url },
+            {
+                title: 'Cond. Laborales',
+                href: CondicionLaboralController.index().url,
+            },
         ],
     },
     {

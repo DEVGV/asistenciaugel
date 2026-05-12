@@ -43,7 +43,8 @@ import { dashboard, login } from '@/routes';
                 >
                     <h1 class="mb-1 font-medium">Comencemos</h1>
                     <p class="mb-2 text-[#706f6c] dark:text-[#A1A09A]">
-                        Laravel tiene un ecosistema increíblemente rico. <br />Sugerimos comenzar con lo siguiente.
+                        Laravel tiene un ecosistema increíblemente rico.
+                        <br />Sugerimos comenzar con lo siguiente.
                     </p>
                     <ul class="mb-4 flex flex-col lg:mb-6">
                         <li

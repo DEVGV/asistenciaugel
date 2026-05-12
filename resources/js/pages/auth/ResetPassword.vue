@@ -37,7 +37,11 @@ const inputEmail = ref(props.email);
         <div class="space-y-4">
             <!-- Email Field -->
             <div class="animate-element animate-delay-200">
-                <Label for="email" class="text-sm font-medium text-muted-foreground ml-1">Correo Electrónico</Label>
+                <Label
+                    for="email"
+                    class="ml-1 text-sm font-medium text-muted-foreground"
+                    >Correo Electrónico</Label
+                >
                 <GlassInputWrapper class="mt-1.5 opacity-60">
                     <Input
                         id="email"
@@ -46,7 +50,7 @@ const inputEmail = ref(props.email);
                         autocomplete="email"
                         v-model="inputEmail"
                         readonly
-                        class="h-12 border-0 bg-transparent shadow-none focus-visible:ring-0 px-4 cursor-not-allowed"
+                        class="h-12 cursor-not-allowed border-0 bg-transparent px-4 shadow-none focus-visible:ring-0"
                     />
                 </GlassInputWrapper>
                 <InputError :message="errors.email" class="mt-2 ml-1" />
@@ -54,7 +58,11 @@ const inputEmail = ref(props.email);
 
             <!-- Password Field -->
             <div class="animate-element animate-delay-300">
-                <Label for="password" class="text-sm font-medium text-muted-foreground ml-1">Nueva Contraseña</Label>
+                <Label
+                    for="password"
+                    class="ml-1 text-sm font-medium text-muted-foreground"
+                    >Nueva Contraseña</Label
+                >
                 <GlassInputWrapper class="mt-1.5">
                     <PasswordInput
                         id="password"
@@ -62,7 +70,7 @@ const inputEmail = ref(props.email);
                         autocomplete="new-password"
                         autofocus
                         placeholder="Crea una nueva contraseña"
-                        class="h-12 border-0 bg-transparent shadow-none focus-visible:ring-0 px-4"
+                        class="h-12 border-0 bg-transparent px-4 shadow-none focus-visible:ring-0"
                     />
                 </GlassInputWrapper>
                 <InputError :message="errors.password" class="mt-2 ml-1" />
@@ -70,32 +78,37 @@ const inputEmail = ref(props.email);
 
             <!-- Confirm Password Field -->
             <div class="animate-element animate-delay-400">
-                <Label for="password_confirmation" class="text-sm font-medium text-muted-foreground ml-1">Confirmar Contraseña</Label>
+                <Label
+                    for="password_confirmation"
+                    class="ml-1 text-sm font-medium text-muted-foreground"
+                    >Confirmar Contraseña</Label
+                >
                 <GlassInputWrapper class="mt-1.5">
                     <PasswordInput
                         id="password_confirmation"
                         name="password_confirmation"
                         autocomplete="new-password"
                         placeholder="Repite tu nueva contraseña"
-                        class="h-12 border-0 bg-transparent shadow-none focus-visible:ring-0 px-4"
+                        class="h-12 border-0 bg-transparent px-4 shadow-none focus-visible:ring-0"
                     />
                 </GlassInputWrapper>
-                <InputError :message="errors.password_confirmation" class="mt-2 ml-1" />
+                <InputError
+                    :message="errors.password_confirmation"
+                    class="mt-2 ml-1"
+                />
             </div>
 
             <!-- Reset Password Button -->
             <Button
                 type="submit"
-                class="animate-element animate-delay-500 w-full h-12 rounded-2xl bg-primary py-4 font-semibold text-primary-foreground hover:bg-primary/90 transition-all duration-300 shadow-lg shadow-primary/20 mt-4"
+                class="animate-element animate-delay-500 mt-4 h-12 w-full rounded-2xl bg-primary py-4 font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-all duration-300 hover:bg-primary/90"
                 :disabled="processing"
             >
                 <template v-if="processing">
-                    <span class="animate-spin mr-2">◌</span>
+                    <span class="mr-2 animate-spin">◌</span>
                     Restableciendo...
                 </template>
-                <template v-else>
-                    Restablecer Contraseña
-                </template>
+                <template v-else> Restablecer Contraseña </template>
             </Button>
         </div>
     </Form>

@@ -28,7 +28,11 @@ defineOptions({
         <div class="space-y-4">
             <!-- Password Field -->
             <div class="animate-element animate-delay-200">
-                <Label for="password" class="text-sm font-medium text-muted-foreground ml-1">Contraseña</Label>
+                <Label
+                    for="password"
+                    class="ml-1 text-sm font-medium text-muted-foreground"
+                    >Contraseña</Label
+                >
                 <GlassInputWrapper class="mt-1.5">
                     <PasswordInput
                         id="password"
@@ -37,7 +41,7 @@ defineOptions({
                         autocomplete="current-password"
                         autofocus
                         placeholder="Ingresa tu contraseña"
-                        class="h-12 border-0 bg-transparent shadow-none focus-visible:ring-0 px-4"
+                        class="h-12 border-0 bg-transparent px-4 shadow-none focus-visible:ring-0"
                     />
                 </GlassInputWrapper>
                 <InputError :message="errors.password" class="mt-2 ml-1" />
@@ -46,16 +50,14 @@ defineOptions({
             <!-- Confirm Button -->
             <Button
                 type="submit"
-                class="animate-element animate-delay-300 w-full h-12 rounded-2xl bg-primary py-4 font-semibold text-primary-foreground hover:bg-primary/90 transition-all duration-300 shadow-lg shadow-primary/20 mt-4"
+                class="animate-element animate-delay-300 mt-4 h-12 w-full rounded-2xl bg-primary py-4 font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-all duration-300 hover:bg-primary/90"
                 :disabled="processing"
             >
                 <template v-if="processing">
-                    <span class="animate-spin mr-2">◌</span>
+                    <span class="mr-2 animate-spin">◌</span>
                     Confirmando...
                 </template>
-                <template v-else>
-                    Confirmar Contraseña
-                </template>
+                <template v-else> Confirmar Contraseña </template>
             </Button>
         </div>
     </Form>

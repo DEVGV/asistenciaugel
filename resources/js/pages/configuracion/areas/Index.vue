@@ -4,8 +4,12 @@ import { Head, useForm, router } from '@inertiajs/vue3';
 import { Plus, Pencil, Trash2, ChevronDown } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import {
-    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
-    DropdownMenuSeparator, DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -154,29 +158,49 @@ function executeDelete() {
                 </TableHeader>
                 <TableBody>
                     <TableRow v-for="area in props.areas.data" :key="area.id">
-                        <TableCell class="font-mono text-sm">{{ area.codigo || '-' }}</TableCell>
-                        <TableCell class="font-medium">{{ area.nombre }}</TableCell>
+                        <TableCell class="font-mono text-sm">{{
+                            area.codigo || '-'
+                        }}</TableCell>
+                        <TableCell class="font-medium">{{
+                            area.nombre
+                        }}</TableCell>
                         <TableCell>{{ area.sigla || '-' }}</TableCell>
-                        <TableCell class="max-w-xs truncate text-muted-foreground">{{ area.descripcion || '-' }}</TableCell>
+                        <TableCell
+                            class="max-w-xs truncate text-muted-foreground"
+                            >{{ area.descripcion || '-' }}</TableCell
+                        >
                         <TableCell>
                             <StatusBadge :active="area.activo" />
                         </TableCell>
                         <TableCell class="text-right">
                             <DropdownMenu>
                                 <DropdownMenuTrigger as-child>
-                                    <Button variant="outline" size="sm" class="h-8 data-[state=open]:bg-muted">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        class="h-8 data-[state=open]:bg-muted"
+                                    >
                                         Acciones
-                                        <ChevronDown class="ml-2 h-4 w-4 text-muted-foreground" />
+                                        <ChevronDown
+                                            class="ml-2 h-4 w-4 text-muted-foreground"
+                                        />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                                    <DropdownMenuItem @click="openEditModal(area)">
+                                    <DropdownMenuLabel
+                                        >Acciones</DropdownMenuLabel
+                                    >
+                                    <DropdownMenuItem
+                                        @click="openEditModal(area)"
+                                    >
                                         <Pencil class="mr-2 h-4 w-4" />
                                         <span>Editar</span>
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem @click="confirmDelete(area)" class="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer">
+                                    <DropdownMenuItem
+                                        @click="confirmDelete(area)"
+                                        class="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
+                                    >
                                         <Trash2 class="mr-2 h-4 w-4" />
                                         <span>Eliminar</span>
                                     </DropdownMenuItem>
@@ -192,25 +216,39 @@ function executeDelete() {
                 </TableBody>
             </Table>
 
-            <div class="flex items-center justify-between border-t px-4 py-3" v-if="props.areas.last_page > 1">
+            <div
+                class="flex items-center justify-between border-t px-4 py-3"
+                v-if="props.areas.total > 0"
+            >
                 <span class="text-sm text-muted-foreground">
-                    Página {{ props.areas.current_page }} de {{ props.areas.last_page }}
-                    ({{ props.areas.total }} registros)
+                    Página {{ props.areas.current_page }} de
+                    {{ props.areas.last_page }} ({{ props.areas.total }}
+                    registros)
                 </span>
                 <div class="flex gap-2">
                     <Button
                         variant="outline"
                         size="sm"
                         :disabled="props.areas.current_page <= 1"
-                        @click="router.get(AreaController.index().url, { page: props.areas.current_page - 1 })"
+                        @click="
+                            router.get(AreaController.index().url, {
+                                page: props.areas.current_page - 1,
+                            })
+                        "
                     >
                         Anterior
                     </Button>
                     <Button
                         variant="outline"
                         size="sm"
-                        :disabled="props.areas.current_page >= props.areas.last_page"
-                        @click="router.get(AreaController.index().url, { page: props.areas.current_page + 1 })"
+                        :disabled="
+                            props.areas.current_page >= props.areas.last_page
+                        "
+                        @click="
+                            router.get(AreaController.index().url, {
+                                page: props.areas.current_page + 1,
+                            })
+                        "
                     >
                         Siguiente
                     </Button>
@@ -227,40 +265,85 @@ function executeDelete() {
             <div class="grid gap-4">
                 <div class="grid gap-2">
                     <Label for="nombre">Nombre *</Label>
-                    <Input id="nombre" v-model="form.nombre" placeholder="Nombre del área" />
-                    <p v-if="form.errors.nombre" class="text-sm text-destructive">{{ form.errors.nombre }}</p>
+                    <Input
+                        id="nombre"
+                        v-model="form.nombre"
+                        placeholder="Nombre del área"
+                    />
+                    <p
+                        v-if="form.errors.nombre"
+                        class="text-sm text-destructive"
+                    >
+                        {{ form.errors.nombre }}
+                    </p>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div class="grid gap-2">
                         <Label for="codigo">Código</Label>
-                        <Input id="codigo" v-model="form.codigo" placeholder="Ej: AREA-01" />
-                        <p v-if="form.errors.codigo" class="text-sm text-destructive">{{ form.errors.codigo }}</p>
+                        <Input
+                            id="codigo"
+                            v-model="form.codigo"
+                            placeholder="Ej: AREA-01"
+                        />
+                        <p
+                            v-if="form.errors.codigo"
+                            class="text-sm text-destructive"
+                        >
+                            {{ form.errors.codigo }}
+                        </p>
                     </div>
                     <div class="grid gap-2">
                         <Label for="sigla">Sigla</Label>
-                        <Input id="sigla" v-model="form.sigla" placeholder="Ej: TI" />
-                        <p v-if="form.errors.sigla" class="text-sm text-destructive">{{ form.errors.sigla }}</p>
+                        <Input
+                            id="sigla"
+                            v-model="form.sigla"
+                            placeholder="Ej: TI"
+                        />
+                        <p
+                            v-if="form.errors.sigla"
+                            class="text-sm text-destructive"
+                        >
+                            {{ form.errors.sigla }}
+                        </p>
                     </div>
                 </div>
 
                 <div class="grid gap-2">
                     <Label for="descripcion">Descripción</Label>
-                    <Input id="descripcion" v-model="form.descripcion" placeholder="Descripción opcional" />
-                    <p v-if="form.errors.descripcion" class="text-sm text-destructive">{{ form.errors.descripcion }}</p>
+                    <Input
+                        id="descripcion"
+                        v-model="form.descripcion"
+                        placeholder="Descripción opcional"
+                    />
+                    <p
+                        v-if="form.errors.descripcion"
+                        class="text-sm text-destructive"
+                    >
+                        {{ form.errors.descripcion }}
+                    </p>
                 </div>
 
-                <div class="flex items-center space-x-2 mt-2">
+                <div class="mt-2 flex items-center space-x-2">
                     <input
                         id="activo"
                         type="checkbox"
                         :checked="!!form.activo"
-                        @change="(e) => form.activo = (e.target as HTMLInputElement).checked"
-                        class="size-4 rounded border-input accent-primary cursor-pointer"
+                        @change="
+                            (e) =>
+                                (form.activo = (
+                                    e.target as HTMLInputElement
+                                ).checked)
+                        "
+                        class="size-4 cursor-pointer rounded border-input accent-primary"
                     />
-                    <Label for="activo" class="cursor-pointer">Área Activa</Label>
+                    <Label for="activo" class="cursor-pointer"
+                        >Área Activa</Label
+                    >
                 </div>
-                <p v-if="form.errors.activo" class="text-sm text-destructive">{{ form.errors.activo }}</p>
+                <p v-if="form.errors.activo" class="text-sm text-destructive">
+                    {{ form.errors.activo }}
+                </p>
             </div>
         </FormModal>
 

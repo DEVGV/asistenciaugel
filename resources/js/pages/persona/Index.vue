@@ -1,17 +1,40 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { Plus, Pencil, Trash2, Eye, User, Phone, Mail, MapPin, ChevronDown } from 'lucide-vue-next';
+import {
+    Plus,
+    Pencil,
+    Trash2,
+    Eye,
+    User,
+    Phone,
+    Mail,
+    MapPin,
+    ChevronDown,
+} from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import {
-    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
-    DropdownMenuSeparator, DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-    Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import {
-    Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
 } from '@/components/ui/dialog';
 import FormModal from '@/components/shared/FormModal.vue';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
@@ -52,10 +75,14 @@ let searchTimeout: any = null;
 watch(search, (val) => {
     if (searchTimeout) clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
-        router.get(PersonaController.index().url, { search: val || undefined }, {
-            preserveState: true,
-            replace: true,
-        });
+        router.get(
+            PersonaController.index().url,
+            { search: val || undefined },
+            {
+                preserveState: true,
+                replace: true,
+            },
+        );
     }, 300);
 });
 
@@ -114,11 +141,17 @@ function openEditModal(persona: Persona) {
 function submitForm() {
     if (isEditing.value && editingId.value) {
         form.put(PersonaController.update({ persona: editingId.value }).url, {
-            onSuccess: () => { showModal.value = false; form.reset(); },
+            onSuccess: () => {
+                showModal.value = false;
+                form.reset();
+            },
         });
     } else {
         form.post(PersonaController.store().url, {
-            onSuccess: () => { showModal.value = false; form.reset(); },
+            onSuccess: () => {
+                showModal.value = false;
+                form.reset();
+            },
         });
     }
 }
@@ -136,10 +169,18 @@ function confirmDelete(persona: Persona) {
 function executeDelete() {
     if (!personaToDelete.value) return;
     isDeleting.value = true;
-    router.delete(PersonaController.destroy({ persona: personaToDelete.value.id }).url, {
-        onSuccess: () => { showDeleteModal.value = false; personaToDelete.value = null; },
-        onFinish: () => { isDeleting.value = false; },
-    });
+    router.delete(
+        PersonaController.destroy({ persona: personaToDelete.value.id }).url,
+        {
+            onSuccess: () => {
+                showDeleteModal.value = false;
+                personaToDelete.value = null;
+            },
+            onFinish: () => {
+                isDeleting.value = false;
+            },
+        },
+    );
 }
 
 // ─── Modal Detalle (con tabs) ───
@@ -147,30 +188,50 @@ const showDetailModal = ref(!!props.selectedPersona);
 const detailPersona = ref<Persona | null>(props.selectedPersona || null);
 const activeTab = ref<'datos' | 'telefonos' | 'emails' | 'domicilios'>('datos');
 
-watch(() => props.selectedPersona, (val) => {
-    if (val) {
-        detailPersona.value = val;
-        showDetailModal.value = true;
-    }
-});
+watch(
+    () => props.selectedPersona,
+    (val) => {
+        if (val) {
+            detailPersona.value = val;
+            showDetailModal.value = true;
+        }
+    },
+);
 
 function openDetailModal(persona: Persona) {
-    router.get(PersonaController.show({ persona: persona.id }).url, {}, {
-        preserveState: true,
-        only: ['selectedPersona'],
-    });
+    // Abrir inmediatamente con los datos básicos
+    detailPersona.value = persona;
+    showDetailModal.value = true;
     activeTab.value = 'datos';
+
+    router.get(
+        PersonaController.show({ persona: persona.id }).url,
+        {},
+        {
+            preserveState: true,
+            preserveScroll: true,
+            only: ['selectedPersona'],
+        },
+    );
 }
 
 function closeDetailModal() {
     showDetailModal.value = false;
-    detailPersona.value = null;
+    setTimeout(() => {
+        detailPersona.value = null;
+    }, 300); // Evitar salto visual al cerrar
+
     // Navegar de vuelta al index limpio
-    router.get(PersonaController.index().url, { search: search.value || undefined }, {
-        preserveState: true,
-        replace: true,
-        only: ['personas', 'filters'],
-    });
+    router.get(
+        PersonaController.index().url,
+        { search: search.value || undefined },
+        {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            only: ['personas', 'filters'],
+        },
+    );
 }
 
 const tabs = [
@@ -199,9 +260,8 @@ const tabs = [
                 v-model="search"
                 type="text"
                 placeholder="Buscar por documento, apellidos o nombres..."
-                class="flex h-9 w-full max-w-sm rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                class="flex h-9 w-full max-w-sm rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:outline-none"
             />
-            <span class="text-sm text-muted-foreground">{{ props.personas.total }} registros</span>
         </div>
 
         <!-- Tabla -->
@@ -217,14 +277,26 @@ const tabs = [
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    <TableRow v-for="persona in props.personas.data" :key="persona.id">
+                    <TableRow
+                        v-for="persona in props.personas.data"
+                        :key="persona.id"
+                    >
                         <TableCell class="font-medium">
-                            <div class="text-xs text-muted-foreground">{{ persona.tipoDocIdentidad?.abreviatura || persona.tipoDocIdentidad?.nombre }}</div>
+                            <div class="text-xs text-muted-foreground">
+                                {{
+                                    persona.tipoDocIdentidad?.abreviatura ||
+                                    persona.tipoDocIdentidad?.nombre
+                                }}
+                            </div>
                             <div>{{ persona.docIdentidad }}</div>
                         </TableCell>
                         <TableCell>
-                            <div class="font-medium">{{ persona.paterno }} {{ persona.materno }}</div>
-                            <div class="text-sm text-muted-foreground">{{ persona.nombre }}</div>
+                            <div class="font-medium">
+                                {{ persona.paterno }} {{ persona.materno }}
+                            </div>
+                            <div class="text-sm text-muted-foreground">
+                                {{ persona.nombre }}
+                            </div>
                         </TableCell>
                         <TableCell>{{ persona.sexo?.nombre || '-' }}</TableCell>
                         <TableCell>
@@ -233,23 +305,38 @@ const tabs = [
                         <TableCell class="text-right">
                             <DropdownMenu>
                                 <DropdownMenuTrigger as-child>
-                                    <Button variant="outline" size="sm" class="h-8 data-[state=open]:bg-muted">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        class="h-8 data-[state=open]:bg-muted"
+                                    >
                                         Acciones
-                                        <ChevronDown class="ml-2 h-4 w-4 text-muted-foreground" />
+                                        <ChevronDown
+                                            class="ml-2 h-4 w-4 text-muted-foreground"
+                                        />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                                    <DropdownMenuItem @click="openDetailModal(persona)">
+                                    <DropdownMenuLabel
+                                        >Acciones</DropdownMenuLabel
+                                    >
+                                    <DropdownMenuItem
+                                        @click="openDetailModal(persona)"
+                                    >
                                         <Eye class="mr-2 h-4 w-4" />
                                         <span>Ver Detalles</span>
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem @click="openEditModal(persona)">
+                                    <DropdownMenuItem
+                                        @click="openEditModal(persona)"
+                                    >
                                         <Pencil class="mr-2 h-4 w-4" />
                                         <span>Editar</span>
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem @click="confirmDelete(persona)" class="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer">
+                                    <DropdownMenuItem
+                                        @click="confirmDelete(persona)"
+                                        class="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
+                                    >
                                         <Trash2 class="mr-2 h-4 w-4" />
                                         <span>Eliminar</span>
                                     </DropdownMenuItem>
@@ -265,24 +352,42 @@ const tabs = [
                 </TableBody>
             </Table>
 
-            <div class="flex items-center justify-between border-t px-4 py-3" v-if="props.personas.last_page > 1">
+            <div
+                class="flex items-center justify-between border-t px-4 py-3"
+                v-if="props.personas.total > 0"
+            >
                 <span class="text-sm text-muted-foreground">
-                    Página {{ props.personas.current_page }} de {{ props.personas.last_page }}
+                    Página {{ props.personas.current_page }} de
+                    {{ props.personas.last_page }} ({{ props.personas.total }}
+                    registros)
                 </span>
                 <div class="flex gap-2">
                     <Button
                         variant="outline"
                         size="sm"
                         :disabled="props.personas.current_page <= 1"
-                        @click="router.get(PersonaController.index().url, { page: props.personas.current_page - 1, search: search || undefined })"
+                        @click="
+                            router.get(PersonaController.index().url, {
+                                page: props.personas.current_page - 1,
+                                search: search || undefined,
+                            })
+                        "
                     >
                         Anterior
                     </Button>
                     <Button
                         variant="outline"
                         size="sm"
-                        :disabled="props.personas.current_page >= props.personas.last_page"
-                        @click="router.get(PersonaController.index().url, { page: props.personas.current_page + 1, search: search || undefined })"
+                        :disabled="
+                            props.personas.current_page >=
+                            props.personas.last_page
+                        "
+                        @click="
+                            router.get(PersonaController.index().url, {
+                                page: props.personas.current_page + 1,
+                                search: search || undefined,
+                            })
+                        "
                     >
                         Siguiente
                     </Button>
@@ -314,27 +419,43 @@ const tabs = [
         />
 
         <!-- Modal Detalle con Tabs -->
-        <Dialog :open="showDetailModal" @update:open="(v: boolean) => { if (!v) closeDetailModal(); }">
-            <DialogContent class="sm:max-w-3xl p-0 overflow-hidden flex flex-col font-sans max-h-[min(800px,_85vh)] gap-0 duration-300">
-                <DialogHeader class="sticky top-0 bg-background border-b pt-6 pb-4 px-6 z-10 shrink-0">
-                    <DialogTitle class="text-2xl font-semibold tracking-[-0.029375rem]">
-                        {{ detailPersona?.paterno }} {{ detailPersona?.materno }}, {{ detailPersona?.nombre }}
+        <Dialog
+            :open="showDetailModal"
+            @update:open="
+                (v: boolean) => {
+                    if (!v) closeDetailModal();
+                }
+            "
+        >
+            <DialogContent
+                class="flex max-h-[min(800px,_85vh)] flex-col gap-0 overflow-hidden p-0 font-sans duration-300 sm:max-w-3xl"
+            >
+                <DialogHeader
+                    class="sticky top-0 z-10 shrink-0 border-b bg-background px-6 pt-6 pb-4"
+                >
+                    <DialogTitle
+                        class="text-2xl font-semibold tracking-[-0.029375rem]"
+                    >
+                        {{ detailPersona?.paterno }}
+                        {{ detailPersona?.materno }},
+                        {{ detailPersona?.nombre }}
                     </DialogTitle>
                     <DialogDescription class="text-base text-muted-foreground">
-                        {{ detailPersona?.tipoDocIdentidad?.nombre }}: {{ detailPersona?.docIdentidad }}
+                        {{ detailPersona?.tipoDocIdentidad?.nombre }}:
+                        {{ detailPersona?.docIdentidad }}
                     </DialogDescription>
 
                     <!-- Tabs -->
-                    <div class="flex gap-1 mt-3 -mb-4 border-b-0">
+                    <div class="mt-3 -mb-4 flex gap-1 border-b-0">
                         <button
                             v-for="tab in tabs"
                             :key="tab.key"
                             @click="activeTab = tab.key"
                             :class="[
-                                'flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-t-md transition-colors',
+                                'flex items-center gap-1.5 rounded-t-md px-3 py-2 text-sm font-medium transition-colors',
                                 activeTab === tab.key
-                                    ? 'bg-muted text-foreground border border-b-0 border-border'
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                    ? 'border border-b-0 border-border bg-muted text-foreground'
+                                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
                             ]"
                         >
                             <component :is="tab.icon" class="h-4 w-4" />
@@ -343,40 +464,73 @@ const tabs = [
                     </div>
                 </DialogHeader>
 
-                <div class="overflow-y-auto flex-1 p-6" v-if="detailPersona">
+                <div class="flex-1 overflow-y-auto p-6" v-if="detailPersona">
                     <!-- Tab: Datos -->
                     <div v-if="activeTab === 'datos'" class="space-y-4">
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <p class="text-xs text-muted-foreground">Tipo Doc.</p>
-                                <p class="text-sm font-medium">{{ detailPersona.tipoDocIdentidad?.nombre || '-' }}</p>
+                                <p class="text-xs text-muted-foreground">
+                                    Tipo Doc.
+                                </p>
+                                <p class="text-sm font-medium">
+                                    {{
+                                        detailPersona.tipoDocIdentidad
+                                            ?.nombre || '-'
+                                    }}
+                                </p>
                             </div>
                             <div>
-                                <p class="text-xs text-muted-foreground">N° Documento</p>
-                                <p class="text-sm font-medium">{{ detailPersona.docIdentidad }}</p>
+                                <p class="text-xs text-muted-foreground">
+                                    N° Documento
+                                </p>
+                                <p class="text-sm font-medium">
+                                    {{ detailPersona.docIdentidad }}
+                                </p>
                             </div>
                             <div>
-                                <p class="text-xs text-muted-foreground">Apellido Paterno</p>
-                                <p class="text-sm font-medium">{{ detailPersona.paterno }}</p>
+                                <p class="text-xs text-muted-foreground">
+                                    Apellido Paterno
+                                </p>
+                                <p class="text-sm font-medium">
+                                    {{ detailPersona.paterno }}
+                                </p>
                             </div>
                             <div>
-                                <p class="text-xs text-muted-foreground">Apellido Materno</p>
-                                <p class="text-sm font-medium">{{ detailPersona.materno }}</p>
+                                <p class="text-xs text-muted-foreground">
+                                    Apellido Materno
+                                </p>
+                                <p class="text-sm font-medium">
+                                    {{ detailPersona.materno }}
+                                </p>
                             </div>
                             <div>
-                                <p class="text-xs text-muted-foreground">Nombres</p>
-                                <p class="text-sm font-medium">{{ detailPersona.nombre }}</p>
+                                <p class="text-xs text-muted-foreground">
+                                    Nombres
+                                </p>
+                                <p class="text-sm font-medium">
+                                    {{ detailPersona.nombre }}
+                                </p>
                             </div>
                             <div>
-                                <p class="text-xs text-muted-foreground">Sexo</p>
-                                <p class="text-sm font-medium">{{ detailPersona.sexo?.nombre || '-' }}</p>
+                                <p class="text-xs text-muted-foreground">
+                                    Sexo
+                                </p>
+                                <p class="text-sm font-medium">
+                                    {{ detailPersona.sexo?.nombre || '-' }}
+                                </p>
                             </div>
                             <div>
-                                <p class="text-xs text-muted-foreground">Fecha Nacimiento</p>
-                                <p class="text-sm font-medium">{{ detailPersona.fechaNac || '-' }}</p>
+                                <p class="text-xs text-muted-foreground">
+                                    Fecha Nacimiento
+                                </p>
+                                <p class="text-sm font-medium">
+                                    {{ detailPersona.fechaNac || '-' }}
+                                </p>
                             </div>
                             <div>
-                                <p class="text-xs text-muted-foreground">Estado</p>
+                                <p class="text-xs text-muted-foreground">
+                                    Estado
+                                </p>
                                 <StatusBadge :active="detailPersona.activo" />
                             </div>
                         </div>

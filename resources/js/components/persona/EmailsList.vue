@@ -6,7 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-    Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import FormModal from '@/components/shared/FormModal.vue';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
@@ -56,11 +61,15 @@ function openEdit(item: Email) {
 function submitForm() {
     if (isEditing.value && editingId.value) {
         form.put(EmailController.update({ email: editingId.value }).url, {
-            onSuccess: () => { showModal.value = false; },
+            onSuccess: () => {
+                showModal.value = false;
+            },
         });
     } else {
         form.post(EmailController.store({ persona: props.personaId }).url, {
-            onSuccess: () => { showModal.value = false; },
+            onSuccess: () => {
+                showModal.value = false;
+            },
         });
     }
 }
@@ -73,17 +82,27 @@ function confirmDelete(item: Email) {
 function executeDelete() {
     if (!itemToDelete.value) return;
     isDeleting.value = true;
-    router.delete(EmailController.destroy({ email: itemToDelete.value.id }).url, {
-        onSuccess: () => { showDeleteModal.value = false; itemToDelete.value = null; },
-        onFinish: () => { isDeleting.value = false; },
-    });
+    router.delete(
+        EmailController.destroy({ email: itemToDelete.value.id }).url,
+        {
+            onSuccess: () => {
+                showDeleteModal.value = false;
+                itemToDelete.value = null;
+            },
+            onFinish: () => {
+                isDeleting.value = false;
+            },
+        },
+    );
 }
 </script>
 
 <template>
     <div>
-        <div class="flex items-center justify-between mb-3">
-            <h3 class="text-sm font-semibold text-muted-foreground">Correos Electrónicos</h3>
+        <div class="mb-3 flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-muted-foreground">
+                Correos Electrónicos
+            </h3>
             <Button size="sm" variant="outline" @click="openCreate">
                 <Plus class="mr-1 h-3.5 w-3.5" /> Agregar
             </Button>
@@ -107,21 +126,38 @@ function executeDelete() {
                                 {{ item.email }}
                             </div>
                         </TableCell>
-                        <TableCell>{{ item.personalInst === 'P' ? 'Personal' : 'Institucional' }}</TableCell>
+                        <TableCell>{{
+                            item.personalInst === 'P'
+                                ? 'Personal'
+                                : 'Institucional'
+                        }}</TableCell>
                         <TableCell>
                             <StatusBadge :active="!item.fechaFin" />
                         </TableCell>
                         <TableCell class="text-right">
-                            <Button variant="ghost" size="icon" class="h-7 w-7" @click="openEdit(item)">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                class="h-7 w-7"
+                                @click="openEdit(item)"
+                            >
                                 <Pencil class="h-3.5 w-3.5" />
                             </Button>
-                            <Button variant="ghost" size="icon" class="h-7 w-7 text-destructive" @click="confirmDelete(item)">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                class="h-7 w-7 text-destructive"
+                                @click="confirmDelete(item)"
+                            >
                                 <Trash2 class="h-3.5 w-3.5" />
                             </Button>
                         </TableCell>
                     </TableRow>
                     <TableRow v-if="emails.length === 0">
-                        <TableCell colspan="4" class="h-16 text-center text-muted-foreground text-sm">
+                        <TableCell
+                            colspan="4"
+                            class="h-16 text-center text-sm text-muted-foreground"
+                        >
                             Sin correos registrados.
                         </TableCell>
                     </TableRow>
@@ -129,16 +165,33 @@ function executeDelete() {
             </Table>
         </div>
 
-        <FormModal v-model:show="showModal" :title="isEditing ? 'Editar Email' : 'Nuevo Email'" :processing="form.processing" @submit="submitForm">
+        <FormModal
+            v-model:show="showModal"
+            :title="isEditing ? 'Editar Email' : 'Nuevo Email'"
+            :processing="form.processing"
+            @submit="submitForm"
+        >
             <div class="grid gap-4">
                 <div class="grid gap-2">
                     <Label>Email *</Label>
-                    <Input v-model="form.email" type="email" placeholder="correo@ejemplo.com" />
-                    <p v-if="form.errors.email" class="text-sm text-destructive">{{ form.errors.email }}</p>
+                    <Input
+                        v-model="form.email"
+                        type="email"
+                        placeholder="correo@ejemplo.com"
+                    />
+                    <p
+                        v-if="form.errors.email"
+                        class="text-sm text-destructive"
+                    >
+                        {{ form.errors.email }}
+                    </p>
                 </div>
                 <div class="grid gap-2">
                     <Label>Tipo *</Label>
-                    <select v-model="form.personalInst" class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs">
+                    <select
+                        v-model="form.personalInst"
+                        class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+                    >
                         <option value="P">Personal</option>
                         <option value="I">Institucional</option>
                     </select>
@@ -151,7 +204,9 @@ function executeDelete() {
                     <div class="grid gap-2">
                         <Label>Fecha de Baja</Label>
                         <Input v-model="form.fechaFin" type="date" />
-                        <p class="text-xs text-muted-foreground">Establece una fecha para marcarlo como inactivo.</p>
+                        <p class="text-xs text-muted-foreground">
+                            Establece una fecha para marcarlo como inactivo.
+                        </p>
                     </div>
                 </div>
             </div>

@@ -20,7 +20,8 @@ function onDocTypeChange(item: ParamSimple | null) {
 }
 
 async function buscarReniec() {
-    if (!props.form.docIdentidad || props.form.docIdentidad.length !== 8) return;
+    if (!props.form.docIdentidad || props.form.docIdentidad.length !== 8)
+        return;
     if (selectedDocTypeAbrev.value !== 'DNI') return;
 
     isSearchingReniec.value = true;
@@ -31,9 +32,9 @@ async function buscarReniec() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json',
+                Accept: 'application/json',
             },
-            body: JSON.stringify({ dni: props.form.docIdentidad })
+            body: JSON.stringify({ dni: props.form.docIdentidad }),
         });
 
         const result = await response.json();
@@ -55,11 +56,14 @@ async function buscarReniec() {
     }
 }
 
-watch(() => props.form.docIdentidad, (newVal) => {
-    if (newVal?.length === 8 && selectedDocTypeAbrev.value === 'DNI') {
-        buscarReniec();
-    }
-});
+watch(
+    () => props.form.docIdentidad,
+    (newVal) => {
+        if (newVal?.length === 8 && selectedDocTypeAbrev.value === 'DNI') {
+            buscarReniec();
+        }
+    },
+);
 </script>
 
 <template>
@@ -90,34 +94,64 @@ watch(() => props.form.docIdentidad, (newVal) => {
                         size="icon"
                         class="absolute right-0 h-full px-3 py-2 hover:bg-transparent"
                         @click="buscarReniec"
-                        :disabled="isSearchingReniec || form.docIdentidad?.length !== 8"
+                        :disabled="
+                            isSearchingReniec || form.docIdentidad?.length !== 8
+                        "
                     >
-                        <Loader2 v-if="isSearchingReniec" class="h-4 w-4 animate-spin text-muted-foreground" />
+                        <Loader2
+                            v-if="isSearchingReniec"
+                            class="h-4 w-4 animate-spin text-muted-foreground"
+                        />
                         <Search v-else class="h-4 w-4 text-muted-foreground" />
                     </Button>
                 </div>
-                <p v-if="searchError" class="text-sm text-amber-500">{{ searchError }}</p>
-                <p v-if="form.errors.docIdentidad" class="text-sm text-destructive">{{ form.errors.docIdentidad }}</p>
+                <p v-if="searchError" class="text-sm text-amber-500">
+                    {{ searchError }}
+                </p>
+                <p
+                    v-if="form.errors.docIdentidad"
+                    class="text-sm text-destructive"
+                >
+                    {{ form.errors.docIdentidad }}
+                </p>
             </div>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
             <div class="grid gap-2">
                 <Label for="paterno">Ap. Paterno *</Label>
-                <Input id="paterno" v-model="form.paterno" placeholder="Apellido paterno" />
-                <p v-if="form.errors.paterno" class="text-sm text-destructive">{{ form.errors.paterno }}</p>
+                <Input
+                    id="paterno"
+                    v-model="form.paterno"
+                    placeholder="Apellido paterno"
+                />
+                <p v-if="form.errors.paterno" class="text-sm text-destructive">
+                    {{ form.errors.paterno }}
+                </p>
             </div>
             <div class="grid gap-2">
                 <Label for="materno">Ap. Materno *</Label>
-                <Input id="materno" v-model="form.materno" placeholder="Apellido materno" />
-                <p v-if="form.errors.materno" class="text-sm text-destructive">{{ form.errors.materno }}</p>
+                <Input
+                    id="materno"
+                    v-model="form.materno"
+                    placeholder="Apellido materno"
+                />
+                <p v-if="form.errors.materno" class="text-sm text-destructive">
+                    {{ form.errors.materno }}
+                </p>
             </div>
         </div>
 
         <div class="grid gap-2">
             <Label for="nombre">Nombres *</Label>
-            <Input id="nombre" v-model="form.nombre" placeholder="Nombres completos" />
-            <p v-if="form.errors.nombre" class="text-sm text-destructive">{{ form.errors.nombre }}</p>
+            <Input
+                id="nombre"
+                v-model="form.nombre"
+                placeholder="Nombres completos"
+            />
+            <p v-if="form.errors.nombre" class="text-sm text-destructive">
+                {{ form.errors.nombre }}
+            </p>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
@@ -139,19 +173,26 @@ watch(() => props.form.docIdentidad, (newVal) => {
         <div class="grid gap-2">
             <Label for="fechaNac">Fecha Nacimiento</Label>
             <Input id="fechaNac" v-model="form.fechaNac" type="date" />
-            <p v-if="form.errors.fechaNac" class="text-sm text-destructive">{{ form.errors.fechaNac }}</p>
+            <p v-if="form.errors.fechaNac" class="text-sm text-destructive">
+                {{ form.errors.fechaNac }}
+            </p>
         </div>
 
-        <div class="flex items-center space-x-2 mt-2">
+        <div class="mt-2 flex items-center space-x-2">
             <input
                 id="activo"
                 type="checkbox"
                 :checked="!!form.activo"
-                @change="(e: Event) => form.activo = (e.target as HTMLInputElement).checked"
-                class="size-4 rounded border-input accent-primary cursor-pointer"
+                @change="
+                    (e: Event) =>
+                        (form.activo = (e.target as HTMLInputElement).checked)
+                "
+                class="size-4 cursor-pointer rounded border-input accent-primary"
             />
             <Label for="activo" class="cursor-pointer">Persona Activa</Label>
         </div>
-        <p v-if="form.errors.activo" class="text-sm text-destructive">{{ form.errors.activo }}</p>
+        <p v-if="form.errors.activo" class="text-sm text-destructive">
+            {{ form.errors.activo }}
+        </p>
     </div>
 </template>

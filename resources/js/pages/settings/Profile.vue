@@ -95,7 +95,8 @@ const user = computed(() => page.props.auth.user);
                     v-if="status === 'verification-link-sent'"
                     class="mt-2 text-sm font-medium text-green-600"
                 >
-                    Se ha enviado un nuevo enlace de verificación a tu dirección de correo electrónico.
+                    Se ha enviado un nuevo enlace de verificación a tu dirección
+                    de correo electrónico.
                 </div>
             </div>
 

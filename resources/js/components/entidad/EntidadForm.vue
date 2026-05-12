@@ -27,7 +27,12 @@ async function buscarRuc(ruc: string) {
             headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/json',
-                'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
+                'X-CSRF-TOKEN':
+                    (
+                        document.querySelector(
+                            'meta[name="csrf-token"]',
+                        ) as HTMLMetaElement
+                    )?.content ?? '',
             },
             body: JSON.stringify({ ruc }),
         });
@@ -35,7 +40,8 @@ async function buscarRuc(ruc: string) {
         const json = await response.json();
 
         if (!response.ok) {
-            rucError.value = json.message ?? 'No se encontraron datos para este RUC.';
+            rucError.value =
+                json.message ?? 'No se encontraron datos para este RUC.';
             return;
         }
 
@@ -82,13 +88,17 @@ const emits = defineEmits<{
                 />
                 <span
                     v-if="isLookingUp"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground animate-pulse"
+                    class="absolute top-1/2 right-3 -translate-y-1/2 animate-pulse text-xs text-muted-foreground"
                 >
                     Buscando…
                 </span>
             </div>
-            <p v-if="rucError" class="text-sm text-destructive">{{ rucError }}</p>
-            <p v-else-if="form.errors.ruc" class="text-sm text-destructive">{{ form.errors.ruc }}</p>
+            <p v-if="rucError" class="text-sm text-destructive">
+                {{ rucError }}
+            </p>
+            <p v-else-if="form.errors.ruc" class="text-sm text-destructive">
+                {{ form.errors.ruc }}
+            </p>
         </div>
 
         <div class="grid gap-2">
@@ -98,7 +108,9 @@ const emits = defineEmits<{
                 v-model="form.razonSocial"
                 placeholder="Se llenará automáticamente al ingresar el RUC"
             />
-            <p v-if="form.errors.razonSocial" class="text-sm text-destructive">{{ form.errors.razonSocial }}</p>
+            <p v-if="form.errors.razonSocial" class="text-sm text-destructive">
+                {{ form.errors.razonSocial }}
+            </p>
         </div>
 
         <div class="grid gap-2">
@@ -108,19 +120,29 @@ const emits = defineEmits<{
                 v-model="form.razonComercial"
                 placeholder="Nombre comercial (Opcional)"
             />
-            <p v-if="form.errors.razonComercial" class="text-sm text-destructive">{{ form.errors.razonComercial }}</p>
+            <p
+                v-if="form.errors.razonComercial"
+                class="text-sm text-destructive"
+            >
+                {{ form.errors.razonComercial }}
+            </p>
         </div>
 
-        <div class="flex items-center space-x-2 mt-2">
+        <div class="mt-2 flex items-center space-x-2">
             <input
                 id="activo"
                 type="checkbox"
                 :checked="!!form.activo"
-                @change="(e) => form.activo = (e.target as HTMLInputElement).checked"
-                class="size-4 rounded border-input accent-primary cursor-pointer"
+                @change="
+                    (e) =>
+                        (form.activo = (e.target as HTMLInputElement).checked)
+                "
+                class="size-4 cursor-pointer rounded border-input accent-primary"
             />
             <Label for="activo" class="cursor-pointer">Entidad Activa</Label>
         </div>
-        <p v-if="form.errors.activo" class="text-sm text-destructive">{{ form.errors.activo }}</p>
+        <p v-if="form.errors.activo" class="text-sm text-destructive">
+            {{ form.errors.activo }}
+        </p>
     </div>
 </template>

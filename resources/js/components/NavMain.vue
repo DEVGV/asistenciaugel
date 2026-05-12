@@ -34,7 +34,10 @@ const { isCurrentUrl } = useCurrentUrl();
                 <Collapsible
                     v-if="item.items && item.items.length > 0"
                     as-child
-                    :default-open="item.isActive || item.items.some(subItem => isCurrentUrl(subItem.href))"
+                    :default-open="
+                        item.isActive ||
+                        item.items.some((subItem) => isCurrentUrl(subItem.href))
+                    "
                     class="group/collapsible"
                 >
                     <SidebarMenuItem>
@@ -42,12 +45,17 @@ const { isCurrentUrl } = useCurrentUrl();
                             <SidebarMenuButton :tooltip="item.title">
                                 <component :is="item.icon" v-if="item.icon" />
                                 <span>{{ item.title }}</span>
-                                <ChevronRight class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                <ChevronRight
+                                    class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+                                />
                             </SidebarMenuButton>
                         </CollapsibleTrigger>
                         <CollapsibleContent>
                             <SidebarMenuSub>
-                                <SidebarMenuSubItem v-for="subItem in item.items" :key="subItem.title">
+                                <SidebarMenuSubItem
+                                    v-for="subItem in item.items"
+                                    :key="subItem.title"
+                                >
                                     <SidebarMenuSubButton
                                         as-child
                                         :is-active="isCurrentUrl(subItem.href)"
@@ -61,7 +69,7 @@ const { isCurrentUrl } = useCurrentUrl();
                         </CollapsibleContent>
                     </SidebarMenuItem>
                 </Collapsible>
-                
+
                 <SidebarMenuItem v-else>
                     <SidebarMenuButton
                         as-child

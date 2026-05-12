@@ -6,7 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-    Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import FormModal from '@/components/shared/FormModal.vue';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
@@ -63,11 +68,15 @@ function openEdit(tel: Telefono) {
 function submitForm() {
     if (isEditing.value && editingId.value) {
         form.put(TelefonoController.update({ telefono: editingId.value }).url, {
-            onSuccess: () => { showModal.value = false; },
+            onSuccess: () => {
+                showModal.value = false;
+            },
         });
     } else {
         form.post(TelefonoController.store({ persona: props.personaId }).url, {
-            onSuccess: () => { showModal.value = false; },
+            onSuccess: () => {
+                showModal.value = false;
+            },
         });
     }
 }
@@ -80,17 +89,27 @@ function confirmDelete(tel: Telefono) {
 function executeDelete() {
     if (!itemToDelete.value) return;
     isDeleting.value = true;
-    router.delete(TelefonoController.destroy({ telefono: itemToDelete.value.id }).url, {
-        onSuccess: () => { showDeleteModal.value = false; itemToDelete.value = null; },
-        onFinish: () => { isDeleting.value = false; },
-    });
+    router.delete(
+        TelefonoController.destroy({ telefono: itemToDelete.value.id }).url,
+        {
+            onSuccess: () => {
+                showDeleteModal.value = false;
+                itemToDelete.value = null;
+            },
+            onFinish: () => {
+                isDeleting.value = false;
+            },
+        },
+    );
 }
 </script>
 
 <template>
     <div>
-        <div class="flex items-center justify-between mb-3">
-            <h3 class="text-sm font-semibold text-muted-foreground">Teléfonos</h3>
+        <div class="mb-3 flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-muted-foreground">
+                Teléfonos
+            </h3>
             <Button size="sm" variant="outline" @click="openCreate">
                 <Plus class="mr-1 h-3.5 w-3.5" /> Agregar
             </Button>
@@ -111,27 +130,48 @@ function executeDelete() {
                     <TableRow v-for="tel in telefonos" :key="tel.id">
                         <TableCell>
                             <div class="flex items-center gap-1.5">
-                                <Smartphone v-if="tel.movilFijo === 'M'" class="h-4 w-4 text-muted-foreground" />
-                                <Phone v-else class="h-4 w-4 text-muted-foreground" />
+                                <Smartphone
+                                    v-if="tel.movilFijo === 'M'"
+                                    class="h-4 w-4 text-muted-foreground"
+                                />
+                                <Phone
+                                    v-else
+                                    class="h-4 w-4 text-muted-foreground"
+                                />
                                 {{ tel.movilFijo === 'M' ? 'Móvil' : 'Fijo' }}
                             </div>
                         </TableCell>
-                        <TableCell class="font-medium">{{ tel.codigoPais }} {{ tel.numero }}</TableCell>
+                        <TableCell class="font-medium"
+                            >{{ tel.codigoPais }} {{ tel.numero }}</TableCell
+                        >
                         <TableCell>{{ tel.operador?.nombre || '-' }}</TableCell>
                         <TableCell>
                             <StatusBadge :active="!tel.fechaFin" />
                         </TableCell>
                         <TableCell class="text-right">
-                            <Button variant="ghost" size="icon" class="h-7 w-7" @click="openEdit(tel)">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                class="h-7 w-7"
+                                @click="openEdit(tel)"
+                            >
                                 <Pencil class="h-3.5 w-3.5" />
                             </Button>
-                            <Button variant="ghost" size="icon" class="h-7 w-7 text-destructive" @click="confirmDelete(tel)">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                class="h-7 w-7 text-destructive"
+                                @click="confirmDelete(tel)"
+                            >
                                 <Trash2 class="h-3.5 w-3.5" />
                             </Button>
                         </TableCell>
                     </TableRow>
                     <TableRow v-if="telefonos.length === 0">
-                        <TableCell colspan="5" class="h-16 text-center text-muted-foreground text-sm">
+                        <TableCell
+                            colspan="5"
+                            class="h-16 text-center text-sm text-muted-foreground"
+                        >
                             Sin teléfonos registrados.
                         </TableCell>
                     </TableRow>
@@ -139,27 +179,52 @@ function executeDelete() {
             </Table>
         </div>
 
-        <FormModal v-model:show="showModal" :title="isEditing ? 'Editar Teléfono' : 'Nuevo Teléfono'" :processing="form.processing" @submit="submitForm">
+        <FormModal
+            v-model:show="showModal"
+            :title="isEditing ? 'Editar Teléfono' : 'Nuevo Teléfono'"
+            :processing="form.processing"
+            @submit="submitForm"
+        >
             <div class="grid gap-4">
                 <div class="grid grid-cols-2 gap-4">
                     <div class="grid gap-2">
                         <Label>Tipo *</Label>
-                        <select v-model="form.movilFijo" class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs">
+                        <select
+                            v-model="form.movilFijo"
+                            class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+                        >
                             <option value="M">Móvil</option>
                             <option value="F">Fijo</option>
                         </select>
                     </div>
-                    <ParamSelect v-model="form.operador_id" type="operadores" label="Operador" />
+                    <ParamSelect
+                        v-model="form.operador_id"
+                        type="operadores"
+                        label="Operador"
+                    />
                 </div>
                 <div class="grid grid-cols-3 gap-4">
                     <div class="grid gap-2">
                         <Label>Código</Label>
-                        <Input v-model="form.codigoPais" placeholder="+51" maxlength="5" />
+                        <Input
+                            v-model="form.codigoPais"
+                            placeholder="+51"
+                            maxlength="5"
+                        />
                     </div>
                     <div class="col-span-2 grid gap-2">
                         <Label>Número *</Label>
-                        <Input v-model="form.numero" placeholder="999999999" maxlength="20" />
-                        <p v-if="form.errors.numero" class="text-sm text-destructive">{{ form.errors.numero }}</p>
+                        <Input
+                            v-model="form.numero"
+                            placeholder="999999999"
+                            maxlength="20"
+                        />
+                        <p
+                            v-if="form.errors.numero"
+                            class="text-sm text-destructive"
+                        >
+                            {{ form.errors.numero }}
+                        </p>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
@@ -170,7 +235,9 @@ function executeDelete() {
                     <div class="grid gap-2">
                         <Label>Fecha de Baja</Label>
                         <Input v-model="form.fechaFin" type="date" />
-                        <p class="text-xs text-muted-foreground">Establece una fecha para marcarlo como inactivo.</p>
+                        <p class="text-xs text-muted-foreground">
+                            Establece una fecha para marcarlo como inactivo.
+                        </p>
                     </div>
                 </div>
             </div>

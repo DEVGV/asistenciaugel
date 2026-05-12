@@ -35,26 +35,53 @@ function onUpdateOpen(value: boolean) {
 
 <template>
     <Dialog :open="show" @update:open="onUpdateOpen">
-        <DialogContent :class="['sm:max-w-md p-0 overflow-hidden flex flex-col font-sans max-h-[min(800px,_80vh)] gap-0 duration-300', {
-            'sm:max-w-sm': maxWidth === 'sm',
-            'sm:max-w-lg': maxWidth === 'lg',
-            'sm:max-w-xl': maxWidth === 'xl',
-            'sm:max-w-2xl': maxWidth === '2xl',
-        }]">
-            <DialogHeader class="sticky top-0 bg-background border-b pt-6 pb-5 px-6 z-10 shrink-0">
-                <DialogTitle class="text-2xl font-semibold tracking-[-0.029375rem]">{{ title }}</DialogTitle>
-                <DialogDescription :class="['text-base text-muted-foreground', { 'sr-only': !description }]">
-                    {{ description || 'Complete el formulario a continuación.' }}
+        <DialogContent
+            :class="[
+                'flex max-h-[min(800px,_80vh)] flex-col gap-0 overflow-hidden p-0 font-sans duration-300 sm:max-w-md',
+                {
+                    'sm:max-w-sm': maxWidth === 'sm',
+                    'sm:max-w-lg': maxWidth === 'lg',
+                    'sm:max-w-xl': maxWidth === 'xl',
+                    'sm:max-w-2xl': maxWidth === '2xl',
+                },
+            ]"
+        >
+            <DialogHeader
+                class="sticky top-0 z-10 shrink-0 border-b bg-background px-6 pt-6 pb-5"
+            >
+                <DialogTitle
+                    class="text-2xl font-semibold tracking-[-0.029375rem]"
+                    >{{ title }}</DialogTitle
+                >
+                <DialogDescription
+                    :class="[
+                        'text-base text-muted-foreground',
+                        { 'sr-only': !description },
+                    ]"
+                >
+                    {{
+                        description || 'Complete el formulario a continuación.'
+                    }}
                 </DialogDescription>
             </DialogHeader>
 
-            <form @submit.prevent="emit('submit')" class="flex flex-col flex-1 overflow-hidden">
-                <div class="overflow-y-auto text-sm px-6 py-6 flex-1">
+            <form
+                @submit.prevent="emit('submit')"
+                class="flex flex-1 flex-col overflow-hidden"
+            >
+                <div class="flex-1 overflow-y-auto px-6 py-6 text-sm">
                     <slot />
                 </div>
-                
-                <DialogFooter class="sticky bottom-0 p-4 flex flex-row justify-between sm:justify-between shrink-0 bg-muted/30 border-t rounded-b-xl z-10">
-                    <Button type="button" variant="outline" @click="onUpdateOpen(false)" :disabled="processing">
+
+                <DialogFooter
+                    class="sticky bottom-0 z-10 flex shrink-0 flex-row justify-between rounded-b-xl border-t bg-muted/30 p-4 sm:justify-between"
+                >
+                    <Button
+                        type="button"
+                        variant="outline"
+                        @click="onUpdateOpen(false)"
+                        :disabled="processing"
+                    >
                         {{ cancelText || 'Cancelar' }}
                     </Button>
                     <Button type="submit" :disabled="processing">

@@ -4,8 +4,12 @@ import { Head, useForm, router } from '@inertiajs/vue3';
 import { Plus, Pencil, Trash2, ChevronDown } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import {
-    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
-    DropdownMenuSeparator, DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
     Table,
@@ -117,15 +121,18 @@ function confirmDeleteEntidad(entidad: Entidad) {
 function executeDelete() {
     if (!entidadToDelete.value) return;
     isDeleting.value = true;
-    router.delete(EntidadController.destroy({ entidade: entidadToDelete.value.id }).url, {
-        onSuccess: () => {
-            showDeleteModal.value = false;
-            entidadToDelete.value = null;
+    router.delete(
+        EntidadController.destroy({ entidade: entidadToDelete.value.id }).url,
+        {
+            onSuccess: () => {
+                showDeleteModal.value = false;
+                entidadToDelete.value = null;
+            },
+            onFinish: () => {
+                isDeleting.value = false;
+            },
         },
-        onFinish: () => {
-            isDeleting.value = false;
-        }
-    });
+    );
 }
 </script>
 
@@ -153,32 +160,54 @@ function executeDelete() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    <TableRow v-for="entidad in props.entidades.data" :key="entidad.id">
-                        <TableCell class="font-medium">{{ entidad.ruc }}</TableCell>
+                    <TableRow
+                        v-for="entidad in props.entidades.data"
+                        :key="entidad.id"
+                    >
+                        <TableCell class="font-medium">{{
+                            entidad.ruc
+                        }}</TableCell>
                         <TableCell>
                             <div>{{ entidad.razonSocial }}</div>
-                            <div class="text-sm text-muted-foreground">{{ entidad.razonComercial }}</div>
+                            <div class="text-sm text-muted-foreground">
+                                {{ entidad.razonComercial }}
+                            </div>
                         </TableCell>
-                        <TableCell>{{ entidad.tipoEntidad?.nombre || '-' }}</TableCell>
+                        <TableCell>{{
+                            entidad.tipoEntidad?.nombre || '-'
+                        }}</TableCell>
                         <TableCell>
                             <StatusBadge :active="entidad.activo" />
                         </TableCell>
                         <TableCell class="text-right">
                             <DropdownMenu>
                                 <DropdownMenuTrigger as-child>
-                                    <Button variant="outline" size="sm" class="h-8 data-[state=open]:bg-muted">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        class="h-8 data-[state=open]:bg-muted"
+                                    >
                                         Acciones
-                                        <ChevronDown class="ml-2 h-4 w-4 text-muted-foreground" />
+                                        <ChevronDown
+                                            class="ml-2 h-4 w-4 text-muted-foreground"
+                                        />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                                    <DropdownMenuItem @click="openEditModal(entidad)">
+                                    <DropdownMenuLabel
+                                        >Acciones</DropdownMenuLabel
+                                    >
+                                    <DropdownMenuItem
+                                        @click="openEditModal(entidad)"
+                                    >
                                         <Pencil class="mr-2 h-4 w-4" />
                                         <span>Editar</span>
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem @click="confirmDeleteEntidad(entidad)" class="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer">
+                                    <DropdownMenuItem
+                                        @click="confirmDeleteEntidad(entidad)"
+                                        class="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
+                                    >
                                         <Trash2 class="mr-2 h-4 w-4" />
                                         <span>Eliminar</span>
                                     </DropdownMenuItem>
@@ -193,26 +222,41 @@ function executeDelete() {
                     </TableRow>
                 </TableBody>
             </Table>
-            
-            <div class="flex items-center justify-between border-t px-4 py-3" v-if="props.entidades.last_page > 1">
+
+            <div
+                class="flex items-center justify-between border-t px-4 py-3"
+                v-if="props.entidades.total > 0"
+            >
                 <span class="text-sm text-muted-foreground">
-                    Página {{ props.entidades.current_page }} de {{ props.entidades.last_page }}
-                    ({{ props.entidades.total }} registros)
+                    Página {{ props.entidades.current_page }} de
+                    {{ props.entidades.last_page }} ({{ props.entidades.total }}
+                    registros)
                 </span>
                 <div class="flex gap-2">
                     <Button
                         variant="outline"
                         size="sm"
                         :disabled="props.entidades.current_page <= 1"
-                        @click="router.get(EntidadController.index().url, { page: props.entidades.current_page - 1 })"
+                        @click="
+                            router.get(EntidadController.index().url, {
+                                page: props.entidades.current_page - 1,
+                            })
+                        "
                     >
                         Anterior
                     </Button>
                     <Button
                         variant="outline"
                         size="sm"
-                        :disabled="props.entidades.current_page >= props.entidades.last_page"
-                        @click="router.get(EntidadController.index().url, { page: props.entidades.current_page + 1 })"
+                        :disabled="
+                            props.entidades.current_page >=
+                            props.entidades.last_page
+                        "
+                        @click="
+                            router.get(EntidadController.index().url, {
+                                page: props.entidades.current_page + 1,
+                            })
+                        "
                     >
                         Siguiente
                     </Button>
@@ -228,7 +272,11 @@ function executeDelete() {
         >
             <EntidadForm
                 :form="form"
-                @ruc-data="(data) => { form.razonSocial = data.razonSocial; }"
+                @ruc-data="
+                    (data) => {
+                        form.razonSocial = data.razonSocial;
+                    }
+                "
             />
         </FormModal>
 

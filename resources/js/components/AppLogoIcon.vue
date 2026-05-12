@@ -13,10 +13,10 @@ defineProps<Props>();
 </script>
 
 <template>
-    <img 
-        src="/img/dre_icon.png" 
-        alt="Logo Icon" 
-        :class="className" 
-        v-bind="$attrs" 
+    <img
+        src="/img/dre_icon.png"
+        alt="Logo Icon"
+        :class="className"
+        v-bind="$attrs"
     />
 </template>
