@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { Plus, Pencil, Trash2, ChevronDown } from 'lucide-vue-next';
+import { ref, watch } from 'vue';
+import CondicionLaboralController from '@/actions/App/Http/Controllers/Configuracion/CondicionLaboralController';
+import ConfirmModal from '@/components/shared/ConfirmModal.vue';
+import FormModal from '@/components/shared/FormModal.vue';
+import ParamSelect from '@/components/shared/ParamSelect.vue';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -21,11 +25,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import FormModal from '@/components/shared/FormModal.vue';
-import ConfirmModal from '@/components/shared/ConfirmModal.vue';
-import ParamSelect from '@/components/shared/ParamSelect.vue';
 import type { CondicionLaboral } from '@/types/models/configuracion';
-import CondicionLaboralController from '@/actions/App/Http/Controllers/Configuracion/CondicionLaboralController';
 
 interface PaginatedResponse<T> {
     data: T[];
@@ -58,7 +58,6 @@ const editingId = ref<number | null>(null);
 
 const form = useForm({
     nombre: '',
-    codigo: '',
     abreviatura: '',
     descripcion: '',
     regimenLaboral_id: null as number | null,
@@ -85,7 +84,6 @@ function openEditModal(condicion: CondicionLaboral) {
     editingId.value = condicion.id;
     form.clearErrors();
     form.nombre = condicion.nombre ?? '';
-    form.codigo = condicion.codigo ?? '';
     form.abreviatura = condicion.abreviatura ?? '';
     form.descripcion = condicion.descripcion ?? '';
     form.regimenLaboral_id = condicion.regimenLaboral_id;
@@ -126,7 +124,10 @@ function confirmDelete(condicion: CondicionLaboral) {
 }
 
 function executeDelete() {
-    if (!condicionToDelete.value) return;
+    if (!condicionToDelete.value) {
+return;
+}
+
     isDeleting.value = true;
     router.delete(
         CondicionLaboralController.destroy({
@@ -298,23 +299,13 @@ function executeDelete() {
                         {{ form.errors.nombre }}
                     </p>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="grid gap-2">
-                        <Label for="codigo">Código</Label>
-                        <Input
-                            id="codigo"
-                            v-model="form.codigo"
-                            placeholder="Ej: CL-001"
-                        />
-                    </div>
-                    <div class="grid gap-2">
-                        <Label for="abreviatura">Abreviatura</Label>
-                        <Input
-                            id="abreviatura"
-                            v-model="form.abreviatura"
-                            placeholder="Ej: CAS"
-                        />
-                    </div>
+                <div class="grid gap-2">
+                    <Label for="abreviatura">Abreviatura</Label>
+                    <Input
+                        id="abreviatura"
+                        v-model="form.abreviatura"
+                        placeholder="Ej: CAS"
+                    />
                 </div>
                 <ParamSelect
                     v-model="form.regimenLaboral_id"

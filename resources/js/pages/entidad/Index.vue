@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { Plus, Pencil, Trash2, ChevronDown } from 'lucide-vue-next';
+import { ref, watch } from 'vue';
+import EntidadController from '@/actions/App/Http/Controllers/Entidad/EntidadController';
+import EntidadForm from '@/components/entidad/EntidadForm.vue';
+import ConfirmModal from '@/components/shared/ConfirmModal.vue';
+import FormModal from '@/components/shared/FormModal.vue';
+import StatusBadge from '@/components/shared/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -20,12 +25,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 
-import FormModal from '@/components/shared/FormModal.vue';
-import ConfirmModal from '@/components/shared/ConfirmModal.vue';
-import EntidadForm from '@/components/entidad/EntidadForm.vue';
-import StatusBadge from '@/components/shared/StatusBadge.vue';
 import type { Entidad } from '@/types/models/entidad';
-import EntidadController from '@/actions/App/Http/Controllers/Entidad/EntidadController';
 
 export interface PaginatedResponse<T> {
     data: T[];
@@ -119,7 +119,10 @@ function confirmDeleteEntidad(entidad: Entidad) {
 }
 
 function executeDelete() {
-    if (!entidadToDelete.value) return;
+    if (!entidadToDelete.value) {
+return;
+}
+
     isDeleting.value = true;
     router.delete(
         EntidadController.destroy({ entidade: entidadToDelete.value.id }).url,

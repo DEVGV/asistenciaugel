@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import {
     Plus,
@@ -12,7 +11,23 @@ import {
     MapPin,
     ChevronDown,
 } from 'lucide-vue-next';
+import { ref, watch, computed } from 'vue';
+import PersonaController from '@/actions/App/Http/Controllers/Persona/PersonaController';
+import DomiciliosList from '@/components/persona/DomiciliosList.vue';
+import EmailsList from '@/components/persona/EmailsList.vue';
+import PersonaForm from '@/components/persona/PersonaForm.vue';
+import TelefonosList from '@/components/persona/TelefonosList.vue';
+import ConfirmModal from '@/components/shared/ConfirmModal.vue';
+import FormModal from '@/components/shared/FormModal.vue';
+import StatusBadge from '@/components/shared/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -29,22 +44,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import FormModal from '@/components/shared/FormModal.vue';
-import ConfirmModal from '@/components/shared/ConfirmModal.vue';
-import PersonaForm from '@/components/persona/PersonaForm.vue';
-import TelefonosList from '@/components/persona/TelefonosList.vue';
-import EmailsList from '@/components/persona/EmailsList.vue';
-import DomiciliosList from '@/components/persona/DomiciliosList.vue';
-import StatusBadge from '@/components/shared/StatusBadge.vue';
 import type { Persona } from '@/types/models/persona';
-import PersonaController from '@/actions/App/Http/Controllers/Persona/PersonaController';
 
 export interface PaginatedResponse<T> {
     data: T[];
@@ -73,7 +73,10 @@ const search = ref(props.filters.search || '');
 let searchTimeout: any = null;
 
 watch(search, (val) => {
-    if (searchTimeout) clearTimeout(searchTimeout);
+    if (searchTimeout) {
+clearTimeout(searchTimeout);
+}
+
     searchTimeout = setTimeout(() => {
         router.get(
             PersonaController.index().url,
@@ -167,7 +170,10 @@ function confirmDelete(persona: Persona) {
 }
 
 function executeDelete() {
-    if (!personaToDelete.value) return;
+    if (!personaToDelete.value) {
+return;
+}
+
     isDeleting.value = true;
     router.delete(
         PersonaController.destroy({ persona: personaToDelete.value.id }).url,

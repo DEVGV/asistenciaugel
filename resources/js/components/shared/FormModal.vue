@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -7,7 +8,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 
 defineProps<{
     show: boolean;
@@ -27,6 +27,7 @@ const emit = defineEmits<{
 
 function onUpdateOpen(value: boolean) {
     emit('update:show', value);
+
     if (!value) {
         emit('close');
     }

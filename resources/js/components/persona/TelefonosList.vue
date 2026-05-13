@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { Plus, Pencil, Trash2, Phone, Smartphone } from 'lucide-vue-next';
+import { ref } from 'vue';
+import TelefonoController from '@/actions/App/Http/Controllers/Persona/TelefonoController';
+import ConfirmModal from '@/components/shared/ConfirmModal.vue';
+import FormModal from '@/components/shared/FormModal.vue';
+import ParamSelect from '@/components/shared/ParamSelect.vue';
+import StatusBadge from '@/components/shared/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,12 +18,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import FormModal from '@/components/shared/FormModal.vue';
-import ConfirmModal from '@/components/shared/ConfirmModal.vue';
-import ParamSelect from '@/components/shared/ParamSelect.vue';
-import StatusBadge from '@/components/shared/StatusBadge.vue';
 import type { Telefono } from '@/types/models/persona';
-import TelefonoController from '@/actions/App/Http/Controllers/Persona/TelefonoController';
 
 const props = defineProps<{
     telefonos: Telefono[];
@@ -87,7 +87,10 @@ function confirmDelete(tel: Telefono) {
 }
 
 function executeDelete() {
-    if (!itemToDelete.value) return;
+    if (!itemToDelete.value) {
+return;
+}
+
     isDeleting.value = true;
     router.delete(
         TelefonoController.destroy({ telefono: itemToDelete.value.id }).url,

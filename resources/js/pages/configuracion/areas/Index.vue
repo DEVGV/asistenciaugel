@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { Plus, Pencil, Trash2, ChevronDown } from 'lucide-vue-next';
+import { ref, watch } from 'vue';
+import AreaController from '@/actions/App/Http/Controllers/Configuracion/AreaController';
+import ConfirmModal from '@/components/shared/ConfirmModal.vue';
+import FormModal from '@/components/shared/FormModal.vue';
+import StatusBadge from '@/components/shared/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -21,11 +25,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import FormModal from '@/components/shared/FormModal.vue';
-import ConfirmModal from '@/components/shared/ConfirmModal.vue';
-import StatusBadge from '@/components/shared/StatusBadge.vue';
 import type { Area } from '@/types/models/configuracion';
-import AreaController from '@/actions/App/Http/Controllers/Configuracion/AreaController';
 
 interface PaginatedResponse<T> {
     data: T[];
@@ -55,7 +55,6 @@ const editingId = ref<number | null>(null);
 
 const form = useForm({
     nombre: '',
-    codigo: '',
     sigla: '',
     descripcion: '',
     rolTrabajador_id: null as number | null,
@@ -82,7 +81,6 @@ function openEditModal(area: Area) {
     editingId.value = area.id;
     form.clearErrors();
     form.nombre = area.nombre ?? '';
-    form.codigo = area.codigo ?? '';
     form.sigla = area.sigla ?? '';
     form.descripcion = area.descripcion ?? '';
     form.rolTrabajador_id = area.rolTrabajador_id;
@@ -118,7 +116,10 @@ function confirmDelete(area: Area) {
 }
 
 function executeDelete() {
-    if (!areaToDelete.value) return;
+    if (!areaToDelete.value) {
+return;
+}
+
     isDeleting.value = true;
     router.delete(AreaController.destroy({ area: areaToDelete.value.id }).url, {
         onSuccess: () => {
@@ -278,35 +279,19 @@ function executeDelete() {
                     </p>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="grid gap-2">
-                        <Label for="codigo">Código</Label>
-                        <Input
-                            id="codigo"
-                            v-model="form.codigo"
-                            placeholder="Ej: AREA-01"
-                        />
-                        <p
-                            v-if="form.errors.codigo"
-                            class="text-sm text-destructive"
-                        >
-                            {{ form.errors.codigo }}
-                        </p>
-                    </div>
-                    <div class="grid gap-2">
-                        <Label for="sigla">Sigla</Label>
-                        <Input
-                            id="sigla"
-                            v-model="form.sigla"
-                            placeholder="Ej: TI"
-                        />
-                        <p
-                            v-if="form.errors.sigla"
-                            class="text-sm text-destructive"
-                        >
-                            {{ form.errors.sigla }}
-                        </p>
-                    </div>
+                <div class="grid gap-2">
+                    <Label for="sigla">Sigla</Label>
+                    <Input
+                        id="sigla"
+                        v-model="form.sigla"
+                        placeholder="Ej: TI"
+                    />
+                    <p
+                        v-if="form.errors.sigla"
+                        class="text-sm text-destructive"
+                    >
+                        {{ form.errors.sigla }}
+                    </p>
                 </div>
 
                 <div class="grid gap-2">

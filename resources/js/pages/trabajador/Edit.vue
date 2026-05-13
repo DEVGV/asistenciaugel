@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Head, useForm, Link } from '@inertiajs/vue3';
 import { ArrowLeft, CheckCircle2 } from 'lucide-vue-next';
-import { Button } from '@/components/ui/button';
-import TrabajadorForm from '@/components/trabajador/TrabajadorForm.vue';
-import type { Trabajador } from '@/types/models/trabajador';
 import TrabajadorController from '@/actions/App/Http/Controllers/Trabajador/TrabajadorController';
+import TrabajadorForm from '@/components/trabajador/TrabajadorForm.vue';
+import { Button } from '@/components/ui/button';
+import type { Trabajador } from '@/types/models/trabajador';
 
 const props = defineProps<{
     trabajador: Trabajador;
@@ -15,15 +15,14 @@ defineOptions({
         breadcrumbs: [
             { title: 'Trabajadores', href: TrabajadorController.index().url },
             {
-                title: `Editar ${props.trabajador.codigo}`,
-                href: TrabajadorController.edit({ trabajador: props.trabajador.id }).url,
+                title: 'Editar Trabajador',
+                href: '#',
             },
         ],
     },
 });
 
 const form = useForm({
-    codigo: props.trabajador.codigo,
     activo: props.trabajador.activo,
 });
 

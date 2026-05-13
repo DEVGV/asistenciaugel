@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { Plus, Pencil, Trash2, ChevronDown } from 'lucide-vue-next';
+import { ref, watch } from 'vue';
+import CargoController from '@/actions/App/Http/Controllers/Configuracion/CargoController';
+import ConfirmModal from '@/components/shared/ConfirmModal.vue';
+import FormModal from '@/components/shared/FormModal.vue';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -21,10 +24,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import FormModal from '@/components/shared/FormModal.vue';
-import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import type { Cargo } from '@/types/models/configuracion';
-import CargoController from '@/actions/App/Http/Controllers/Configuracion/CargoController';
 
 interface PaginatedResponse<T> {
     data: T[];
@@ -54,7 +54,6 @@ const editingId = ref<number | null>(null);
 
 const form = useForm({
     nombre: '',
-    codigo: '',
     abreviatura: '',
     rolTrabajador_id: null as number | null,
     activo: true,
@@ -80,7 +79,6 @@ function openEditModal(cargo: Cargo) {
     editingId.value = cargo.id;
     form.clearErrors();
     form.nombre = cargo.nombre ?? '';
-    form.codigo = cargo.codigo ?? '';
     form.abreviatura = cargo.abreviatura ?? '';
     form.rolTrabajador_id = cargo.rolTrabajador_id;
     form.activo = cargo.activo;
@@ -115,7 +113,10 @@ function confirmDelete(cargo: Cargo) {
 }
 
 function executeDelete() {
-    if (!cargoToDelete.value) return;
+    if (!cargoToDelete.value) {
+return;
+}
+
     isDeleting.value = true;
     router.delete(
         CargoController.destroy({ cargo: cargoToDelete.value.id }).url,
@@ -267,23 +268,13 @@ function executeDelete() {
                         {{ form.errors.nombre }}
                     </p>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="grid gap-2">
-                        <Label for="codigo">Código</Label>
-                        <Input
-                            id="codigo"
-                            v-model="form.codigo"
-                            placeholder="Ej: CARGO-01"
-                        />
-                    </div>
-                    <div class="grid gap-2">
-                        <Label for="abreviatura">Abreviatura</Label>
-                        <Input
-                            id="abreviatura"
-                            v-model="form.abreviatura"
-                            placeholder="Ej: DIR"
-                        />
-                    </div>
+                <div class="grid gap-2">
+                    <Label for="abreviatura">Abreviatura</Label>
+                    <Input
+                        id="abreviatura"
+                        v-model="form.abreviatura"
+                        placeholder="Ej: DIR"
+                    />
                 </div>
                 <div class="mt-2 flex items-center space-x-2">
                     <input

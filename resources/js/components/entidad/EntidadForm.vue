@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import SunatController from '@/actions/App/Http/Controllers/Api/SunatController';
+import ParamSelect from '@/components/shared/ParamSelect.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import ParamSelect from '@/components/shared/ParamSelect.vue';
-import SunatController from '@/actions/App/Http/Controllers/Api/SunatController';
 
 defineProps<{
     form: any; // Inertia Form instance
@@ -15,6 +15,7 @@ const rucError = ref<string | null>(null);
 async function buscarRuc(ruc: string) {
     if (ruc.length !== 11 || !/^\d{11}$/.test(ruc)) {
         rucError.value = null;
+
         return;
     }
 
@@ -42,10 +43,12 @@ async function buscarRuc(ruc: string) {
         if (!response.ok) {
             rucError.value =
                 json.message ?? 'No se encontraron datos para este RUC.';
+
             return;
         }
 
         const data = json.data;
+
         // Rellenar campos automáticamente
         if (data?.nombre_o_razon_social) {
             // Escribimos en los campos del formulario padre via prop

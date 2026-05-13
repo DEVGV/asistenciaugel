@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
 import { onClickOutside } from '@vueuse/core';
-import { Label } from '@/components/ui/label';
 import { Check, ChevronDown, Search } from 'lucide-vue-next';
-import type { ParamSimple } from '@/types/models/params';
+import { ref, computed, onMounted, watch } from 'vue';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import type { ParamSimple } from '@/types/models/params';
 
 const props = defineProps<{
     type: string;
@@ -33,19 +33,26 @@ onClickOutside(target, () => {
 
 async function fetchData() {
     loading.value = true;
+
     try {
         const url = props.parentId
             ? `/api/params/${props.type}?parent_id=${props.parentId}`
             : `/api/params/${props.type}`;
 
         const response = await fetch(url);
-        if (!response.ok) throw new Error('Network response was not ok');
+
+        if (!response.ok) {
+throw new Error('Network response was not ok');
+}
+
         const json = await response.json();
         data.value = json.data;
+
         if (props.modelValue) {
             const initialItem = data.value.find(
                 (i) => String(i.id) === String(props.modelValue),
             );
+
             if (initialItem) {
                 emit('update:item', initialItem);
             }
@@ -79,7 +86,10 @@ watch(
             const item = data.value.find(
                 (i) => String(i.id) === String(newVal),
             );
-            if (item) emit('update:item', item);
+
+            if (item) {
+emit('update:item', item);
+}
         }
     },
 );
@@ -92,6 +102,7 @@ const filteredData = computed(() => {
     if (query) {
         results = results.filter((item) => {
             const name = item.nombre || item.descripcion || '';
+
             return String(name).toLowerCase().includes(query);
         });
     }
@@ -100,16 +111,24 @@ const filteredData = computed(() => {
 });
 
 const selectedItemName = computed(() => {
-    if (!props.modelValue) return '';
+    if (!props.modelValue) {
+return '';
+}
+
     const item = data.value.find(
         (i) => String(i.id) === String(props.modelValue),
     );
+
     return item ? item.nombre || item.descripcion : '';
 });
 
 function toggleDropdown() {
-    if (props.disabled || loading.value) return;
+    if (props.disabled || loading.value) {
+return;
+}
+
     isOpen.value = !isOpen.value;
+
     if (isOpen.value) {
         searchQuery.value = ''; // Limpiar búsqueda al abrir
     }

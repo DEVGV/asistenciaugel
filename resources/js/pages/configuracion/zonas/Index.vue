@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { Plus, Pencil, Trash2, ChevronDown } from 'lucide-vue-next';
+import { ref, watch } from 'vue';
+import ZonaController from '@/actions/App/Http/Controllers/Configuracion/ZonaController';
+import ConfirmModal from '@/components/shared/ConfirmModal.vue';
+import FormModal from '@/components/shared/FormModal.vue';
+import ParamSelect from '@/components/shared/ParamSelect.vue';
+import StatusBadge from '@/components/shared/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -21,12 +26,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import FormModal from '@/components/shared/FormModal.vue';
-import ConfirmModal from '@/components/shared/ConfirmModal.vue';
-import StatusBadge from '@/components/shared/StatusBadge.vue';
-import ParamSelect from '@/components/shared/ParamSelect.vue';
 import type { Zona } from '@/types/models/configuracion';
-import ZonaController from '@/actions/App/Http/Controllers/Configuracion/ZonaController';
 
 interface PaginatedResponse<T> {
     data: T[];
@@ -134,7 +134,10 @@ function confirmDelete(zona: Zona) {
 }
 
 function executeDelete() {
-    if (!zonaToDelete.value) return;
+    if (!zonaToDelete.value) {
+return;
+}
+
     isDeleting.value = true;
     router.delete(ZonaController.destroy({ zona: zonaToDelete.value.id }).url, {
         onSuccess: () => {
@@ -148,10 +151,14 @@ function executeDelete() {
 }
 
 function getUbigeoText(zona: Zona): string {
-    if (!zona.distrito) return '-';
+    if (!zona.distrito) {
+return '-';
+}
+
     const dist = zona.distrito.nombre || '';
     const prov = zona.distrito.provincia?.nombre || '';
     const depto = zona.distrito.provincia?.departamento?.nombre || '';
+
     return [depto, prov, dist].filter(Boolean).join(' / ');
 }
 </script>

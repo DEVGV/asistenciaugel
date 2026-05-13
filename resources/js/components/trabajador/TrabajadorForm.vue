@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { Persona } from '@/types/models/persona';
 
@@ -31,20 +30,6 @@ defineProps<{
             </div>
         </div>
 
-        <!-- Campo Código del Trabajador -->
-        <div class="grid gap-2">
-            <Label for="codigo">Código de Trabajador *</Label>
-            <Input
-                id="codigo"
-                v-model="form.codigo"
-                placeholder="Ingrese el código único del trabajador"
-                maxlength="50"
-                autofocus
-            />
-            <p v-if="form.errors?.codigo" class="text-sm text-destructive">
-                {{ form.errors.codigo }}
-            </p>
-        </div>
 
         <!-- Estado Activo -->
         <div class="mt-2 flex items-center space-x-2">

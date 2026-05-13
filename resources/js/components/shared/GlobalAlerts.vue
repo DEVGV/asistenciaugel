@@ -1,6 +1,12 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
 import { usePage } from '@inertiajs/vue3';
+import {
+    CheckCircle2,
+    AlertCircle,
+    Info,
+    AlertTriangle,
+} from 'lucide-vue-next';
+import { computed, ref, watch } from 'vue';
 import {
     Alert,
     AlertContent,
@@ -8,12 +14,6 @@ import {
     AlertTitle,
     AlertIcon,
 } from '@/components/ui/alert';
-import {
-    CheckCircle2,
-    AlertCircle,
-    Info,
-    AlertTriangle,
-} from 'lucide-vue-next';
 
 const page = usePage();
 const flash = computed(() => (page.props.flash as any) || {});
@@ -30,19 +30,20 @@ let timeoutId: any = null;
 watch(
     flash,
     (newFlash) => {
-        if (newFlash.success)
-            showToast('success', '¡Éxito!', newFlash.success, CheckCircle2);
-        else if (newFlash.error)
-            showToast('destructive', 'Error', newFlash.error, AlertCircle);
-        else if (newFlash.warning)
-            showToast(
+        if (newFlash.success) {
+showToast('success', '¡Éxito!', newFlash.success, CheckCircle2);
+} else if (newFlash.error) {
+showToast('destructive', 'Error', newFlash.error, AlertCircle);
+} else if (newFlash.warning) {
+showToast(
                 'warning',
                 'Advertencia',
                 newFlash.warning,
                 AlertTriangle,
             );
-        else if (newFlash.info)
-            showToast('info', 'Información', newFlash.info, Info);
+} else if (newFlash.info) {
+showToast('info', 'Información', newFlash.info, Info);
+}
     },
     { deep: true, immediate: true },
 );
@@ -51,7 +52,9 @@ function showToast(type: any, title: string, message: string, icon: any) {
     alertConfig.value = { type, title, message, icon };
 
     // Limpiar timeout anterior si existe
-    if (timeoutId) clearTimeout(timeoutId);
+    if (timeoutId) {
+clearTimeout(timeoutId);
+}
 
     // Auto-ocultar después de 4 segundos
     timeoutId = setTimeout(() => {
@@ -61,6 +64,7 @@ function showToast(type: any, title: string, message: string, icon: any) {
 
 function closeAlert() {
     alertConfig.value = null;
+
     if (page.props.flash) {
         (page.props.flash as any) = {};
     }

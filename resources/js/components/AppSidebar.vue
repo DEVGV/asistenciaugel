@@ -11,6 +11,13 @@ import {
     CalendarCheck,
     FileText,
 } from 'lucide-vue-next';
+import AreaController from '@/actions/App/Http/Controllers/Configuracion/AreaController';
+import CargoController from '@/actions/App/Http/Controllers/Configuracion/CargoController';
+import CondicionLaboralController from '@/actions/App/Http/Controllers/Configuracion/CondicionLaboralController';
+import ZonaController from '@/actions/App/Http/Controllers/Configuracion/ZonaController';
+import EntidadController from '@/actions/App/Http/Controllers/Entidad/EntidadController';
+import PersonaController from '@/actions/App/Http/Controllers/Persona/PersonaController';
+import TrabajadorController from '@/actions/App/Http/Controllers/Trabajador/TrabajadorController';
 import AppLogo from '@/components/AppLogo.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
@@ -24,13 +31,6 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import EntidadController from '@/actions/App/Http/Controllers/Entidad/EntidadController';
-import PersonaController from '@/actions/App/Http/Controllers/Persona/PersonaController';
-import AreaController from '@/actions/App/Http/Controllers/Configuracion/AreaController';
-import CargoController from '@/actions/App/Http/Controllers/Configuracion/CargoController';
-import CondicionLaboralController from '@/actions/App/Http/Controllers/Configuracion/CondicionLaboralController';
-import ZonaController from '@/actions/App/Http/Controllers/Configuracion/ZonaController';
-import TrabajadorController from '@/actions/App/Http/Controllers/Trabajador/TrabajadorController';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [

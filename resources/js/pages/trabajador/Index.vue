@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
 import { Head, router, Link, useForm } from '@inertiajs/vue3';
 import {
     Plus,
@@ -12,9 +11,13 @@ import {
     Loader2,
     CheckCircle2,
 } from 'lucide-vue-next';
+import { ref, watch } from 'vue';
+import PersonaController from '@/actions/App/Http/Controllers/Persona/PersonaController';
+import TrabajadorController from '@/actions/App/Http/Controllers/Trabajador/TrabajadorController';
+import ConfirmModal from '@/components/shared/ConfirmModal.vue';
+import FormModal from '@/components/shared/FormModal.vue';
+import StatusBadge from '@/components/shared/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -23,6 +26,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import {
     Table,
     TableBody,
@@ -31,13 +35,8 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import ConfirmModal from '@/components/shared/ConfirmModal.vue';
-import FormModal from '@/components/shared/FormModal.vue';
-import StatusBadge from '@/components/shared/StatusBadge.vue';
-import type { Trabajador, PaginatedResponse } from '@/types/models/trabajador';
 import type { Persona } from '@/types/models/persona';
-import TrabajadorController from '@/actions/App/Http/Controllers/Trabajador/TrabajadorController';
-import PersonaController from '@/actions/App/Http/Controllers/Persona/PersonaController';
+import type { Trabajador, PaginatedResponse } from '@/types/models/trabajador';
 
 defineOptions({
     layout: {
@@ -57,7 +56,10 @@ const search = ref(props.filters.search || '');
 let searchTimeout: any = null;
 
 watch(search, (val) => {
-    if (searchTimeout) clearTimeout(searchTimeout);
+    if (searchTimeout) {
+clearTimeout(searchTimeout);
+}
+
     searchTimeout = setTimeout(() => {
         router.get(
             TrabajadorController.index().url,
@@ -81,7 +83,10 @@ function confirmDelete(trabajador: Trabajador) {
 }
 
 function executeDelete() {
-    if (!trabajadorToDelete.value) return;
+    if (!trabajadorToDelete.value) {
+return;
+}
+
     isDeleting.value = true;
     router.delete(
         TrabajadorController.destroy({ trabajador: trabajadorToDelete.value.id }).url,
@@ -107,15 +112,11 @@ let searchPersonaTimeout: any = null;
 // Formularios y Selecciones
 const selectedPersonas = ref<Persona[]>([]);
 const form = useForm({
-    trabajadores: [] as { persona_id: number; codigo: string; activo: boolean }[],
+    trabajadores: [] as { persona_id: number; activo: boolean }[],
 });
-
-// Paso actual en el modal (1: Buscar/Seleccionar, 2: Asignar Códigos)
-const creationStep = ref<1 | 2>(1);
 
 function openCreateModal() {
     showCreateModal.value = true;
-    creationStep.value = 1;
     searchPersonaQuery.value = '';
     searchedPersonas.value = null;
     selectedPersonas.value = [];
@@ -126,6 +127,7 @@ function openCreateModal() {
 
 async function searchPersonasAPI(query: string, page = 1) {
     isSearchingPersonas.value = true;
+
     try {
         const response = await fetch(
             PersonaController.search({ search: query, page }).url,
@@ -135,6 +137,7 @@ async function searchPersonasAPI(query: string, page = 1) {
                 },
             }
         );
+
         if (response.ok) {
             searchedPersonas.value = await response.json();
         }
@@ -146,7 +149,10 @@ async function searchPersonasAPI(query: string, page = 1) {
 }
 
 watch(searchPersonaQuery, (val) => {
-    if (searchPersonaTimeout) clearTimeout(searchPersonaTimeout);
+    if (searchPersonaTimeout) {
+clearTimeout(searchPersonaTimeout);
+}
+
     searchPersonaTimeout = setTimeout(() => {
         searchPersonasAPI(val);
     }, 300);
@@ -154,6 +160,7 @@ watch(searchPersonaQuery, (val) => {
 
 function togglePersonaSelection(persona: Persona) {
     const index = selectedPersonas.value.findIndex((p) => p.id === persona.id);
+
     if (index === -1) {
         selectedPersonas.value.push(persona);
     } else {
@@ -165,24 +172,16 @@ function isPersonaSelected(id: number) {
     return selectedPersonas.value.some((p) => p.id === id);
 }
 
-function goToStep2() {
-    if (selectedPersonas.value.length === 0) return;
-    
-    // Inicializar el formulario con las personas seleccionadas
-    form.trabajadores = selectedPersonas.value.map((persona) => {
-        // Buscar si ya tenía datos ingresados para no perderlos si retrocede y avanza
-        const existing = form.trabajadores.find((t) => t.persona_id === persona.id);
-        return {
-            persona_id: persona.id,
-            codigo: existing ? existing.codigo : '',
-            activo: existing ? existing.activo : true,
-        };
-    });
-    
-    creationStep.value = 2;
-}
-
 function submitMasivo() {
+    if (selectedPersonas.value.length === 0) {
+return;
+}
+    
+    form.trabajadores = selectedPersonas.value.map((persona) => ({
+        persona_id: persona.id,
+        activo: true,
+    }));
+    
     form.post(TrabajadorController.store().url, {
         onSuccess: () => {
             showCreateModal.value = false;
@@ -385,15 +384,14 @@ function submitMasivo() {
             v-model:show="showCreateModal"
             title="Registrar Trabajadores"
             max-width="2xl"
-            @submit="creationStep === 1 ? goToStep2() : submitMasivo()"
+            @submit="submitMasivo"
             :processing="form.processing"
         >
             <template #default>
-                <!-- PASO 1: Selección Múltiple -->
-                <div v-if="creationStep === 1" class="space-y-4 min-h-[400px]">
+                <div class="space-y-4 min-h-[400px]">
                     <div class="flex items-center justify-between">
                         <p class="text-sm text-muted-foreground">
-                            Paso 1: Seleccione una o varias personas para asignarlas como trabajadores.
+                            Seleccione una o varias personas para asignarlas como trabajadores.
                         </p>
                         <span class="text-xs font-semibold bg-primary/10 text-primary px-2 py-1 rounded-full">
                             {{ selectedPersonas.length }} Seleccionados
@@ -479,91 +477,25 @@ function submitMasivo() {
                         </div>
                     </div>
                 </div>
-
-                <!-- PASO 2: Asignación de Códigos -->
-                <div v-else class="space-y-4">
-                    <p class="text-sm text-muted-foreground mb-4">
-                        Paso 2: Ingrese el código de trabajador correspondiente para cada persona.
-                    </p>
-                    
-                    <p v-if="form.errors.trabajadores" class="text-sm font-semibold text-destructive mb-2">
-                        {{ form.errors.trabajadores }}
-                    </p>
-
-                    <div class="max-h-[400px] overflow-y-auto space-y-4 pr-2">
-                        <div
-                            v-for="(persona, index) in selectedPersonas"
-                            :key="persona.id"
-                            class="p-4 border rounded-lg bg-card grid md:grid-cols-2 gap-4 items-center"
-                        >
-                            <div>
-                                <p class="text-sm font-bold">
-                                    {{ persona.paterno }} {{ persona.materno }}, {{ persona.nombre }}
-                                </p>
-                                <p class="text-xs text-muted-foreground mt-0.5">
-                                    DNI/Doc: {{ persona.docIdentidad }}
-                                </p>
-                            </div>
-                            
-                            <div class="space-y-2">
-                                <Label :for="'codigo_' + index" class="sr-only">Código de Trabajador</Label>
-                                <Input
-                                    :id="'codigo_' + index"
-                                    v-model="form.trabajadores[index].codigo"
-                                    placeholder="Ingrese código de trabajador *"
-                                    required
-                                />
-                                <p v-if="form.errors[`trabajadores.${index}.codigo`]" class="text-xs text-destructive mt-1">
-                                    {{ form.errors[`trabajadores.${index}.codigo`] }}
-                                </p>
-                                <p v-if="form.errors[`trabajadores.${index}.persona_id`]" class="text-xs text-destructive mt-1">
-                                    {{ form.errors[`trabajadores.${index}.persona_id`] }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </template>
             
             <template #footer>
-                <div class="flex w-full justify-between gap-2">
+                <div class="flex w-full justify-end gap-2">
                     <Button
-                        v-if="creationStep === 2"
                         type="button"
                         variant="outline"
-                        @click="creationStep = 1"
+                        @click="showCreateModal = false"
                     >
-                        Volver
+                        Cancelar
                     </Button>
-                    <div v-else></div> <!-- Placeholder for spacing -->
                     
-                    <div class="flex gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            @click="showCreateModal = false"
-                        >
-                            Cancelar
-                        </Button>
-                        
-                        <Button
-                            v-if="creationStep === 1"
-                            type="button"
-                            @click="goToStep2"
-                            :disabled="selectedPersonas.length === 0"
-                        >
-                            Siguiente ({{ selectedPersonas.length }})
-                        </Button>
-                        
-                        <Button
-                            v-if="creationStep === 2"
-                            type="submit"
-                            :disabled="form.processing"
-                        >
-                            <CheckCircle2 class="mr-2 h-4 w-4" />
-                            {{ form.processing ? 'Guardando...' : 'Finalizar Registro' }}
-                        </Button>
-                    </div>
+                    <Button
+                        type="submit"
+                        :disabled="form.processing || selectedPersonas.length === 0"
+                    >
+                        <CheckCircle2 class="mr-2 h-4 w-4" />
+                        {{ form.processing ? 'Guardando...' : `Registrar (${selectedPersonas.length})` }}
+                    </Button>
                 </div>
             </template>
         </FormModal>

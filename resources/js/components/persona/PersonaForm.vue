@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { Search, Loader2 } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
+import ParamSelect from '@/components/shared/ParamSelect.vue';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Search, Loader2 } from 'lucide-vue-next';
-import ParamSelect from '@/components/shared/ParamSelect.vue';
 import type { ParamSimple } from '@/types/models/params';
 
 const props = defineProps<{
@@ -20,9 +20,13 @@ function onDocTypeChange(item: ParamSimple | null) {
 }
 
 async function buscarReniec() {
-    if (!props.form.docIdentidad || props.form.docIdentidad.length !== 8)
-        return;
-    if (selectedDocTypeAbrev.value !== 'DNI') return;
+    if (!props.form.docIdentidad || props.form.docIdentidad.length !== 8) {
+return;
+}
+
+    if (selectedDocTypeAbrev.value !== 'DNI') {
+return;
+}
 
     isSearchingReniec.value = true;
     searchError.value = null;

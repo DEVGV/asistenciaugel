@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { Plus, Pencil, Trash2, Mail } from 'lucide-vue-next';
+import { ref } from 'vue';
+import EmailController from '@/actions/App/Http/Controllers/Persona/EmailController';
+import ConfirmModal from '@/components/shared/ConfirmModal.vue';
+import FormModal from '@/components/shared/FormModal.vue';
+import StatusBadge from '@/components/shared/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,11 +17,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import FormModal from '@/components/shared/FormModal.vue';
-import ConfirmModal from '@/components/shared/ConfirmModal.vue';
-import StatusBadge from '@/components/shared/StatusBadge.vue';
 import type { Email } from '@/types/models/persona';
-import EmailController from '@/actions/App/Http/Controllers/Persona/EmailController';
 
 const props = defineProps<{
     emails: Email[];
@@ -80,7 +80,10 @@ function confirmDelete(item: Email) {
 }
 
 function executeDelete() {
-    if (!itemToDelete.value) return;
+    if (!itemToDelete.value) {
+return;
+}
+
     isDeleting.value = true;
     router.delete(
         EmailController.destroy({ email: itemToDelete.value.id }).url,

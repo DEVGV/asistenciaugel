@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import {
     ArrowLeft,
@@ -11,13 +10,14 @@ import {
     Mail,
     MapPin,
 } from 'lucide-vue-next';
-import { Button } from '@/components/ui/button';
-import StatusBadge from '@/components/shared/StatusBadge.vue';
-import TelefonosList from '@/components/persona/TelefonosList.vue';
-import EmailsList from '@/components/persona/EmailsList.vue';
-import DomiciliosList from '@/components/persona/DomiciliosList.vue';
-import type { Trabajador } from '@/types/models/trabajador';
+import { ref } from 'vue';
 import TrabajadorController from '@/actions/App/Http/Controllers/Trabajador/TrabajadorController';
+import DomiciliosList from '@/components/persona/DomiciliosList.vue';
+import EmailsList from '@/components/persona/EmailsList.vue';
+import TelefonosList from '@/components/persona/TelefonosList.vue';
+import StatusBadge from '@/components/shared/StatusBadge.vue';
+import { Button } from '@/components/ui/button';
+import type { Trabajador } from '@/types/models/trabajador';
 
 const props = defineProps<{
     trabajador: Trabajador;
@@ -28,8 +28,8 @@ defineOptions({
         breadcrumbs: [
             { title: 'Trabajadores', href: TrabajadorController.index().url },
             {
-                title: `Detalle ${props.trabajador.codigo}`,
-                href: TrabajadorController.show({ trabajador: props.trabajador.id }).url,
+                title: 'Detalles del Trabajador',
+                href: '#',
             },
         ],
     },
