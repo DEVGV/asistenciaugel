@@ -30,6 +30,7 @@ import AreaController from '@/actions/App/Http/Controllers/Configuracion/AreaCon
 import CargoController from '@/actions/App/Http/Controllers/Configuracion/CargoController';
 import CondicionLaboralController from '@/actions/App/Http/Controllers/Configuracion/CondicionLaboralController';
 import ZonaController from '@/actions/App/Http/Controllers/Configuracion/ZonaController';
+import TrabajadorController from '@/actions/App/Http/Controllers/Trabajador/TrabajadorController';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -45,7 +46,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Trabajadores',
-        href: '#', // TODO: Reemplazar con ruta real
+        href: TrabajadorController.index().url,
         icon: UserCheck,
     },
     {

@@ -22,7 +22,6 @@ class UpdateCondicionLaboralRequest extends FormRequest
     {
         return [
             'nombre' => ['required', 'string', 'max:255'],
-            'codigo' => ['nullable', 'string', 'max:50'],
             'regimenLaboral_id' => ['required', 'integer', Rule::exists(ParamRegimenLaboral::class, 'id')],
             'tipoTrabajador_id' => ['required', 'integer', Rule::exists(ParamTipoTrabajador::class, 'id')],
             'abreviatura' => ['nullable', 'string', 'max:50'],

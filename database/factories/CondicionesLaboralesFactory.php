@@ -16,7 +16,6 @@ class CondicionesLaboralesFactory extends Factory
     {
         return [
             'nombre' => fake()->words(3, true),
-            'codigo' => fake()->bothify('CL-##'),
             'abreviatura' => strtoupper(fake()->lexify('???')),
             'descripcion' => fake()->optional()->sentence(),
             'regimenLaboral_id' => 1,

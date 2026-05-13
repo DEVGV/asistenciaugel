@@ -4,20 +4,22 @@ namespace App\Models;
 
 use App\Models\Param\ParamRegimenLaboral;
 use App\Models\Param\ParamTipoTrabajador;
+use App\Traits\HasCodigo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CondicionesLaborales extends Model
 {
-    use HasFactory;
+    use HasCodigo, HasFactory;
 
     protected $table = 't_condicionesLaborales';
 
     public $timestamps = false;
 
+    protected string $codigoPrefix = 'CLA';
+
     protected $fillable = [
-        'codigo',
         'regimenLaboral_id',
         'tipoTrabajador_id',
         'nombre',

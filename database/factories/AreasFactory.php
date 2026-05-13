@@ -16,7 +16,6 @@ class AreasFactory extends Factory
     {
         return [
             'nombre' => fake()->words(2, true),
-            'codigo' => fake()->bothify('AREA-##'),
             'sigla' => strtoupper(fake()->lexify('???')),
             'descripcion' => fake()->optional()->sentence(),
             'rolTrabajador_id' => null,

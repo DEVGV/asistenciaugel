@@ -6,7 +6,6 @@ final readonly class CreateAreaDTO
 {
     public function __construct(
         public string $nombre,
-        public ?string $codigo,
         public ?string $sigla,
         public ?string $descripcion,
         public ?int $rolTrabajador_id,
@@ -18,7 +17,6 @@ final readonly class CreateAreaDTO
     {
         return new self(
             nombre: $data['nombre'],
-            codigo: $data['codigo'] ?? null,
             sigla: $data['sigla'] ?? null,
             descripcion: $data['descripcion'] ?? null,
             rolTrabajador_id: isset($data['rolTrabajador_id']) ? (int) $data['rolTrabajador_id'] : null,

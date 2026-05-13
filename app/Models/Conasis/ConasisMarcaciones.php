@@ -4,20 +4,24 @@ namespace App\Models\Conasis;
 
 use App\Models\AltasTrabajadores;
 use App\Models\Trabajador;
+use App\Traits\HasCodigo;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ConasisMarcaciones extends Model
 {
+    use HasCodigo;
+
     protected $table = 'conasis.t_marcaciones';
 
     public $timestamps = false;
+
+    protected string $codigoPrefix = 'MAR';
 
     protected $fillable = [
         'trabajador_id',
         'altaTrabajador_id',
         'localMarcacion_id',
-        'codigo',
         'fechaMarcacion',
         'fechaRegistro',
         'reloj_id',

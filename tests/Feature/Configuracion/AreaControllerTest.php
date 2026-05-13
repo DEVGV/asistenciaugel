@@ -28,12 +28,13 @@ it('can create an area', function () {
 
     post(route('areas.store'), [
         'nombre' => $nombre,
-        'codigo' => 'TI-01',
         'sigla' => 'TI',
         'activo' => true,
     ])->assertRedirect(route('areas.index'));
 
-    expect(Areas::where('nombre', $nombre)->exists())->toBeTrue();
+    $area = Areas::where('nombre', $nombre)->first();
+    expect($area)->not->toBeNull();
+    expect($area->codigo)->toStartWith('ARE');
 });
 
 it('validates required fields on store', function () {
@@ -59,4 +60,13 @@ it('can deactivate an area', function () {
         ->assertRedirect(route('areas.index'));
 
     expect($area->fresh()->activo)->toBeFalse();
+});
+
+it('auto-generates unique sequential codes', function () {
+    $area1 = Areas::factory()->create();
+    $area2 = Areas::factory()->create();
+
+    expect($area1->codigo)->toStartWith('ARE');
+    expect($area2->codigo)->toStartWith('ARE');
+    expect($area1->codigo)->not->toBe($area2->codigo);
 });

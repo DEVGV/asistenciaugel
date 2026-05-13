@@ -5,17 +5,21 @@ namespace App\Models\Conasis;
 use App\Models\AltasTrabajadores;
 use App\Models\InstitucionesEduc;
 use App\Models\Trabajador;
+use App\Traits\HasCodigo;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ConasisHorariosTrabajador extends Model
 {
+    use HasCodigo;
+
     protected $table = 'conasis.t_horariosTrabajador';
 
     public $timestamps = false;
 
+    protected string $codigoPrefix = 'HOR';
+
     protected $fillable = [
-        'codigo',
         'anio',
         'institucionEduc_id',
         'trabajador_id',

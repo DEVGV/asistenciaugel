@@ -1,14 +1,12 @@
 <?php
 
-namespace App\DTOs\Configuracion;
+namespace App\DTOs\Trabajador;
 
-final readonly class UpdateAreaDTO
+final readonly class CreateTrabajadorDTO
 {
     public function __construct(
-        public string $nombre,
-        public ?string $sigla,
-        public ?string $descripcion,
-        public ?int $rolTrabajador_id,
+        public int $persona_id,
+        public int $created_by,
         public bool $activo = true,
     ) {}
 
@@ -16,10 +14,8 @@ final readonly class UpdateAreaDTO
     public static function from(array $data): self
     {
         return new self(
-            nombre: $data['nombre'],
-            sigla: $data['sigla'] ?? null,
-            descripcion: $data['descripcion'] ?? null,
-            rolTrabajador_id: isset($data['rolTrabajador_id']) ? (int) $data['rolTrabajador_id'] : null,
+            persona_id: (int) $data['persona_id'],
+            created_by: auth()->id() ?? 1,
             activo: isset($data['activo']) ? filter_var($data['activo'], FILTER_VALIDATE_BOOLEAN) : true,
         );
     }

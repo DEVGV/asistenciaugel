@@ -7,6 +7,7 @@ use App\Http\Requests\Persona\StorePersonaRequest;
 use App\Http\Requests\Persona\UpdatePersonaRequest;
 use App\Models\Personas;
 use App\Services\Persona\PersonaService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -24,6 +25,13 @@ class PersonaController extends Controller
             'personas' => $this->personaService->listarPaginado($request),
             'filters' => $request->only(['search']),
         ]);
+    }
+
+    public function search(Request $request): JsonResponse
+    {
+        return response()->json(
+            $this->personaService->listarPaginado($request)
+        );
     }
 
     public function show(Personas $persona): Response

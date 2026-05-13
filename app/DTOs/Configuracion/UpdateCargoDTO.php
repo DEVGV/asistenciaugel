@@ -6,7 +6,6 @@ final readonly class UpdateCargoDTO
 {
     public function __construct(
         public string $nombre,
-        public ?string $codigo,
         public ?string $abreviatura,
         public ?int $rolTrabajador_id,
         public bool $activo = true,
@@ -17,7 +16,6 @@ final readonly class UpdateCargoDTO
     {
         return new self(
             nombre: $data['nombre'],
-            codigo: $data['codigo'] ?? null,
             abreviatura: $data['abreviatura'] ?? null,
             rolTrabajador_id: isset($data['rolTrabajador_id']) ? (int) $data['rolTrabajador_id'] : null,
             activo: isset($data['activo']) ? filter_var($data['activo'], FILTER_VALIDATE_BOOLEAN) : true,

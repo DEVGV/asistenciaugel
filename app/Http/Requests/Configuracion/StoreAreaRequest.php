@@ -19,7 +19,6 @@ class StoreAreaRequest extends FormRequest
     {
         return [
             'nombre' => ['required', 'string', 'max:255'],
-            'codigo' => ['nullable', 'string', 'max:50'],
             'sigla' => ['nullable', 'string', 'max:50'],
             'descripcion' => ['nullable', 'string', 'max:500'],
             'rolTrabajador_id' => ['nullable', 'integer'],

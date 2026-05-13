@@ -19,7 +19,6 @@ class StoreCargoRequest extends FormRequest
     {
         return [
             'nombre' => ['required', 'string', 'max:255'],
-            'codigo' => ['nullable', 'string', 'max:50'],
             'abreviatura' => ['nullable', 'string', 'max:50'],
             'rolTrabajador_id' => ['nullable', 'integer'],
             'activo' => ['boolean'],

@@ -9,6 +9,7 @@ use App\Http\Controllers\Persona\DomicilioController;
 use App\Http\Controllers\Persona\EmailController;
 use App\Http\Controllers\Persona\PersonaController;
 use App\Http\Controllers\Persona\TelefonoController;
+use App\Http\Controllers\Trabajador\TrabajadorController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
@@ -50,6 +51,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('personas.domicilios', DomicilioController::class)
         ->only(['store', 'update', 'destroy'])
         ->shallow();
+
+    Route::resource('trabajadores', TrabajadorController::class)
+        ->except(['create'])
+        ->parameters(['trabajadores' => 'trabajador']);
 });
 
 require __DIR__.'/settings.php';

@@ -16,7 +16,6 @@ class CargosFactory extends Factory
     {
         return [
             'nombre' => fake()->jobTitle(),
-            'codigo' => fake()->bothify('CARGO-##'),
             'abreviatura' => strtoupper(fake()->lexify('???')),
             'rolTrabajador_id' => null,
             'created_by' => 1,

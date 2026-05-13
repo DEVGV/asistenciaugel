@@ -8,7 +8,6 @@ final readonly class UpdateCondicionLaboralDTO
         public int $regimenLaboral_id,
         public int $tipoTrabajador_id,
         public string $nombre,
-        public ?string $codigo,
         public ?string $abreviatura,
         public ?string $descripcion,
     ) {}
@@ -20,7 +19,6 @@ final readonly class UpdateCondicionLaboralDTO
             regimenLaboral_id: (int) $data['regimenLaboral_id'],
             tipoTrabajador_id: (int) $data['tipoTrabajador_id'],
             nombre: $data['nombre'],
-            codigo: $data['codigo'] ?? null,
             abreviatura: $data['abreviatura'] ?? null,
             descripcion: $data['descripcion'] ?? null,
         );

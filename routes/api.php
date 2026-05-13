@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\ParamController;
 use App\Http\Controllers\Api\SunatController;
+use App\Http\Controllers\Persona\PersonaController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -21,4 +22,7 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
     // Consultas SUNAT via apiperu.dev
     Route::post('sunat/ruc', [SunatController::class, 'ruc'])->name('api.sunat.ruc');
     Route::post('sunat/dni', [SunatController::class, 'dni'])->name('api.sunat.dni');
+
+    // Búsqueda de Personas
+    Route::get('personas/search', [PersonaController::class, 'search'])->name('api.personas.search');
 });

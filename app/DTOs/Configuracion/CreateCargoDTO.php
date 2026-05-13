@@ -6,7 +6,6 @@ final readonly class CreateCargoDTO
 {
     public function __construct(
         public string $nombre,
-        public ?string $codigo,
         public ?string $abreviatura,
         public ?int $rolTrabajador_id,
         public int $created_by,
@@ -18,7 +17,6 @@ final readonly class CreateCargoDTO
     {
         return new self(
             nombre: $data['nombre'],
-            codigo: $data['codigo'] ?? null,
             abreviatura: $data['abreviatura'] ?? null,
             rolTrabajador_id: isset($data['rolTrabajador_id']) ? (int) $data['rolTrabajador_id'] : null,
             created_by: auth()->id() ?? 1,
