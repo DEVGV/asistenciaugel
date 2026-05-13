@@ -8,6 +8,7 @@ use App\Models\Param\ParamTipoDocIdentidad;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Personas extends Model
 {
@@ -58,6 +59,11 @@ class Personas extends Model
     public function domicilios(): HasMany
     {
         return $this->hasMany(Domicilios::class, 'persona_id');
+    }
+
+    public function trabajador(): HasOne
+    {
+        return $this->hasOne(Trabajador::class, 'persona_id');
     }
 
     /**

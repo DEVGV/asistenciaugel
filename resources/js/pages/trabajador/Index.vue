@@ -11,7 +11,7 @@ import {
     Loader2,
     CheckCircle2,
 } from 'lucide-vue-next';
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import PersonaController from '@/actions/App/Http/Controllers/Persona/PersonaController';
 import TrabajadorController from '@/actions/App/Http/Controllers/Trabajador/TrabajadorController';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
@@ -111,12 +111,21 @@ let searchPersonaTimeout: any = null;
 
 // Formularios y Selecciones
 const selectedPersonas = ref<Persona[]>([]);
+const showOnlySelected = ref(false);
+
+const displayedPersonas = computed(() => {
+    return showOnlySelected.value 
+        ? selectedPersonas.value 
+        : (searchedPersonas.value?.data || []);
+});
+
 const form = useForm({
     trabajadores: [] as { persona_id: number; activo: boolean }[],
 });
 
 function openCreateModal() {
     showCreateModal.value = true;
+    showOnlySelected.value = false;
     searchPersonaQuery.value = '';
     searchedPersonas.value = null;
     selectedPersonas.value = [];
@@ -130,7 +139,7 @@ async function searchPersonasAPI(query: string, page = 1) {
 
     try {
         const response = await fetch(
-            PersonaController.search({ search: query, page }).url,
+            PersonaController.search({ query: { search: query, page, exclude_trabajadores: true } }).url,
             {
                 headers: {
                     Accept: 'application/json',
@@ -193,7 +202,7 @@ return;
 <template>
     <Head title="Trabajadores" />
 
-    <div class="flex flex-col gap-4 p-4 sm:p-6">
+    <div class="flex flex-col gap-4 p-4 ">
         <!-- Encabezado -->
         <div class="flex items-center justify-between">
             <div>
@@ -383,7 +392,7 @@ return;
         <FormModal
             v-model:show="showCreateModal"
             title="Registrar Trabajadores"
-            max-width="2xl"
+            max-width="4xl"
             @submit="submitMasivo"
             :processing="form.processing"
         >
@@ -393,12 +402,24 @@ return;
                         <p class="text-sm text-muted-foreground">
                             Seleccione una o varias personas para asignarlas como trabajadores.
                         </p>
-                        <span class="text-xs font-semibold bg-primary/10 text-primary px-2 py-1 rounded-full">
-                            {{ selectedPersonas.length }} Seleccionados
-                        </span>
+                        <div class="flex items-center gap-2">
+                            <Button
+                                v-if="selectedPersonas.length > 0"
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                class="h-7 text-xs"
+                                @click="showOnlySelected = !showOnlySelected"
+                            >
+                                {{ showOnlySelected ? 'Ver Todos' : 'Ver Seleccionados' }}
+                            </Button>
+                            <span class="text-xs font-semibold bg-primary/10 text-primary px-2 py-1 rounded-full">
+                                {{ selectedPersonas.length }} Seleccionados
+                            </span>
+                        </div>
                     </div>
 
-                    <div class="relative">
+                    <div v-if="!showOnlySelected" class="relative">
                         <Search class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                             v-model="searchPersonaQuery"
@@ -419,7 +440,7 @@ return;
                             </TableHeader>
                             <TableBody>
                                 <TableRow
-                                    v-for="persona in searchedPersonas?.data || []"
+                                    v-for="persona in displayedPersonas"
                                     :key="persona.id"
                                     class="cursor-pointer hover:bg-muted/50"
                                     @click="togglePersonaSelection(persona)"
@@ -445,9 +466,9 @@ return;
                                         </div>
                                     </TableCell>
                                 </TableRow>
-                                <TableRow v-if="!searchedPersonas?.data?.length">
+                                <TableRow v-if="displayedPersonas.length === 0">
                                     <TableCell colspan="3" class="h-24 text-center text-muted-foreground text-sm">
-                                        No se encontraron personas con ese criterio.
+                                        {{ showOnlySelected ? 'No hay personas seleccionadas.' : 'No se encontraron personas con ese criterio.' }}
                                     </TableCell>
                                 </TableRow>
                             </TableBody>
@@ -455,7 +476,7 @@ return;
                     </div>
 
                     <!-- Paginación de Personas Modal -->
-                    <div v-if="searchedPersonas && searchedPersonas.total > 0" class="flex justify-between items-center text-xs text-muted-foreground">
+                    <div v-if="!showOnlySelected && searchedPersonas && searchedPersonas.total > 0" class="flex justify-between items-center text-xs text-muted-foreground">
                         <span>Página {{ searchedPersonas.current_page }} de {{ searchedPersonas.last_page }}</span>
                         <div class="flex gap-1">
                             <Button

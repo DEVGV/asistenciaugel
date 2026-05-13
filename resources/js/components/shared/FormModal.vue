@@ -44,6 +44,9 @@ function onUpdateOpen(value: boolean) {
                     'sm:max-w-lg': maxWidth === 'lg',
                     'sm:max-w-xl': maxWidth === 'xl',
                     'sm:max-w-2xl': maxWidth === '2xl',
+                    'sm:max-w-3xl': maxWidth === '3xl',
+                    'sm:max-w-4xl': maxWidth === '4xl',
+                    'sm:max-w-5xl': maxWidth === '5xl',
                 },
             ]"
         >
@@ -77,17 +80,19 @@ function onUpdateOpen(value: boolean) {
                 <DialogFooter
                     class="sticky bottom-0 z-10 flex shrink-0 flex-row justify-between rounded-b-xl border-t bg-muted/30 p-4 sm:justify-between"
                 >
-                    <Button
-                        type="button"
-                        variant="outline"
-                        @click="onUpdateOpen(false)"
-                        :disabled="processing"
-                    >
-                        {{ cancelText || 'Cancelar' }}
-                    </Button>
-                    <Button type="submit" :disabled="processing">
-                        {{ submitText || 'Guardar' }}
-                    </Button>
+                    <slot name="footer">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="onUpdateOpen(false)"
+                            :disabled="processing"
+                        >
+                            {{ cancelText || 'Cancelar' }}
+                        </Button>
+                        <Button type="submit" :disabled="processing">
+                            {{ submitText || 'Guardar' }}
+                        </Button>
+                    </slot>
                 </DialogFooter>
             </form>
         </DialogContent>

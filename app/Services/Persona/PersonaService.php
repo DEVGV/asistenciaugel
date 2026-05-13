@@ -25,6 +25,11 @@ class PersonaService
                         ->orWhere('nombre', 'ilike', "%{$search}%");
                 });
             })
+            ->when($request->boolean('exclude_trabajadores'), function ($query) {
+                $query->whereDoesntHave('trabajador', function ($q) {
+                    $q->where('activo', true);
+                });
+            })
             ->where('activo', true)
             ->orderBy('paterno')
             ->orderBy('materno')
