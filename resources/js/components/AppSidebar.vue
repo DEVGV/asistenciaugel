@@ -16,6 +16,7 @@ import CargoController from '@/actions/App/Http/Controllers/Configuracion/CargoC
 import CondicionLaboralController from '@/actions/App/Http/Controllers/Configuracion/CondicionLaboralController';
 import ZonaController from '@/actions/App/Http/Controllers/Configuracion/ZonaController';
 import EntidadController from '@/actions/App/Http/Controllers/Entidad/EntidadController';
+import InstitucionEducativaController from '@/actions/App/Http/Controllers/InstitucionEducativa/InstitucionEducativaController';
 import PersonaController from '@/actions/App/Http/Controllers/Persona/PersonaController';
 import TrabajadorController from '@/actions/App/Http/Controllers/Trabajador/TrabajadorController';
 import AppLogo from '@/components/AppLogo.vue';
@@ -51,7 +52,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Instituciones Educativas',
-        href: '#', // TODO: Reemplazar con ruta real
+        href: InstitucionEducativaController.index().url,
         icon: School,
     },
     {

@@ -177,7 +177,7 @@ return;
                             </div>
                         </TableCell>
                         <TableCell>{{
-                            entidad.tipoEntidad?.nombre || '-'
+                            entidad.tipo_entidad?.nombre || '-'
                         }}</TableCell>
                         <TableCell>
                             <StatusBadge :active="entidad.activo" />

@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class GradosIE extends Model
 {
+    use \App\Traits\HasCodigo;
+
     protected $table = 't_gradosIE';
 
     public $timestamps = false;
@@ -23,5 +26,10 @@ class GradosIE extends Model
     public function institucionEduc(): BelongsTo
     {
         return $this->belongsTo(InstitucionesEduc::class, 'institucionEduc_id');
+    }
+
+    public function secciones(): HasMany
+    {
+        return $this->hasMany(SeccionesIE::class, 'grado_id');
     }
 }

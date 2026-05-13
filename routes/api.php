@@ -25,4 +25,7 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
 
     // Búsqueda de Personas
     Route::get('personas/search', [PersonaController::class, 'search'])->name('api.personas.search');
+    
+    // Búsqueda de Entidades
+    Route::get('entidades/search', [\App\Http\Controllers\Entidad\EntidadController::class, 'search'])->name('api.entidades.search');
 });

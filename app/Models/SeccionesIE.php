@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SeccionesIE extends Model
 {
+    use \App\Traits\HasCodigo;
+
     protected $table = 't_seccionesIE';
 
     public $timestamps = false;

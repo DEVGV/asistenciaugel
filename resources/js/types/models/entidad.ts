@@ -10,5 +10,5 @@ export interface Entidad {
     created_by: number;
     activo: boolean;
     // Relations
-    tipoEntidad?: ParamSimple;
+    tipo_entidad?: ParamSimple;
 }

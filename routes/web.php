@@ -5,6 +5,10 @@ use App\Http\Controllers\Configuracion\CargoController;
 use App\Http\Controllers\Configuracion\CondicionLaboralController;
 use App\Http\Controllers\Configuracion\ZonaController;
 use App\Http\Controllers\Entidad\EntidadController;
+use App\Http\Controllers\InstitucionEducativa\CursoIEController;
+use App\Http\Controllers\InstitucionEducativa\GradoIEController;
+use App\Http\Controllers\InstitucionEducativa\InstitucionEducativaController;
+use App\Http\Controllers\InstitucionEducativa\SeccionIEController;
 use App\Http\Controllers\Persona\DomicilioController;
 use App\Http\Controllers\Persona\EmailController;
 use App\Http\Controllers\Persona\PersonaController;
@@ -55,6 +59,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('trabajadores', TrabajadorController::class)
         ->except(['create'])
         ->parameters(['trabajadores' => 'trabajador']);
+
+    Route::resource('instituciones', InstitucionEducativaController::class)
+        ->except(['create', 'edit'])
+        ->parameters(['instituciones' => 'institucione']);
+
+    Route::resource('instituciones.cursos', CursoIEController::class)
+        ->only(['store', 'update', 'destroy'])
+        ->shallow()
+        ->parameters(['instituciones' => 'institucione']);
+
+    Route::resource('instituciones.grados', GradoIEController::class)
+        ->only(['store', 'update', 'destroy'])
+        ->shallow()
+        ->parameters(['instituciones' => 'institucione']);
+
+    Route::resource('grados.secciones', SeccionIEController::class)
+        ->only(['store', 'update', 'destroy'])
+        ->shallow();
 });
 
 require __DIR__.'/settings.php';

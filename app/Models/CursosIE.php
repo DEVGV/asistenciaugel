@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CursosIE extends Model
 {
+    use \App\Traits\HasCodigo;
+
     protected $table = 't_cursosIE';
 
     public $timestamps = false;

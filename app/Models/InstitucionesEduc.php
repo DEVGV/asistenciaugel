@@ -8,6 +8,7 @@ use App\Models\Param\ParamRegimenEduc;
 use App\Models\Param\ParamTipoInstEduc;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class InstitucionesEduc extends Model
 {
@@ -58,5 +59,15 @@ class InstitucionesEduc extends Model
     public function entidadAdmin(): BelongsTo
     {
         return $this->belongsTo(Entidades::class, 'entidadAdmin_id');
+    }
+
+    public function cursos(): HasMany
+    {
+        return $this->hasMany(CursosIE::class, 'institucionEduc_id');
+    }
+
+    public function grados(): HasMany
+    {
+        return $this->hasMany(GradosIE::class, 'institucionEduc_id');
     }
 }
