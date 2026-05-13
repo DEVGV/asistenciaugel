@@ -1,6 +1,9 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+
+uses(DatabaseTransactions::class);
 
 test('profile page is displayed', function () {
     $user = User::factory()->create();
@@ -14,12 +17,13 @@ test('profile page is displayed', function () {
 
 test('profile information can be updated', function () {
     $user = User::factory()->create();
+    $newEmail = 'test-'.time().'-'.rand(100, 999).'@example.com';
 
     $response = $this
         ->actingAs($user)
         ->patch(route('profile.update'), [
             'name' => 'Test User',
-            'email' => 'test@example.com',
+            'email' => $newEmail,
         ]);
 
     $response
@@ -29,7 +33,7 @@ test('profile information can be updated', function () {
     $user->refresh();
 
     expect($user->name)->toBe('Test User');
-    expect($user->email)->toBe('test@example.com');
+    expect($user->email)->toBe($newEmail);
     expect($user->email_verified_at)->toBeNull();
 });
 
