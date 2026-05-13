@@ -3,6 +3,7 @@
 use App\Http\Controllers\Configuracion\AreaController;
 use App\Http\Controllers\Configuracion\CargoController;
 use App\Http\Controllers\Configuracion\CondicionLaboralController;
+use App\Http\Controllers\Configuracion\ZonaController;
 use App\Http\Controllers\Entidad\EntidadController;
 use App\Http\Controllers\Persona\DomicilioController;
 use App\Http\Controllers\Persona\EmailController;
@@ -30,6 +31,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('condiciones-laborales', CondicionLaboralController::class)
         ->only(['index', 'store', 'update', 'destroy'])
         ->parameters(['condiciones-laborales' => 'condicionLaboral']);
+
+    Route::resource('zonas', ZonaController::class)
+        ->only(['index', 'store', 'update', 'destroy'])
+        ->parameters(['zonas' => 'zona']);
 
     Route::resource('personas', PersonaController::class)
         ->only(['index', 'show', 'store', 'update', 'destroy']);

@@ -31,3 +31,27 @@ export interface CondicionLaboral {
     regimenLaboral?: { id: number; nombre: string | null };
     tipoTrabajador?: { id: number; nombre: string | null };
 }
+
+export interface Zona {
+    id: number;
+    tipoZona_id: number;
+    distrito_id: number | null;
+    nombre: string | null;
+    abreviatura: string | null;
+    created_by: number | null;
+    activo: boolean;
+    // Relations
+    tipoZona?: { id: number; nombre: string | null; abreviatura: string | null };
+    distrito?: {
+        id: number;
+        nombre: string | null;
+        provincia?: {
+            id: number;
+            nombre: string | null;
+            departamento?: {
+                id: number;
+                nombre: string | null;
+            };
+        };
+    };
+}

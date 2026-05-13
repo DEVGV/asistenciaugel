@@ -29,6 +29,7 @@ import PersonaController from '@/actions/App/Http/Controllers/Persona/PersonaCon
 import AreaController from '@/actions/App/Http/Controllers/Configuracion/AreaController';
 import CargoController from '@/actions/App/Http/Controllers/Configuracion/CargoController';
 import CondicionLaboralController from '@/actions/App/Http/Controllers/Configuracion/CondicionLaboralController';
+import ZonaController from '@/actions/App/Http/Controllers/Configuracion/ZonaController';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -68,6 +69,7 @@ const mainNavItems: NavItem[] = [
                 title: 'Cond. Laborales',
                 href: CondicionLaboralController.index().url,
             },
+            { title: 'Zonas', href: ZonaController.index().url },
         ],
     },
     {
