@@ -6,6 +6,8 @@ import DomicilioController from '@/actions/App/Http/Controllers/Persona/Domicili
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import FormModal from '@/components/shared/FormModal.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
+import ParamSelect from '@/components/shared/ParamSelect.vue';
+import ZonaSelect from '@/components/shared/ZonaSelect.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,6 +33,10 @@ const showDeleteModal = ref(false);
 const itemToDelete = ref<Domicilio | null>(null);
 const isDeleting = ref(false);
 
+const selectedDepartamento = ref<number | null>(null);
+const selectedProvincia = ref<number | null>(null);
+const selectedDistrito = ref<number | null>(null);
+
 const form = useForm({
     domicilio: '',
     zona_id: null as number | null,
@@ -45,10 +51,13 @@ function openCreate() {
     form.reset();
     form.clearErrors();
     form.fechaInicio = new Date().toISOString().split('T')[0];
+    selectedDepartamento.value = null;
+    selectedProvincia.value = null;
+    selectedDistrito.value = null;
     showModal.value = true;
 }
 
-function openEdit(item: Domicilio) {
+async function openEdit(item: Domicilio) {
     isEditing.value = true;
     editingId.value = item.id;
     form.clearErrors();
@@ -57,6 +66,25 @@ function openEdit(item: Domicilio) {
     form.ubigeo = item.ubigeo || '';
     form.fechaInicio = item.fechaInicio || '';
     form.fechaFin = item.fechaFin || '';
+    
+    selectedDepartamento.value = null;
+    selectedProvincia.value = null;
+    selectedDistrito.value = null;
+
+    if (item.ubigeo) {
+        try {
+            const res = await fetch(`/api/params/ubigeo/${item.ubigeo}`);
+            if (res.ok) {
+                const data = await res.json();
+                selectedDepartamento.value = data.departamento_id;
+                selectedProvincia.value = data.provincia_id;
+                selectedDistrito.value = data.distrito_id;
+            }
+        } catch (e) {
+            console.error('Error fetching ubigeo hierarchy', e);
+        }
+    }
+    
     showModal.value = true;
 }
 
@@ -176,54 +204,107 @@ return;
         <FormModal
             v-model:show="showModal"
             :title="isEditing ? 'Editar Domicilio' : 'Nuevo Domicilio'"
+            max-width="4xl"
             :processing="form.processing"
             @submit="submitForm"
         >
-            <div class="grid gap-4">
-                <div class="grid gap-2">
-                    <Label>Dirección *</Label>
-                    <Input
-                        v-model="form.domicilio"
-                        placeholder="Av. / Jr. / Calle..."
-                    />
-                    <p
-                        v-if="form.errors.domicilio"
-                        class="text-sm text-destructive"
-                    >
-                        {{ form.errors.domicilio }}
-                    </p>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
+            <div class="grid gap-6">
+                <!-- Fila 1: Dirección y Departamento -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="md:col-span-2 grid gap-2">
+                        <Label>Dirección *</Label>
+                        <Input
+                            v-model="form.domicilio"
+                            placeholder="Av. / Jr. / Calle..."
+                            :class="{ 'border-destructive': form.errors.domicilio }"
+                        />
+                        <p v-if="form.errors.domicilio" class="text-sm text-destructive">
+                            {{ form.errors.domicilio }}
+                        </p>
+                    </div>
                     <div class="grid gap-2">
-                        <Label>Ubigeo</Label>
+                        <ParamSelect
+                            type="departamentos"
+                            label="Departamento"
+                            v-model="selectedDepartamento"
+                            placeholder="Seleccionar..."
+                            @update:modelValue="
+                                () => {
+                                    selectedProvincia = null;
+                                    selectedDistrito = null;
+                                    form.ubigeo = '';
+                                }
+                            "
+                        />
+                    </div>
+                </div>
+
+                <!-- Fila 2: Provincia, Distrito y Zona -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid gap-2">
+                        <ParamSelect
+                            type="provincias"
+                            label="Provincia"
+                            :parent-id="selectedDepartamento"
+                            v-model="selectedProvincia"
+                            placeholder="Seleccionar..."
+                            :disabled="!selectedDepartamento"
+                            @update:modelValue="
+                                () => {
+                                    selectedDistrito = null;
+                                    form.ubigeo = '';
+                                }
+                            "
+                        />
+                    </div>
+                    <div class="grid gap-2">
+                        <ParamSelect
+                            type="distritos"
+                            label="Distrito"
+                            :parent-id="selectedProvincia"
+                            v-model="selectedDistrito"
+                            placeholder="Seleccionar..."
+                            :disabled="!selectedProvincia"
+                            @update:item="(item) => {
+                                form.ubigeo = item ? (item.codigo || '') : '';
+                            }"
+                        />
+                    </div>
+                    <div class="grid gap-2">
+                        <ZonaSelect
+                            v-model="form.zona_id"
+                            :distrito-id="selectedDistrito"
+                            label="Zona"
+                            placeholder="Seleccionar zona..."
+                            :disabled="!selectedDistrito"
+                            :error="form.errors.zona_id"
+                        />
+                    </div>
+                </div>
+
+                <!-- Fila 3: Ubigeo y Fechas -->
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end border-t pt-4">
+                    <div class="md:col-span-1 grid gap-2">
+                        <Label class="text-xs font-bold text-muted-foreground uppercase">Ubigeo</Label>
                         <Input
                             v-model="form.ubigeo"
-                            placeholder="Código ubigeo"
+                            placeholder="000000"
                             maxlength="6"
+                            class="h-9 font-mono font-bold bg-muted/30"
                         />
                     </div>
-                    <div class="grid gap-2">
-                        <!-- zona_id se puede expandir con un ParamSelect si hay tipos-zona -->
-                        <Label>Zona</Label>
-                        <Input
-                            v-model="form.zona_id"
-                            placeholder="ID Zona (opcional)"
-                        />
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="grid gap-2">
+                    <div class="md:col-span-2 grid gap-2">
                         <Label>Fecha Inicio</Label>
                         <Input v-model="form.fechaInicio" type="date" />
                     </div>
-                    <div class="grid gap-2">
+                    <div class="md:col-span-2 grid gap-2">
                         <Label>Fecha de Baja</Label>
                         <Input v-model="form.fechaFin" type="date" />
-                        <p class="text-xs text-muted-foreground">
-                            Establece una fecha para marcarlo como inactivo.
-                        </p>
                     </div>
                 </div>
+                <p v-if="form.errors.ubigeo" class="text-xs text-destructive">
+                    {{ form.errors.ubigeo }}
+                </p>
             </div>
         </FormModal>
 

@@ -72,8 +72,6 @@ watch(
     () => props.parentId,
     () => {
         fetchData();
-        emit('update:modelValue', null); // Limpiar si cambia el padre
-        emit('update:item', null);
     },
 );
 

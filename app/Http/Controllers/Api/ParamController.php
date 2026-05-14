@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Param\ParamDistritos;
 use App\Services\Param\ParamService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,6 +33,28 @@ class ParamController extends Controller
         $data = $this->paramService->obtenerPorTipo($type, $parentId);
 
         return response()->json(['data' => $data]);
+    }
+
+    /**
+     * Devuelve departamento_id, provincia_id y distrito_id a partir de un ubigeo (código de distrito).
+     *
+     * GET /api/params/ubigeo/{ubigeo}
+     */
+    public function reverseUbigeo(string $ubigeo): JsonResponse
+    {
+        $distrito = ParamDistritos::with('provincia')
+            ->where('codigo', $ubigeo)
+            ->first();
+
+        if (! $distrito) {
+            return response()->json(['message' => 'Ubigeo no encontrado.'], 404);
+        }
+
+        return response()->json([
+            'distrito_id' => $distrito->id,
+            'provincia_id' => $distrito->provincia_id,
+            'departamento_id' => $distrito->provincia->departamento_id ?? null,
+        ]);
     }
 
     /**
