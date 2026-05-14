@@ -7,6 +7,7 @@ use App\Http\Requests\Entidad\StoreEntidadRequest;
 use App\Http\Requests\Entidad\UpdateEntidadRequest;
 use App\Models\Entidades;
 use App\Services\Entidad\EntidadService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -50,7 +51,7 @@ class EntidadController extends Controller
             ->with('success', 'Entidad eliminada exitosamente.');
     }
 
-    public function search(Request $request): \Illuminate\Http\JsonResponse
+    public function search(Request $request): JsonResponse
     {
         $tipoId = $request->integer('tipo_entidad_id');
         $selectedId = $request->integer('selected_id');
@@ -62,14 +63,21 @@ class EntidadController extends Controller
             $query->where('tipoEntidad_id', $tipoId);
         }
 
+        $query->where(function ($q) use ($selectedId) {
+            $q->where('activo', true);
+            if ($selectedId) {
+                $q->orWhere('id', $selectedId);
+            }
+        });
+
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('razonSocial', 'ilike', "%{$search}%")
-                  ->orWhere('ruc', 'like', "%{$search}%");
+                    ->orWhere('ruc', 'like', "%{$search}%");
             });
         } elseif ($selectedId) {
             // Sort to ensure the selected item is at the top when no search query is active
-            $query->orderByRaw("CASE WHEN id = ? THEN 1 ELSE 0 END DESC", [$selectedId]);
+            $query->orderByRaw('CASE WHEN id = ? THEN 1 ELSE 0 END DESC', [$selectedId]);
         }
 
         return response()->json([
