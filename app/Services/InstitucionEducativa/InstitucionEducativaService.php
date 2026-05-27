@@ -42,6 +42,9 @@ class InstitucionEducativaService
             'entidadAdmin',
             'cursos',
             'grados.secciones',
+            'localesInstEduc.local.zona',
+            'localesInstEduc.relojes',
+            'localesInstEduc.localesMarcacion.trabajador.persona',
         ]);
     }
 

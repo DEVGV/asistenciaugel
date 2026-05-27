@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Conasis\ConasisLocalesInstEduc;
 use App\Models\Param\ParamModalidadesForm;
 use App\Models\Param\ParamNivelesCiclo;
 use App\Models\Param\ParamRegimenEduc;
@@ -69,5 +70,10 @@ class InstitucionesEduc extends Model
     public function grados(): HasMany
     {
         return $this->hasMany(GradosIE::class, 'institucionEduc_id');
+    }
+
+    public function localesInstEduc(): HasMany
+    {
+        return $this->hasMany(ConasisLocalesInstEduc::class, 'institucionEduc_id');
     }
 }

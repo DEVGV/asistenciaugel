@@ -1,4 +1,5 @@
 import type { ParamSimple } from './params';
+import type { LocalInstEduc } from './infraestructura';
 
 export interface Entidad {
     id: number;
@@ -32,6 +33,7 @@ export interface InstitucionEducativa {
     entidad_admin?: Entidad;
     cursos?: CursoIE[];
     grados?: GradoIE[];
+    locales_inst_educ?: LocalInstEduc[];
 }
 
 export interface CursoIE {

@@ -7,7 +7,6 @@ import {
     School,
     Building2,
     Settings,
-    Server,
     CalendarCheck,
     FileText,
 } from 'lucide-vue-next';
@@ -72,16 +71,6 @@ const mainNavItems: NavItem[] = [
                 href: CondicionLaboralController.index().url,
             },
             { title: 'Zonas', href: ZonaController.index().url },
-        ],
-    },
-    {
-        title: 'Infraestructura',
-        href: '#',
-        icon: Server,
-        items: [
-            { title: 'Locales', href: '#' },
-            { title: 'Relojes', href: '#' },
-            { title: 'Dispositivos', href: '#' },
         ],
     },
     {
