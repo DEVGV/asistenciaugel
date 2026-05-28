@@ -7,6 +7,7 @@ use App\Http\Requests\InstitucionEducativa\StoreInstEducRequest;
 use App\Http\Requests\InstitucionEducativa\UpdateInstEducRequest;
 use App\Models\InstitucionesEduc;
 use App\Services\InstitucionEducativa\InstitucionEducativaService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -24,6 +25,31 @@ class InstitucionEducativaController extends Controller
             'instituciones' => $this->ieService->listarPaginado($request),
             'filters' => $request->only(['search']),
         ]);
+    }
+
+    /**
+     * Búsqueda rápida de IE para selects con typeahead.
+     *
+     * GET /api/instituciones/search?search=...&per_page=30
+     */
+    public function search(Request $request): JsonResponse
+    {
+        $query = InstitucionesEduc::query()
+            ->select(['id', 'nombreLegal', 'codigoInstitucion', 'codigoModular']);
+
+        if ($request->filled('search')) {
+            $term = '%'.$request->string('search').'%';
+            $query->where(function ($q) use ($term) {
+                $q->whereRaw('LOWER("nombreLegal") LIKE LOWER(?)', [$term])
+                    ->orWhereRaw('LOWER("codigoInstitucion") LIKE LOWER(?)', [$term])
+                    ->orWhereRaw('LOWER("codigoModular") LIKE LOWER(?)', [$term]);
+            });
+        }
+
+        $perPage = min((int) $request->get('per_page', 30), 100);
+        $results = $query->orderBy('nombreLegal')->paginate($perPage);
+
+        return response()->json($results);
     }
 
     public function store(StoreInstEducRequest $request): RedirectResponse

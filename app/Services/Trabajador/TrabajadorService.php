@@ -44,6 +44,14 @@ class TrabajadorService
             'persona.telefonos.operador',
             'persona.emails',
             'persona.domicilios.zona',
+            'altas.institucionEducativa',
+            'altas.condicionLaboral',
+            'altas.tipoContrato',
+            'altas.rolTrabajador',
+            'altas.situacionLaboral',
+            'altas.area',
+            'altas.cargo',
+            'altas.motivoBaja',
         ]);
     }
 

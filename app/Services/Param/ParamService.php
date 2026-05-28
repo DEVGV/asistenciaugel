@@ -2,6 +2,9 @@
 
 namespace App\Services\Param;
 
+use App\Models\Areas;
+use App\Models\Cargos;
+use App\Models\CondicionesLaborales;
 use App\Models\Param\ParamDepartamento;
 use App\Models\Param\ParamDistritos;
 use App\Models\Param\ParamDocumentos;
@@ -66,6 +69,10 @@ class ParamService
         'niveles-ciclo' => ParamNivelesCiclo::class,
         'tipo-susp-laboral' => ParamTipoSuspensionLaboral::class,
         'tipo-entidad' => ParamTipoEntidad::class,
+        // Entidades propias del sistema (no Param, pero reutilizan el mismo endpoint)
+        'condiciones-laborales' => CondicionesLaborales::class,
+        'areas' => Areas::class,
+        'cargos' => Cargos::class,
     ];
 
     /**

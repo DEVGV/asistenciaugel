@@ -12,6 +12,7 @@ import {
 } from 'lucide-vue-next';
 import { ref } from 'vue';
 import TrabajadorController from '@/actions/App/Http/Controllers/Trabajador/TrabajadorController';
+import AltasList from '@/components/trabajador/AltasList.vue';
 import DomiciliosList from '@/components/persona/DomiciliosList.vue';
 import EmailsList from '@/components/persona/EmailsList.vue';
 import TelefonosList from '@/components/persona/TelefonosList.vue';
@@ -53,16 +54,17 @@ const tabs = [
                     {{ props.trabajador.persona?.paterno }} {{ props.trabajador.persona?.materno }},
                     {{ props.trabajador.persona?.nombre }}
                 </h1>
-                <p class="text-sm text-muted-foreground">
-                    Código: <span class="font-semibold text-primary">{{ props.trabajador.codigo }}</span>
-                    <span v-if="props.trabajador.persona?.docIdentidad" class="ml-2">
-                        · {{ props.trabajador.persona?.tipoDocIdentidad?.nombre }}:
-                        <span class="font-semibold">{{ props.trabajador.persona?.docIdentidad }}</span>
+                <div class="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                    <span>
+                        Código: <span class="font-semibold text-primary">{{ props.trabajador.codigo }}</span>
                     </span>
-                    <span class="ml-2">
-                        · <StatusBadge :active="props.trabajador.activo" />
+                    <span v-if="props.trabajador.persona?.docIdentidad" class="flex items-center gap-1">
+                        <span class="text-muted-foreground/50">·</span>
+                        {{ props.trabajador.persona?.tipoDocIdentidad?.nombre }}:
+                        <span class="font-semibold text-foreground">{{ props.trabajador.persona?.docIdentidad }}</span>
                     </span>
-                </p>
+                    <StatusBadge :active="props.trabajador.activo" />
+                </div>
             </div>
             <div class="flex items-center gap-2">
                 <Button variant="outline" as-child size="sm">
@@ -164,17 +166,12 @@ const tabs = [
                 </div>
             </div>
 
-            <!-- TAB: Información Laboral (Próximamente) -->
-            <div v-if="activeTab === 'laboral'" class="rounded-xl border bg-card p-12 text-center shadow-xs">
-                <div class="mx-auto max-w-md">
-                    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        <FileText class="h-6 w-6" />
-                    </div>
-                    <h3 class="mt-4 text-lg font-semibold">Módulo de Gestión Laboral</h3>
-                    <p class="mt-2 text-sm text-muted-foreground">
-                        La gestión de altas, bajas, cargos y áreas para este trabajador estará disponible próximamente.
-                    </p>
-                </div>
+            <!-- TAB: Información Laboral -->
+            <div v-if="activeTab === 'laboral'">
+                <AltasList
+                    :altas="props.trabajador.altas || []"
+                    :trabajador-id="props.trabajador.id"
+                />
             </div>
 
             <!-- TAB: Horarios (Próximamente) -->

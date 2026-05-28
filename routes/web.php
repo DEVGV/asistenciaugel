@@ -18,6 +18,7 @@ use App\Http\Controllers\Persona\DomicilioController;
 use App\Http\Controllers\Persona\EmailController;
 use App\Http\Controllers\Persona\PersonaController;
 use App\Http\Controllers\Persona\TelefonoController;
+use App\Http\Controllers\Trabajador\AltaTrabajadorController;
 use App\Http\Controllers\Trabajador\TrabajadorController;
 use Illuminate\Support\Facades\Route;
 
@@ -64,6 +65,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('trabajadores', TrabajadorController::class)
         ->except(['create'])
         ->parameters(['trabajadores' => 'trabajador']);
+
+    // Sub-recurso shallow: store/update/destroy por trabajador o por alta directamente
+    Route::resource('trabajadores.altas', AltaTrabajadorController::class)
+        ->only(['store', 'update', 'destroy'])
+        ->shallow()
+        ->parameters(['trabajadores' => 'trabajador', 'altas' => 'alta']);
+
+    // Ruta global paginada de todas las altas del sistema
+    Route::get('altas', [AltaTrabajadorController::class, 'index'])->name('altas.index');
+
+    // Registrar baja de un alta activa
+    Route::post('altas/{alta}/baja', [AltaTrabajadorController::class, 'darBaja'])
+        ->name('altas.baja');
 
     Route::resource('instituciones', InstitucionEducativaController::class)
         ->except(['create', 'edit'])

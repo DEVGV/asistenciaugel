@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\ParamController;
 use App\Http\Controllers\Api\SunatController;
 use App\Http\Controllers\Configuracion\ZonaController;
 use App\Http\Controllers\Entidad\EntidadController;
+use App\Http\Controllers\InstitucionEducativa\InstitucionEducativaController;
 use App\Http\Controllers\Persona\PersonaController;
 use Illuminate\Support\Facades\Route;
 
@@ -34,4 +35,7 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
 
     // Búsqueda de Entidades
     Route::get('entidades/search', [EntidadController::class, 'search'])->name('api.entidades.search');
+
+    // Búsqueda de Instituciones Educativas (typeahead en formularios)
+    Route::get('instituciones/search', [InstitucionEducativaController::class, 'search'])->name('api.instituciones.search');
 });
