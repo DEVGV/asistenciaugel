@@ -7,10 +7,10 @@ import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import FormModal from '@/components/shared/FormModal.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { Local } from '@/types/models/infraestructura';
 
 export interface PaginatedResponse<T> {
@@ -63,7 +63,11 @@ const form = useForm({
     activo: true,
 });
 
-watch(showModal, (val) => { if (!val) { form.reset(); form.clearErrors(); } });
+watch(showModal, (val) => {
+ if (!val) {
+ form.reset(); form.clearErrors(); 
+} 
+});
 
 function openCreate() {
     isEditing.value = false;
@@ -92,11 +96,15 @@ function openEdit(local: Local) {
 function submitForm() {
     if (isEditing.value && editingId.value) {
         form.put(LocalController.update({ local: editingId.value }).url, {
-            onSuccess: () => { showModal.value = false; },
+            onSuccess: () => {
+ showModal.value = false; 
+},
         });
     } else {
         form.post(LocalController.store().url, {
-            onSuccess: () => { showModal.value = false; },
+            onSuccess: () => {
+ showModal.value = false; 
+},
         });
     }
 }
@@ -114,11 +122,18 @@ function confirmDelete(local: Local) {
 }
 
 function executeDelete() {
-    if (!deleteId.value) return;
+    if (!deleteId.value) {
+return;
+}
+
     isDeleting.value = true;
     router.delete(LocalController.destroy({ local: deleteId.value }).url, {
-        onSuccess: () => { showDelete.value = false; deleteId.value = null; },
-        onFinish: () => { isDeleting.value = false; },
+        onSuccess: () => {
+ showDelete.value = false; deleteId.value = null; 
+},
+        onFinish: () => {
+ isDeleting.value = false; 
+},
     });
 }
 </script>

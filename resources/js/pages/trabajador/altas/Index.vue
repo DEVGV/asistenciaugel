@@ -2,7 +2,6 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Building2, Calendar, Search } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
-import altasRoutes from '@/routes/altas';
 import TrabajadorController from '@/actions/App/Http/Controllers/Trabajador/TrabajadorController';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
@@ -15,6 +14,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import altasRoutes from '@/routes/altas';
 import type { AltaTrabajador, PaginatedResponse } from '@/types/models/trabajador';
 
 defineOptions({
@@ -128,12 +128,12 @@ function estaActiva(alta: AltaTrabajador): boolean {
                             </Link>
                         </TableCell>
                         <TableCell>
-                            <div class="text-sm font-medium">{{ alta.institucionEducativa?.nombreLegal || '-' }}</div>
+                            <div class="text-sm font-medium">{{ (alta.institucion_educativa || alta.institucionEducativa)?.nombreLegal || '-' }}</div>
                             <div v-if="alta.codigoAirsp" class="text-xs text-muted-foreground">AIRSP: {{ alta.codigoAirsp }}</div>
                         </TableCell>
                         <TableCell>
-                            <div class="text-xs font-medium">{{ alta.condicionLaboral?.abreviatura || alta.condicionLaboral?.nombre || '-' }}</div>
-                            <div class="text-xs text-muted-foreground">{{ alta.rolTrabajador?.nombre || '-' }}</div>
+                            <div class="text-xs font-medium">{{ (alta.condicion_laboral || alta.condicionLaboral)?.abreviatura || (alta.condicion_laboral || alta.condicionLaboral)?.nombre || '-' }}</div>
+                            <div class="text-xs text-muted-foreground">{{ (alta.rol_trabajador || alta.rolTrabajador)?.nombre || '-' }}</div>
                         </TableCell>
                         <TableCell class="text-xs">{{ alta.fechaInicio }}</TableCell>
                         <TableCell class="text-xs">

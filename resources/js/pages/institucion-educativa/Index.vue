@@ -12,9 +12,9 @@ import {
 import { ref, watch } from 'vue';
 import InstitucionEducativaController from '@/actions/App/Http/Controllers/InstitucionEducativa/InstitucionEducativaController';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
+import EntidadSelect from '@/components/shared/EntidadSelect.vue';
 import FormModal from '@/components/shared/FormModal.vue';
 import ParamSelect from '@/components/shared/ParamSelect.vue';
-import EntidadSelect from '@/components/shared/EntidadSelect.vue';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,

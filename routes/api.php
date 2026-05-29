@@ -6,6 +6,7 @@ use App\Http\Controllers\Configuracion\ZonaController;
 use App\Http\Controllers\Entidad\EntidadController;
 use App\Http\Controllers\InstitucionEducativa\InstitucionEducativaController;
 use App\Http\Controllers\Persona\PersonaController;
+use App\Http\Controllers\Trabajador\TrabajadorController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -30,6 +31,9 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
     // Búsqueda de Personas
     Route::get('personas/search', [PersonaController::class, 'search'])->name('api.personas.search');
 
+    // Búsqueda de Trabajadores
+    Route::get('trabajadores/search', [TrabajadorController::class, 'search'])->name('api.trabajadores.search');
+
     // Búsqueda de Zonas
     Route::get('zonas/search', [ZonaController::class, 'search'])->name('api.zonas.search');
 
@@ -38,4 +42,5 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
 
     // Búsqueda de Instituciones Educativas (typeahead en formularios)
     Route::get('instituciones/search', [InstitucionEducativaController::class, 'search'])->name('api.instituciones.search');
+    Route::get('instituciones/{institucione}/detalles', [InstitucionEducativaController::class, 'detallesJson'])->name('api.instituciones.detalles');
 });

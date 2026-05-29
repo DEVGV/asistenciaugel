@@ -6,10 +6,10 @@ import DispositivoMarcaController from '@/actions/App/Http/Controllers/Infraestr
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import FormModal from '@/components/shared/FormModal.vue';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { DispositivoMarca } from '@/types/models/infraestructura';
 
 export interface PaginatedResponse<T> {
@@ -52,7 +52,11 @@ const form = useForm({
     fechaFin: '',
 });
 
-watch(showModal, (val) => { if (!val) { form.reset(); form.clearErrors(); } });
+watch(showModal, (val) => {
+ if (!val) {
+ form.reset(); form.clearErrors(); 
+} 
+});
 
 function openCreate() {
     form.reset();
@@ -62,7 +66,9 @@ function openCreate() {
 
 function submitForm() {
     form.post(DispositivoMarcaController.store().url, {
-        onSuccess: () => { showModal.value = false; },
+        onSuccess: () => {
+ showModal.value = false; 
+},
     });
 }
 
@@ -77,11 +83,18 @@ function confirmDelete(dispositivo: DispositivoMarca) {
 }
 
 function executeDelete() {
-    if (!deleteId.value) return;
+    if (!deleteId.value) {
+return;
+}
+
     isDeleting.value = true;
     router.delete(DispositivoMarcaController.destroy({ dispositivosMarca: deleteId.value }).url, {
-        onSuccess: () => { showDelete.value = false; deleteId.value = null; },
-        onFinish: () => { isDeleting.value = false; },
+        onSuccess: () => {
+ showDelete.value = false; deleteId.value = null; 
+},
+        onFinish: () => {
+ isDeleting.value = false; 
+},
     });
 }
 </script>

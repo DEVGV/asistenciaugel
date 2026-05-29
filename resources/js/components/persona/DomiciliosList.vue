@@ -5,8 +5,8 @@ import { ref } from 'vue';
 import DomicilioController from '@/actions/App/Http/Controllers/Persona/DomicilioController';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import FormModal from '@/components/shared/FormModal.vue';
-import StatusBadge from '@/components/shared/StatusBadge.vue';
 import ParamSelect from '@/components/shared/ParamSelect.vue';
+import StatusBadge from '@/components/shared/StatusBadge.vue';
 import ZonaSelect from '@/components/shared/ZonaSelect.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -74,6 +74,7 @@ async function openEdit(item: Domicilio) {
     if (item.ubigeo) {
         try {
             const res = await fetch(`/api/params/ubigeo/${item.ubigeo}`);
+
             if (res.ok) {
                 const data = await res.json();
                 selectedDepartamento.value = data.departamento_id;

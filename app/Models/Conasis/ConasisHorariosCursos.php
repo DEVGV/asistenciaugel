@@ -6,6 +6,7 @@ use App\Models\CursosIE;
 use App\Models\SeccionesIE;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ConasisHorariosCursos extends Model
 {
@@ -33,5 +34,10 @@ class ConasisHorariosCursos extends Model
     public function seccion(): BelongsTo
     {
         return $this->belongsTo(SeccionesIE::class, 'seccion_id');
+    }
+
+    public function cargas(): HasMany
+    {
+        return $this->hasMany(ConasisCargaHoraria::class, 'horarioCurso_id');
     }
 }

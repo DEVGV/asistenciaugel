@@ -67,6 +67,13 @@ class InstitucionEducativaController extends Controller
         ]);
     }
 
+    public function detallesJson(InstitucionesEduc $institucione): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->ieService->obtenerConRelaciones($institucione),
+        ]);
+    }
+
     public function update(UpdateInstEducRequest $request, InstitucionesEduc $institucione): RedirectResponse
     {
         $this->ieService->actualizar($institucione, $request->toDTO());

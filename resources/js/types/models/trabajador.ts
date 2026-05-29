@@ -33,13 +33,19 @@ export interface AltaTrabajador {
     // Relations
     trabajador?: Trabajador;
     institucionEducativa?: { id: number; nombreLegal: string | null; codigoInstitucion: string | null };
+    institucion_educativa?: { id: number; nombreLegal: string | null; codigoInstitucion: string | null };
     condicionLaboral?: { id: number; nombre: string | null; abreviatura: string | null };
+    condicion_laboral?: { id: number; nombre: string | null; abreviatura: string | null };
     tipoContrato?: { id: number; nombre: string | null };
+    tipo_contrato?: { id: number; nombre: string | null };
     rolTrabajador?: { id: number; nombre: string | null };
+    rol_trabajador?: { id: number; nombre: string | null };
     situacionLaboral?: { id: number; nombre: string | null };
+    situacion_laboral?: { id: number; nombre: string | null };
     area?: { id: number; nombre: string | null };
     cargo?: { id: number; nombre: string | null };
     motivoBaja?: { id: number; nombre: string | null };
+    motivo_baja?: { id: number; nombre: string | null };
 }
 
 export type { PaginatedResponse };

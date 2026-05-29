@@ -5,6 +5,9 @@ use App\Http\Controllers\Configuracion\CargoController;
 use App\Http\Controllers\Configuracion\CondicionLaboralController;
 use App\Http\Controllers\Configuracion\ZonaController;
 use App\Http\Controllers\Entidad\EntidadController;
+use App\Http\Controllers\Horario\CargaHorariaController;
+use App\Http\Controllers\Horario\HorarioCursoController;
+use App\Http\Controllers\Horario\HorarioTrabajadorController;
 use App\Http\Controllers\Infraestructura\DispositivoMarcaController;
 use App\Http\Controllers\Infraestructura\LocalController;
 use App\Http\Controllers\Infraestructura\LocalInstEducController;
@@ -121,6 +124,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->only(['store', 'destroy'])
         ->shallow()
         ->parameters(['locales-ie' => 'localesIe', 'marcaciones-local' => 'marcacionesLocal']);
+
+    Route::resource('horarios-cursos', HorarioCursoController::class)
+        ->only(['index', 'store', 'update', 'destroy'])
+        ->parameters(['horarios-cursos' => 'horarioCurso']);
+
+    Route::resource('horarios-cursos.cargas', CargaHorariaController::class)
+        ->only(['store', 'update', 'destroy'])
+        ->shallow()
+        ->parameters(['horarios-cursos' => 'horarioCurso', 'cargas' => 'cargaHoraria']);
+
+    Route::resource('horarios-trabajador', HorarioTrabajadorController::class)
+        ->only(['index', 'show'])
+        ->parameters(['horarios-trabajador' => 'horarioTrabajador']);
+
+    // API: listar todos los horarios activos de un trabajador (para el tab Horarios en Show)
+    Route::get('trabajadores/{trabajador}/horarios', [HorarioTrabajadorController::class, 'porTrabajador'])
+        ->name('trabajadores.horarios');
 });
 
 require __DIR__.'/settings.php';

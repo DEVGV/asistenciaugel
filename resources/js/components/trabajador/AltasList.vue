@@ -2,15 +2,15 @@
 import { router, useForm } from '@inertiajs/vue3';
 import { Building2, Calendar, ChevronDown, Pencil, Plus, UserX } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
-import altasRoutes from '@/routes/altas';
 import AltaTrabajadorController from '@/actions/App/Http/Controllers/Trabajador/AltaTrabajadorController';
-import AltaForm from '@/components/trabajador/AltaForm.vue';
-import BajaForm from '@/components/trabajador/BajaForm.vue';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
+import AltaForm from '@/components/trabajador/AltaForm.vue';
+import BajaForm from '@/components/trabajador/BajaForm.vue';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import altasRoutes from '@/routes/altas';
 import type { AltaTrabajador } from '@/types/models/trabajador';
 
 const props = defineProps<{
@@ -36,7 +36,9 @@ function openAltaEdit(alta: AltaTrabajador) {
 }
 
 watch(showAltaModal, (val) => {
-    if (!val) { editingAlta.value = null; }
+    if (!val) {
+ editingAlta.value = null; 
+}
 });
 
 // ─── Modal Baja ───
@@ -49,7 +51,9 @@ function openBaja(alta: AltaTrabajador) {
 }
 
 watch(showBajaModal, (val) => {
-    if (!val) { altaParaBaja.value = null; }
+    if (!val) {
+ altaParaBaja.value = null; 
+}
 });
 
 // ─── Modal Confirmar Eliminación ───
@@ -63,11 +67,18 @@ function confirmDelete(alta: AltaTrabajador) {
 }
 
 function executeDelete() {
-    if (!altaToDelete.value) { return; }
+    if (!altaToDelete.value) {
+ return; 
+}
+
     isDeleting.value = true;
     router.delete(altasRoutes.destroy({ alta: altaToDelete.value.id }).url, {
-        onSuccess: () => { showDeleteModal.value = false; altaToDelete.value = null; },
-        onFinish: () => { isDeleting.value = false; },
+        onSuccess: () => {
+ showDeleteModal.value = false; altaToDelete.value = null; 
+},
+        onFinish: () => {
+ isDeleting.value = false; 
+},
     });
 }
 
@@ -108,14 +119,14 @@ function estaActiva(alta: AltaTrabajador): boolean {
                             <div class="flex items-start gap-1.5">
                                 <Building2 class="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                                 <div>
-                                    <div class="text-sm font-medium">{{ alta.institucionEducativa?.nombreLegal || '-' }}</div>
+                                    <div class="text-sm font-medium">{{ (alta.institucion_educativa || alta.institucionEducativa)?.nombreLegal || '-' }}</div>
                                     <div v-if="alta.codigoAirsp" class="text-xs text-muted-foreground">AIRSP: {{ alta.codigoAirsp }}</div>
                                 </div>
                             </div>
                         </TableCell>
                         <TableCell>
-                            <div class="text-xs font-medium">{{ alta.condicionLaboral?.abreviatura || alta.condicionLaboral?.nombre || '-' }}</div>
-                            <div class="text-xs text-muted-foreground">{{ alta.rolTrabajador?.nombre || '-' }}</div>
+                            <div class="text-xs font-medium">{{ (alta.condicion_laboral || alta.condicionLaboral)?.abreviatura || (alta.condicion_laboral || alta.condicionLaboral)?.nombre || '-' }}</div>
+                            <div class="text-xs text-muted-foreground">{{ (alta.rol_trabajador || alta.rolTrabajador)?.nombre || '-' }}</div>
                         </TableCell>
                         <TableCell>
                             <div class="text-xs font-medium">{{ alta.area?.nombre || '-' }}</div>
@@ -130,7 +141,7 @@ function estaActiva(alta: AltaTrabajador): boolean {
                         <TableCell class="text-xs">
                             <div v-if="alta.fechaBaja" class="text-destructive">
                                 <div class="font-medium">{{ alta.fechaBaja }}</div>
-                                <div class="text-muted-foreground">{{ alta.motivoBaja?.nombre }}</div>
+                                <div class="text-muted-foreground">{{ (alta.motivo_baja || alta.motivoBaja)?.nombre }}</div>
                             </div>
                             <div v-else-if="alta.fechaFin" class="text-muted-foreground">{{ alta.fechaFin }}</div>
                             <span v-else class="text-muted-foreground">—</span>
@@ -195,7 +206,7 @@ function estaActiva(alta: AltaTrabajador): boolean {
         <ConfirmModal
             v-model:show="showDeleteModal"
             title="Eliminar Alta"
-            :description="`¿Eliminar el alta en ${altaToDelete?.institucionEducativa?.nombreLegal}? Esta acción no se puede deshacer.`"
+            :description="`¿Eliminar el alta en ${(altaToDelete?.institucion_educativa || altaToDelete?.institucionEducativa)?.nombreLegal}? Esta acción no se puede deshacer.`"
             confirm-text="Eliminar"
             destructive
             :processing="isDeleting"

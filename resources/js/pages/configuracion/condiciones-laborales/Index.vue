@@ -6,6 +6,7 @@ import CondicionLaboralController from '@/actions/App/Http/Controllers/Configura
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import FormModal from '@/components/shared/FormModal.vue';
 import ParamSelect from '@/components/shared/ParamSelect.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -180,9 +181,12 @@ return;
                         <TableCell class="font-medium">{{
                             condicion.nombre
                         }}</TableCell>
-                        <TableCell>{{
-                            condicion.abreviatura || '-'
-                        }}</TableCell>
+                        <TableCell>
+                            <Badge v-if="condicion.abreviatura" variant="outline" class="font-semibold uppercase tracking-wider text-[10px] bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800">
+                                {{ condicion.abreviatura }}
+                            </Badge>
+                            <span v-else>-</span>
+                        </TableCell>
                         <TableCell class="text-sm text-muted-foreground">{{
                             condicion.regimenLaboral?.nombre || '-'
                         }}</TableCell>

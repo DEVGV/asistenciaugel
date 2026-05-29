@@ -2,11 +2,11 @@
 import { useForm } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 import AltaTrabajadorController from '@/actions/App/Http/Controllers/Trabajador/AltaTrabajadorController';
-import altasRoutes from '@/routes/altas';
 import FormModal from '@/components/shared/FormModal.vue';
 import ParamSelect from '@/components/shared/ParamSelect.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import altasRoutes from '@/routes/altas';
 import type { AltaTrabajador } from '@/types/models/trabajador';
 
 const props = defineProps<{
@@ -70,8 +70,12 @@ let ieTimeout: ReturnType<typeof setTimeout>;
 watch(ieQuery, (q) => {
     clearTimeout(ieTimeout);
     ieTimeout = setTimeout(async () => {
-        if (!q && !props.isEditing) { return; }
+        if (!q && !props.isEditing) {
+ return; 
+}
+
         ieLoading.value = true;
+
         try {
             const res = await fetch(`/api/instituciones/search?search=${encodeURIComponent(q)}&per_page=30`);
             const data = await res.json();

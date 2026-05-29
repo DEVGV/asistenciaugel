@@ -40,20 +40,34 @@ let debounceTimer: any = null;
 
 async function fetchData(query = '') {
     loading.value = true;
+
     try {
         const url = new URL('/api/entidades/search', window.location.origin);
-        if (props.tipoEntidadId) url.searchParams.append('tipo_entidad_id', String(props.tipoEntidadId));
-        if (props.modelValue && !query) url.searchParams.append('selected_id', String(props.modelValue));
-        if (query) url.searchParams.append('q', query);
+
+        if (props.tipoEntidadId) {
+url.searchParams.append('tipo_entidad_id', String(props.tipoEntidadId));
+}
+
+        if (props.modelValue && !query) {
+url.searchParams.append('selected_id', String(props.modelValue));
+}
+
+        if (query) {
+url.searchParams.append('q', query);
+}
 
         const response = await fetch(url.toString());
-        if (!response.ok) throw new Error('Network response was not ok');
+
+        if (!response.ok) {
+throw new Error('Network response was not ok');
+}
 
         const json = await response.json();
         data.value = json.data;
 
         if (props.modelValue && !selectedItemName.value) {
             const initialItem = data.value.find((i) => String(i.id) === String(props.modelValue));
+
             if (initialItem) {
                 selectedItemName.value = initialItem.nombre;
                 emit('update:item', initialItem);
@@ -80,7 +94,10 @@ watch(isOpen, (val) => {
 });
 
 watch(searchQuery, (newVal) => {
-    if (debounceTimer) clearTimeout(debounceTimer);
+    if (debounceTimer) {
+clearTimeout(debounceTimer);
+}
+
     debounceTimer = setTimeout(() => {
         fetchData(newVal);
     }, 300);
@@ -94,6 +111,7 @@ watch(
             emit('update:item', null);
         } else {
             const item = data.value.find((i) => String(i.id) === String(newVal));
+
             if (item) {
                 selectedItemName.value = item.nombre;
                 emit('update:item', item);
@@ -103,8 +121,12 @@ watch(
 );
 
 function toggleDropdown() {
-    if (props.disabled) return;
+    if (props.disabled) {
+return;
+}
+
     isOpen.value = !isOpen.value;
+
     if (isOpen.value) {
         searchQuery.value = ''; 
         fetchData(); 

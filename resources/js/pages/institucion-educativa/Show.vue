@@ -2,29 +2,30 @@
 import { Head, useForm, router, Link } from '@inertiajs/vue3';
 import {
     ArrowLeft, Plus, Pencil, Trash2, School, BookOpen, GraduationCap,
-    LayoutGrid, ChevronDown, MapPin, Clock, Smartphone, UserPlus,
+    LayoutGrid, ChevronDown, MapPin, Clock, Smartphone, UserPlus, Calendar,
 } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
-import InstitucionEducativaController from '@/actions/App/Http/Controllers/InstitucionEducativa/InstitucionEducativaController';
+import HorarioTrabajadorController from '@/actions/App/Http/Controllers/Horario/HorarioTrabajadorController';
+import LocalController from '@/actions/App/Http/Controllers/Infraestructura/LocalController';
+import LocalInstEducController from '@/actions/App/Http/Controllers/Infraestructura/LocalInstEducController';
+import LocalMarcacionController from '@/actions/App/Http/Controllers/Infraestructura/LocalMarcacionController';
+import RelojController from '@/actions/App/Http/Controllers/Infraestructura/RelojController';
 import CursoIEController from '@/actions/App/Http/Controllers/InstitucionEducativa/CursoIEController';
 import GradoIEController from '@/actions/App/Http/Controllers/InstitucionEducativa/GradoIEController';
+import InstitucionEducativaController from '@/actions/App/Http/Controllers/InstitucionEducativa/InstitucionEducativaController';
 import SeccionIEController from '@/actions/App/Http/Controllers/InstitucionEducativa/SeccionIEController';
-import LocalInstEducController from '@/actions/App/Http/Controllers/Infraestructura/LocalInstEducController';
-import LocalController from '@/actions/App/Http/Controllers/Infraestructura/LocalController';
-import RelojController from '@/actions/App/Http/Controllers/Infraestructura/RelojController';
-import LocalMarcacionController from '@/actions/App/Http/Controllers/Infraestructura/LocalMarcacionController';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import FormModal from '@/components/shared/FormModal.vue';
 import ParamSelect from '@/components/shared/ParamSelect.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
 import ZonaSelect from '@/components/shared/ZonaSelect.vue';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import type { InstitucionEducativa, CursoIE, GradoIE, SeccionIE } from '@/types/models/institucion-educativa';
 import type { LocalInstEduc, Reloj } from '@/types/models/infraestructura';
+import type { InstitucionEducativa, CursoIE, GradoIE, SeccionIE } from '@/types/models/institucion-educativa';
 
 defineOptions({
     layout: {
@@ -48,7 +49,11 @@ const subParentId = ref<number | null>(null);
 
 const subForm = useForm({ nombre: '', sigla: '', activo: true });
 
-watch(showSubModal, (val) => { if (!val) { subForm.reset(); subForm.clearErrors(); } });
+watch(showSubModal, (val) => {
+ if (!val) {
+ subForm.reset(); subForm.clearErrors(); 
+} 
+});
 
 function openSubCreate(type: 'curso' | 'grado' | 'seccion', parentId?: number) {
     subModalType.value = type;
@@ -83,7 +88,10 @@ function submitSub() {
         } else {
             targetUrl = SeccionIEController.update({ seccione: subEditingId.value }).url;
         }
-        subForm.put(targetUrl, { onSuccess: () => { showSubModal.value = false; } });
+
+        subForm.put(targetUrl, { onSuccess: () => {
+ showSubModal.value = false; 
+} });
     } else {
         if (subModalType.value === 'curso') {
             targetUrl = CursoIEController.store({ institucione: ieId }).url;
@@ -92,7 +100,10 @@ function submitSub() {
         } else {
             targetUrl = SeccionIEController.store({ grado: subParentId.value! }).url;
         }
-        subForm.post(targetUrl, { onSuccess: () => { showSubModal.value = false; } });
+
+        subForm.post(targetUrl, { onSuccess: () => {
+ showSubModal.value = false; 
+} });
     }
 }
 
@@ -111,7 +122,10 @@ function confirmDeleteSub(type: 'curso' | 'grado' | 'seccion', id: number, name:
 }
 
 function executeDeleteSub() {
-    if (!deleteSubId.value) return;
+    if (!deleteSubId.value) {
+return;
+}
+
     isDeletingSub.value = true;
     let targetUrl = '';
 
@@ -124,8 +138,12 @@ function executeDeleteSub() {
     }
 
     router.delete(targetUrl, {
-        onSuccess: () => { showDeleteSub.value = false; deleteSubId.value = null; },
-        onFinish: () => { isDeletingSub.value = false; },
+        onSuccess: () => {
+ showDeleteSub.value = false; deleteSubId.value = null; 
+},
+        onFinish: () => {
+ isDeletingSub.value = false; 
+},
     });
 }
 
@@ -230,13 +248,17 @@ function openLocalEdit(lie: any) {
 
 function submitLocal() {
     if (isEditingLocal.value && editingLocalId.value) {
-        localForm.put(LocalController.update({ locale: editingLocalId.value }).url, {
-            onSuccess: () => { showLocalModal.value = false; },
+        localForm.put(LocalController.update({ local: editingLocalId.value }).url, {
+            onSuccess: () => {
+ showLocalModal.value = false; 
+},
         });
     } else {
         localForm.post(
             LocalInstEducController.store({ institucione: props.institucion.id }).url,
-            { onSuccess: () => { showLocalModal.value = false; } },
+            { onSuccess: () => {
+ showLocalModal.value = false; 
+} },
         );
     }
 }
@@ -254,11 +276,18 @@ function confirmDeleteLocal(localIe: LocalInstEduc) {
 }
 
 function executeDeleteLocal() {
-    if (!deleteLocalId.value) return;
+    if (!deleteLocalId.value) {
+return;
+}
+
     isDeletingLocal.value = true;
     router.delete(LocalInstEducController.destroy({ localesIe: deleteLocalId.value }).url, {
-        onSuccess: () => { showDeleteLocal.value = false; deleteLocalId.value = null; },
-        onFinish: () => { isDeletingLocal.value = false; },
+        onSuccess: () => {
+ showDeleteLocal.value = false; deleteLocalId.value = null; 
+},
+        onFinish: () => {
+ isDeletingLocal.value = false; 
+},
     });
 }
 
@@ -278,7 +307,11 @@ const relojForm = useForm({
     activo: true,
 });
 
-watch(showRelojModal, (val) => { if (!val) { relojForm.reset(); relojForm.clearErrors(); } });
+watch(showRelojModal, (val) => {
+ if (!val) {
+ relojForm.reset(); relojForm.clearErrors(); 
+} 
+});
 
 function openRelojCreate(localInstEducId: number) {
     relojIsEditing.value = false;
@@ -312,11 +345,15 @@ function submitReloj() {
 
     if (relojIsEditing.value && relojEditingId.value) {
         submitter.put(RelojController.update({ reloje: relojEditingId.value }).url, {
-            onSuccess: () => { showRelojModal.value = false; },
+            onSuccess: () => {
+ showRelojModal.value = false; 
+},
         });
     } else {
         submitter.post(RelojController.store({ localesIe: relojParentId.value! }).url, {
-            onSuccess: () => { showRelojModal.value = false; },
+            onSuccess: () => {
+ showRelojModal.value = false; 
+},
         });
     }
 }
@@ -334,11 +371,18 @@ function confirmDeleteReloj(reloj: Reloj) {
 }
 
 function executeDeleteReloj() {
-    if (!deleteRelojId.value) return;
+    if (!deleteRelojId.value) {
+return;
+}
+
     isDeletingReloj.value = true;
     router.delete(RelojController.destroy({ reloje: deleteRelojId.value }).url, {
-        onSuccess: () => { showDeleteReloj.value = false; deleteRelojId.value = null; },
-        onFinish: () => { isDeletingReloj.value = false; },
+        onSuccess: () => {
+ showDeleteReloj.value = false; deleteRelojId.value = null; 
+},
+        onFinish: () => {
+ isDeletingReloj.value = false; 
+},
     });
 }
 
@@ -452,30 +496,58 @@ const tabs = [
             <div v-for="grado in props.institucion.grados || []" :key="grado.id" class="rounded-lg border bg-card overflow-hidden">
                 <div class="flex items-center justify-between border-b bg-muted/30 px-4 py-2.5">
                     <div class="flex items-center gap-2">
-                        <GraduationCap class="h-4 w-4 text-primary" />
-                        <span class="text-sm font-semibold">{{ grado.nombre }}</span>
+                        <GraduationCap class="h-4.5 w-4.5 text-primary" />
+                        <span class="text-sm font-semibold text-foreground">{{ grado.nombre }}</span>
                         <span v-if="grado.codigo" class="text-xs text-muted-foreground">({{ grado.codigo }})</span>
                         <StatusBadge :active="grado.activo" />
                     </div>
-                    <div class="flex gap-1">
-                        <Button variant="ghost" size="sm" class="h-7 text-xs" @click="openSubCreate('seccion', grado.id)"><Plus class="mr-1 h-3 w-3" /> Sección</Button>
-                        <Button variant="ghost" size="sm" class="h-7" @click="openSubEdit('grado', grado)"><Pencil class="h-3.5 w-3.5" /></Button>
-                        <Button variant="ghost" size="sm" class="h-7 text-destructive" @click="confirmDeleteSub('grado', grado.id, grado.nombre)"><Trash2 class="h-3.5 w-3.5" /></Button>
+                    <div class="flex items-center gap-1.5">
+                        <Button variant="outline" size="sm" class="h-7 text-xs border-emerald-200 bg-emerald-50/30 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-400" @click="openSubCreate('seccion', grado.id)">
+                            <Plus class="mr-1 h-3.5 w-3.5 text-emerald-500" />
+                            <span>Sección</span>
+                        </Button>
+                        <Button variant="ghost" size="sm" class="h-7 w-7 p-0 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/20" @click="openSubEdit('grado', grado)" title="Editar Grado">
+                            <Pencil class="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="sm" class="h-7 w-7 p-0 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/20" @click="confirmDeleteSub('grado', grado.id, grado.nombre)" title="Eliminar Grado">
+                            <Trash2 class="h-3.5 w-3.5" />
+                        </Button>
                     </div>
                 </div>
-                <div v-if="grado.secciones?.length" class="p-3">
-                    <div class="flex flex-wrap gap-2">
+                <div v-if="grado.secciones?.length" class="p-4 border-t bg-muted/5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                         <div v-for="sec in grado.secciones" :key="sec.id"
-                            class="flex items-center gap-2 rounded-md border bg-background px-3 py-1.5 text-sm">
-                            <LayoutGrid class="h-3.5 w-3.5 text-muted-foreground" />
-                            <span class="font-medium">{{ sec.nombre }}</span>
-                            <span v-if="sec.sigla" class="text-xs text-muted-foreground">({{ sec.sigla }})</span>
-                            <button @click="openSubEdit('seccion', sec)" class="ml-1 text-muted-foreground hover:text-foreground"><Pencil class="h-3 w-3" /></button>
-                            <button @click="confirmDeleteSub('seccion', sec.id, sec.nombre)" class="text-muted-foreground hover:text-destructive"><Trash2 class="h-3 w-3" /></button>
+                            class="flex items-center justify-between gap-4 rounded-lg border bg-background p-2.5 shadow-xs transition-all hover:shadow-md dark:border-muted/30">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
+                                    <LayoutGrid class="h-4 w-4" />
+                                </div>
+                                <div class="truncate">
+                                    <p class="text-sm font-bold text-foreground truncate">Sección {{ sec.nombre }}</p>
+                                    <p v-if="sec.sigla" class="text-[11px] text-muted-foreground truncate">Sigla: {{ sec.sigla }}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <Button variant="outline" size="sm" class="h-8 gap-1.5 text-xs text-blue-600 border-blue-100 hover:text-blue-700 hover:bg-blue-50/50 dark:border-blue-900/50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-950/20" as-child>
+                                    <Link :href="HorarioTrabajadorController.index({ query: { ie_id: props.institucion.id, grado_id: grado.id, seccion_id: sec.id } }).url">
+                                        <Calendar class="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" />
+                                        <span>Ver Horario</span>
+                                    </Link>
+                                </Button>
+                                
+                                <Button variant="ghost" size="icon" class="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/20" @click="openSubEdit('seccion', sec)" title="Editar">
+                                    <Pencil class="h-3.5 w-3.5" />
+                                </Button>
+                                
+                                <Button variant="ghost" size="icon" class="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/20" @click="confirmDeleteSub('seccion', sec.id, sec.nombre)" title="Eliminar">
+                                    <Trash2 class="h-3.5 w-3.5" />
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div v-else class="p-4 text-center text-xs text-muted-foreground">Sin secciones registradas.</div>
+                <div v-else class="p-4 text-center text-xs text-muted-foreground bg-muted/5">Sin secciones registradas.</div>
             </div>
             <div v-if="!props.institucion.grados?.length" class="rounded-md border p-8 text-center text-muted-foreground">No hay grados registrados.</div>
         </div>

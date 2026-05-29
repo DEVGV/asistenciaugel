@@ -12,11 +12,12 @@ import {
 } from 'lucide-vue-next';
 import { ref } from 'vue';
 import TrabajadorController from '@/actions/App/Http/Controllers/Trabajador/TrabajadorController';
-import AltasList from '@/components/trabajador/AltasList.vue';
 import DomiciliosList from '@/components/persona/DomiciliosList.vue';
 import EmailsList from '@/components/persona/EmailsList.vue';
 import TelefonosList from '@/components/persona/TelefonosList.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
+import AltasList from '@/components/trabajador/AltasList.vue';
+import HorariosTrabajadorTab from '@/components/trabajador/HorariosTrabajadorTab.vue';
 import { Button } from '@/components/ui/button';
 import type { Trabajador } from '@/types/models/trabajador';
 
@@ -174,17 +175,9 @@ const tabs = [
                 />
             </div>
 
-            <!-- TAB: Horarios (Próximamente) -->
-            <div v-if="activeTab === 'horarios'" class="rounded-xl border bg-card p-12 text-center shadow-xs">
-                <div class="mx-auto max-w-md">
-                    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        <Calendar class="h-6 w-6" />
-                    </div>
-                    <h3 class="mt-4 text-lg font-semibold">Módulo de Horarios</h3>
-                    <p class="mt-2 text-sm text-muted-foreground">
-                        La programación de turnos y horarios semanales se habilitará en las próximas versiones.
-                    </p>
-                </div>
+            <!-- TAB: Horarios -->
+            <div v-if="activeTab === 'horarios'">
+                <HorariosTrabajadorTab :trabajador-id="props.trabajador.id" />
             </div>
         </div>
     </div>

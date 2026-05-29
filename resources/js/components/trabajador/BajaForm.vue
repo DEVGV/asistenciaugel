@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
 import { watch } from 'vue';
-import altasRoutes from '@/routes/altas';
 import FormModal from '@/components/shared/FormModal.vue';
 import ParamSelect from '@/components/shared/ParamSelect.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import altasRoutes from '@/routes/altas';
 import type { AltaTrabajador } from '@/types/models/trabajador';
 
 const props = defineProps<{
@@ -40,7 +40,7 @@ function submit() {
     <FormModal
         :show="props.show"
         title="Registrar Baja"
-        :description="`Dar de baja al trabajador en ${props.alta.institucionEducativa?.nombreLegal ?? 'la institución'}.`"
+        :description="`Dar de baja al trabajador en ${(props.alta.institucion_educativa || props.alta.institucionEducativa)?.nombreLegal ?? 'la institución'}.`"
         :processing="form.processing"
         @update:show="emit('update:show', $event)"
         @submit="submit"
@@ -50,7 +50,7 @@ function submit() {
                 <p class="font-medium">Información del Alta</p>
                 <p class="text-muted-foreground mt-1">
                     Inicio: <span class="font-medium text-foreground">{{ props.alta.fechaInicio }}</span>
-                    &nbsp;·&nbsp; IE: <span class="font-medium text-foreground">{{ props.alta.institucionEducativa?.nombreLegal ?? '-' }}</span>
+                    &nbsp;·&nbsp; IE: <span class="font-medium text-foreground">{{ (props.alta.institucion_educativa || props.alta.institucionEducativa)?.nombreLegal ?? '-' }}</span>
                 </p>
             </div>
 
