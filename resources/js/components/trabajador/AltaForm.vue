@@ -36,30 +36,33 @@ const form = useForm({
     observacion: '',
 });
 
-watch(() => props.show, (visible) => {
-    if (visible && props.isEditing && props.alta) {
-        form.trabajador_id = props.trabajadorId;
-        form.institucionEducativa_id = props.alta.institucionEducativa_id;
-        form.condicionLaboral_id = props.alta.condicionLaboral_id;
-        form.tipoContrato_id = props.alta.tipoContrato_id;
-        form.rolTrabajador_id = props.alta.rolTrabajador_id;
-        form.situacionLaboral_id = props.alta.situacionLaboral_id;
-        form.area_id = props.alta.area_id;
-        form.cargo_id = props.alta.cargo_id;
-        form.codigoAirsp = props.alta.codigoAirsp ?? '';
-        form.fechaInicio = props.alta.fechaInicio ?? '';
-        form.fechaFin = props.alta.fechaFin ?? '';
-        form.fechaAlta = props.alta.fechaAlta ?? '';
-        form.observacion = props.alta.observacion ?? '';
-    } else if (visible && !props.isEditing) {
-        form.reset();
-        form.trabajador_id = props.trabajadorId;
-    }
+watch(
+    () => props.show,
+    (visible) => {
+        if (visible && props.isEditing && props.alta) {
+            form.trabajador_id = props.trabajadorId;
+            form.institucionEducativa_id = props.alta.institucionEducativa_id;
+            form.condicionLaboral_id = props.alta.condicionLaboral_id;
+            form.tipoContrato_id = props.alta.tipoContrato_id;
+            form.rolTrabajador_id = props.alta.rolTrabajador_id;
+            form.situacionLaboral_id = props.alta.situacionLaboral_id;
+            form.area_id = props.alta.area_id;
+            form.cargo_id = props.alta.cargo_id;
+            form.codigoAirsp = props.alta.codigoAirsp ?? '';
+            form.fechaInicio = props.alta.fechaInicio ?? '';
+            form.fechaFin = props.alta.fechaFin ?? '';
+            form.fechaAlta = props.alta.fechaAlta ?? '';
+            form.observacion = props.alta.observacion ?? '';
+        } else if (visible && !props.isEditing) {
+            form.reset();
+            form.trabajador_id = props.trabajadorId;
+        }
 
-    if (!visible) {
-        form.clearErrors();
-    }
-});
+        if (!visible) {
+            form.clearErrors();
+        }
+    },
+);
 
 // IE search with debounce — fetch direct from API
 const ieQuery = ref('');
@@ -71,13 +74,15 @@ watch(ieQuery, (q) => {
     clearTimeout(ieTimeout);
     ieTimeout = setTimeout(async () => {
         if (!q && !props.isEditing) {
- return; 
-}
+            return;
+        }
 
         ieLoading.value = true;
 
         try {
-            const res = await fetch(`/api/instituciones/search?search=${encodeURIComponent(q)}&per_page=30`);
+            const res = await fetch(
+                `/api/instituciones/search?search=${encodeURIComponent(q)}&per_page=30`,
+            );
             const data = await res.json();
             ieOptions.value = (data.data || []).map((ie: any) => ({
                 id: ie.id,
@@ -97,9 +102,13 @@ function submit() {
             onSuccess: () => emit('update:show', false),
         });
     } else {
-        form.post(AltaTrabajadorController.store({ trabajador: props.trabajadorId }).url, {
-            onSuccess: () => emit('update:show', false),
-        });
+        form.post(
+            AltaTrabajadorController.store({ trabajador: props.trabajadorId })
+                .url,
+            {
+                onSuccess: () => emit('update:show', false),
+            },
+        );
     }
 }
 </script>
@@ -116,8 +125,8 @@ function submit() {
     >
         <div class="grid gap-5">
             <!-- Fila 1: IE y Código AIRSP -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="md:col-span-2 grid gap-2">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div class="grid gap-2 md:col-span-2">
                     <Label>Institución Educativa *</Label>
                     <!-- Select manual para IE con búsqueda -->
                     <div class="relative">
@@ -129,32 +138,53 @@ function submit() {
                         />
                     </div>
                     <!-- Show selected IE name -->
-                    <div v-if="form.institucionEducativa_id" class="text-xs text-muted-foreground">
+                    <div
+                        v-if="form.institucionEducativa_id"
+                        class="text-xs text-muted-foreground"
+                    >
                         IE seleccionada ID: {{ form.institucionEducativa_id }}
                     </div>
                     <!-- IE dropdown results -->
-                    <div v-if="ieOptions.length && ieQuery" class="rounded-md border bg-background shadow-lg max-h-48 overflow-y-auto">
+                    <div
+                        v-if="ieOptions.length && ieQuery"
+                        class="max-h-48 overflow-y-auto rounded-md border bg-background shadow-lg"
+                    >
                         <button
                             v-for="ie in ieOptions"
                             :key="ie.id"
                             type="button"
                             class="w-full px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
-                            :class="{ 'bg-primary/10 font-medium text-primary': form.institucionEducativa_id === ie.id }"
-                            @click="form.institucionEducativa_id = ie.id; ieQuery = ie.nombre; ieOptions = [];"
+                            :class="{
+                                'bg-primary/10 font-medium text-primary':
+                                    form.institucionEducativa_id === ie.id,
+                            }"
+                            @click="
+                                form.institucionEducativa_id = ie.id;
+                                ieQuery = ie.nombre;
+                                ieOptions = [];
+                            "
                         >
                             {{ ie.nombre }}
                         </button>
                     </div>
-                    <p v-if="form.errors.institucionEducativa_id" class="text-sm text-destructive">{{ form.errors.institucionEducativa_id }}</p>
+                    <p
+                        v-if="form.errors.institucionEducativa_id"
+                        class="text-sm text-destructive"
+                    >
+                        {{ form.errors.institucionEducativa_id }}
+                    </p>
                 </div>
                 <div class="grid gap-2">
                     <Label>Código AIRSP</Label>
-                    <Input v-model="form.codigoAirsp" placeholder="Ej: 28001234" />
+                    <Input
+                        v-model="form.codigoAirsp"
+                        placeholder="Ej: 28001234"
+                    />
                 </div>
             </div>
 
             <!-- Fila 2: Condición y Tipo Contrato -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <ParamSelect
                     type="condiciones-laborales"
                     label="Condición Laboral *"
@@ -172,7 +202,7 @@ function submit() {
             </div>
 
             <!-- Fila 3: Rol y Situación Laboral -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <ParamSelect
                     type="roles-trabajador"
                     label="Rol del Trabajador *"
@@ -190,7 +220,7 @@ function submit() {
             </div>
 
             <!-- Fila 4: Área y Cargo -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <ParamSelect
                     type="areas"
                     label="Área *"
@@ -208,11 +238,22 @@ function submit() {
             </div>
 
             <!-- Fila 5: Fechas -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 border-t pt-4">
+            <div class="grid grid-cols-2 gap-4 border-t pt-4 md:grid-cols-4">
                 <div class="grid gap-2">
                     <Label>Fecha Inicio *</Label>
-                    <Input v-model="form.fechaInicio" type="date" :class="{ 'border-destructive': form.errors.fechaInicio }" />
-                    <p v-if="form.errors.fechaInicio" class="text-sm text-destructive">{{ form.errors.fechaInicio }}</p>
+                    <Input
+                        v-model="form.fechaInicio"
+                        type="date"
+                        :class="{
+                            'border-destructive': form.errors.fechaInicio,
+                        }"
+                    />
+                    <p
+                        v-if="form.errors.fechaInicio"
+                        class="text-sm text-destructive"
+                    >
+                        {{ form.errors.fechaInicio }}
+                    </p>
                 </div>
                 <div class="grid gap-2">
                     <Label>Fecha Fin</Label>
@@ -231,7 +272,7 @@ function submit() {
                     v-model="form.observacion"
                     rows="2"
                     placeholder="Observaciones adicionales..."
-                    class="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:outline-none resize-none"
+                    class="flex min-h-[60px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:outline-none"
                 />
             </div>
         </div>

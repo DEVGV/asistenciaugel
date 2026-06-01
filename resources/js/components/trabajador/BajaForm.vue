@@ -22,12 +22,15 @@ const form = useForm({
     motivoBaja_id: null as number | null,
 });
 
-watch(() => props.show, (visible) => {
-    if (!visible) {
-        form.reset();
-        form.clearErrors();
-    }
-});
+watch(
+    () => props.show,
+    (visible) => {
+        if (!visible) {
+            form.reset();
+            form.clearErrors();
+        }
+    },
+);
 
 function submit() {
     form.post(altasRoutes.baja({ alta: props.alta.id }).url, {
@@ -48,9 +51,18 @@ function submit() {
         <div class="grid gap-4">
             <div class="rounded-md border bg-muted/30 p-3 text-sm">
                 <p class="font-medium">Información del Alta</p>
-                <p class="text-muted-foreground mt-1">
-                    Inicio: <span class="font-medium text-foreground">{{ props.alta.fechaInicio }}</span>
-                    &nbsp;·&nbsp; IE: <span class="font-medium text-foreground">{{ (props.alta.institucion_educativa || props.alta.institucionEducativa)?.nombreLegal ?? '-' }}</span>
+                <p class="mt-1 text-muted-foreground">
+                    Inicio:
+                    <span class="font-medium text-foreground">{{
+                        props.alta.fechaInicio
+                    }}</span>
+                    &nbsp;·&nbsp; IE:
+                    <span class="font-medium text-foreground">{{
+                        (
+                            props.alta.institucion_educativa ||
+                            props.alta.institucionEducativa
+                        )?.nombreLegal ?? '-'
+                    }}</span>
                 </p>
             </div>
 
@@ -62,7 +74,12 @@ function submit() {
                     :class="{ 'border-destructive': form.errors.fechaBaja }"
                     :min="props.alta.fechaInicio"
                 />
-                <p v-if="form.errors.fechaBaja" class="text-sm text-destructive">{{ form.errors.fechaBaja }}</p>
+                <p
+                    v-if="form.errors.fechaBaja"
+                    class="text-sm text-destructive"
+                >
+                    {{ form.errors.fechaBaja }}
+                </p>
             </div>
 
             <ParamSelect

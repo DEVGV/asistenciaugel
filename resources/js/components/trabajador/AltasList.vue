@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { router, useForm } from '@inertiajs/vue3';
-import { Building2, Calendar, ChevronDown, Pencil, Plus, UserX } from 'lucide-vue-next';
+import {
+    Building2,
+    Calendar,
+    ChevronDown,
+    Pencil,
+    Plus,
+    UserX,
+} from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import AltaTrabajadorController from '@/actions/App/Http/Controllers/Trabajador/AltaTrabajadorController';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
@@ -8,8 +15,20 @@ import StatusBadge from '@/components/shared/StatusBadge.vue';
 import AltaForm from '@/components/trabajador/AltaForm.vue';
 import BajaForm from '@/components/trabajador/BajaForm.vue';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import altasRoutes from '@/routes/altas';
 import type { AltaTrabajador } from '@/types/models/trabajador';
 
@@ -37,8 +56,8 @@ function openAltaEdit(alta: AltaTrabajador) {
 
 watch(showAltaModal, (val) => {
     if (!val) {
- editingAlta.value = null; 
-}
+        editingAlta.value = null;
+    }
 });
 
 // ─── Modal Baja ───
@@ -52,8 +71,8 @@ function openBaja(alta: AltaTrabajador) {
 
 watch(showBajaModal, (val) => {
     if (!val) {
- altaParaBaja.value = null; 
-}
+        altaParaBaja.value = null;
+    }
 });
 
 // ─── Modal Confirmar Eliminación ───
@@ -68,17 +87,18 @@ function confirmDelete(alta: AltaTrabajador) {
 
 function executeDelete() {
     if (!altaToDelete.value) {
- return; 
-}
+        return;
+    }
 
     isDeleting.value = true;
     router.delete(altasRoutes.destroy({ alta: altaToDelete.value.id }).url, {
         onSuccess: () => {
- showDeleteModal.value = false; altaToDelete.value = null; 
-},
+            showDeleteModal.value = false;
+            altaToDelete.value = null;
+        },
         onFinish: () => {
- isDeleting.value = false; 
-},
+            isDeleting.value = false;
+        },
     });
 }
 
@@ -92,7 +112,8 @@ function estaActiva(alta: AltaTrabajador): boolean {
         <!-- Cabecera -->
         <div class="flex items-center justify-between">
             <p class="text-sm text-muted-foreground">
-                Historial de vinculaciones laborales del trabajador con instituciones educativas.
+                Historial de vinculaciones laborales del trabajador con
+                instituciones educativas.
             </p>
             <Button size="sm" @click="openAltaCreate">
                 <Plus class="mr-2 h-4 w-4" /> Nueva Alta
@@ -100,7 +121,7 @@ function estaActiva(alta: AltaTrabajador): boolean {
         </div>
 
         <!-- Tabla -->
-        <div class="rounded-md border bg-card overflow-hidden">
+        <div class="overflow-hidden rounded-md border bg-card">
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -110,54 +131,115 @@ function estaActiva(alta: AltaTrabajador): boolean {
                         <TableHead class="w-[120px]">Inicio</TableHead>
                         <TableHead class="w-[120px]">Fin / Baja</TableHead>
                         <TableHead class="w-[80px]">Estado</TableHead>
-                        <TableHead class="w-[80px] text-right">Acciones</TableHead>
+                        <TableHead class="w-[80px] text-right"
+                            >Acciones</TableHead
+                        >
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     <TableRow v-for="alta in props.altas" :key="alta.id">
                         <TableCell>
                             <div class="flex items-start gap-1.5">
-                                <Building2 class="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                <Building2
+                                    class="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                                />
                                 <div>
-                                    <div class="text-sm font-medium">{{ (alta.institucion_educativa || alta.institucionEducativa)?.nombreLegal || '-' }}</div>
-                                    <div v-if="alta.codigoAirsp" class="text-xs text-muted-foreground">AIRSP: {{ alta.codigoAirsp }}</div>
+                                    <div class="text-sm font-medium">
+                                        {{
+                                            (
+                                                alta.institucion_educativa ||
+                                                alta.institucionEducativa
+                                            )?.nombreLegal || '-'
+                                        }}
+                                    </div>
+                                    <div
+                                        v-if="alta.codigoAirsp"
+                                        class="text-xs text-muted-foreground"
+                                    >
+                                        AIRSP: {{ alta.codigoAirsp }}
+                                    </div>
                                 </div>
                             </div>
                         </TableCell>
                         <TableCell>
-                            <div class="text-xs font-medium">{{ (alta.condicion_laboral || alta.condicionLaboral)?.abreviatura || (alta.condicion_laboral || alta.condicionLaboral)?.nombre || '-' }}</div>
-                            <div class="text-xs text-muted-foreground">{{ (alta.rol_trabajador || alta.rolTrabajador)?.nombre || '-' }}</div>
+                            <div class="text-xs font-medium">
+                                {{
+                                    (
+                                        alta.condicion_laboral ||
+                                        alta.condicionLaboral
+                                    )?.abreviatura ||
+                                    (
+                                        alta.condicion_laboral ||
+                                        alta.condicionLaboral
+                                    )?.nombre ||
+                                    '-'
+                                }}
+                            </div>
+                            <div class="text-xs text-muted-foreground">
+                                {{
+                                    (alta.rol_trabajador || alta.rolTrabajador)
+                                        ?.nombre || '-'
+                                }}
+                            </div>
                         </TableCell>
                         <TableCell>
-                            <div class="text-xs font-medium">{{ alta.area?.nombre || '-' }}</div>
-                            <div class="text-xs text-muted-foreground">{{ alta.cargo?.nombre || '-' }}</div>
+                            <div class="text-xs font-medium">
+                                {{ alta.area?.nombre || '-' }}
+                            </div>
+                            <div class="text-xs text-muted-foreground">
+                                {{ alta.cargo?.nombre || '-' }}
+                            </div>
                         </TableCell>
                         <TableCell class="text-xs">
                             <div class="flex items-center gap-1">
-                                <Calendar class="h-3 w-3 text-muted-foreground" />
+                                <Calendar
+                                    class="h-3 w-3 text-muted-foreground"
+                                />
                                 {{ alta.fechaInicio }}
                             </div>
                         </TableCell>
                         <TableCell class="text-xs">
                             <div v-if="alta.fechaBaja" class="text-destructive">
-                                <div class="font-medium">{{ alta.fechaBaja }}</div>
-                                <div class="text-muted-foreground">{{ (alta.motivo_baja || alta.motivoBaja)?.nombre }}</div>
+                                <div class="font-medium">
+                                    {{ alta.fechaBaja }}
+                                </div>
+                                <div class="text-muted-foreground">
+                                    {{
+                                        (alta.motivo_baja || alta.motivoBaja)
+                                            ?.nombre
+                                    }}
+                                </div>
                             </div>
-                            <div v-else-if="alta.fechaFin" class="text-muted-foreground">{{ alta.fechaFin }}</div>
+                            <div
+                                v-else-if="alta.fechaFin"
+                                class="text-muted-foreground"
+                            >
+                                {{ alta.fechaFin }}
+                            </div>
                             <span v-else class="text-muted-foreground">—</span>
                         </TableCell>
                         <TableCell>
-                            <StatusBadge :active="estaActiva(alta)" :label-active="'Activo'" :label-inactive="'Baja'" />
+                            <StatusBadge
+                                :active="estaActiva(alta)"
+                                :label-active="'Activo'"
+                                :label-inactive="'Baja'"
+                            />
                         </TableCell>
                         <TableCell class="text-right">
                             <DropdownMenu>
                                 <DropdownMenuTrigger as-child>
-                                    <Button variant="ghost" size="sm" class="h-7">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        class="h-7"
+                                    >
                                         <ChevronDown class="h-4 w-4" />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                    <DropdownMenuItem @click="openAltaEdit(alta)">
+                                    <DropdownMenuItem
+                                        @click="openAltaEdit(alta)"
+                                    >
                                         <Pencil class="mr-2 h-4 w-4" /> Editar
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
@@ -165,7 +247,8 @@ function estaActiva(alta: AltaTrabajador): boolean {
                                         @click="openBaja(alta)"
                                         class="text-destructive focus:text-destructive"
                                     >
-                                        <UserX class="mr-2 h-4 w-4" /> Dar de Baja
+                                        <UserX class="mr-2 h-4 w-4" /> Dar de
+                                        Baja
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         v-if="estaActiva(alta)"
@@ -179,7 +262,10 @@ function estaActiva(alta: AltaTrabajador): boolean {
                         </TableCell>
                     </TableRow>
                     <TableRow v-if="!props.altas.length">
-                        <TableCell colspan="7" class="h-24 text-center text-muted-foreground">
+                        <TableCell
+                            colspan="7"
+                            class="h-24 text-center text-muted-foreground"
+                        >
                             No hay altas registradas para este trabajador.
                         </TableCell>
                     </TableRow>

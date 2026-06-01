@@ -88,8 +88,8 @@ function confirmDelete(tel: Telefono) {
 
 function executeDelete() {
     if (!itemToDelete.value) {
-return;
-}
+        return;
+    }
 
     isDeleting.value = true;
     router.delete(

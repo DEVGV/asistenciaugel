@@ -21,12 +21,12 @@ function onDocTypeChange(item: ParamSimple | null) {
 
 async function buscarReniec() {
     if (!props.form.docIdentidad || props.form.docIdentidad.length !== 8) {
-return;
-}
+        return;
+    }
 
     if (selectedDocTypeAbrev.value !== 'DNI') {
-return;
-}
+        return;
+    }
 
     isSearchingReniec.value = true;
     searchError.value = null;

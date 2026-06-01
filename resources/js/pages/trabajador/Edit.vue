@@ -27,7 +27,9 @@ const form = useForm({
 });
 
 function submitUpdate() {
-    form.put(TrabajadorController.update({ trabajador: props.trabajador.id }).url);
+    form.put(
+        TrabajadorController.update({ trabajador: props.trabajador.id }).url,
+    );
 }
 </script>
 
@@ -61,22 +63,17 @@ function submitUpdate() {
                     :persona="props.trabajador.persona"
                 />
 
-                <div class="pt-4 border-t flex justify-end gap-2">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        as-child
-                    >
+                <div class="flex justify-end gap-2 border-t pt-4">
+                    <Button type="button" variant="outline" as-child>
                         <Link :href="TrabajadorController.index().url">
                             Cancelar
                         </Link>
                     </Button>
-                    <Button
-                        type="submit"
-                        :disabled="form.processing"
-                    >
+                    <Button type="submit" :disabled="form.processing">
                         <CheckCircle2 class="mr-2 h-4 w-4" />
-                        {{ form.processing ? 'Guardando...' : 'Guardar Cambios' }}
+                        {{
+                            form.processing ? 'Guardando...' : 'Guardar Cambios'
+                        }}
                     </Button>
                 </div>
             </form>

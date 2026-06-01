@@ -251,3 +251,35 @@ it('can list worker schedules and active institutions', function () {
             })
         );
 });
+
+it('can delete a course schedule even if a teacher is assigned', function () {
+    $horario = ConasisHorariosCursos::create([
+        'anio' => 2026,
+        'seccion_id' => $this->seccion->id,
+        'curso_id' => $this->curso->id,
+        'diaSemana' => 'L',
+        'nroDia' => 1,
+        'horaInicio' => '08:00:00',
+        'horaFin' => '09:30:00',
+        'minAcum' => 90,
+        'created_by' => $this->user->id,
+    ]);
+
+    post(route('horarios-cursos.cargas.store', $horario), [
+        'horarioCurso_id' => $horario->id,
+        'trabajador_id' => $this->trabajador->id,
+        'altaTrabajador_id' => $this->alta->id,
+        'fechaInicio' => '2026-03-01',
+        'titularSuplencia' => 'T',
+    ])->assertStatus(201);
+
+    // Verify DetalleHorario exists before delete
+    expect(ConasisDetalleHorarios::where('horarioCursoIni_id', $horario->id)->count())->toBeGreaterThan(0);
+
+    // Now delete the course schedule
+    delete(route('horarios-cursos.destroy', $horario))->assertOk();
+
+    expect(ConasisHorariosCursos::find($horario->id))->toBeNull();
+    expect(ConasisCargaHoraria::where('horarioCurso_id', $horario->id)->count())->toBe(0);
+    expect(ConasisDetalleHorarios::where('horarioCursoIni_id', $horario->id)->count())->toBe(0);
+});

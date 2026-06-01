@@ -57,8 +57,8 @@ let searchTimeout: any = null;
 
 watch(search, (val) => {
     if (searchTimeout) {
-clearTimeout(searchTimeout);
-}
+        clearTimeout(searchTimeout);
+    }
 
     searchTimeout = setTimeout(() => {
         router.get(
@@ -84,12 +84,14 @@ function confirmDelete(trabajador: Trabajador) {
 
 function executeDelete() {
     if (!trabajadorToDelete.value) {
-return;
-}
+        return;
+    }
 
     isDeleting.value = true;
     router.delete(
-        TrabajadorController.destroy({ trabajador: trabajadorToDelete.value.id }).url,
+        TrabajadorController.destroy({
+            trabajador: trabajadorToDelete.value.id,
+        }).url,
         {
             onSuccess: () => {
                 showDeleteModal.value = false;
@@ -114,9 +116,9 @@ const selectedPersonas = ref<Persona[]>([]);
 const showOnlySelected = ref(false);
 
 const displayedPersonas = computed(() => {
-    return showOnlySelected.value 
-        ? selectedPersonas.value 
-        : (searchedPersonas.value?.data || []);
+    return showOnlySelected.value
+        ? selectedPersonas.value
+        : searchedPersonas.value?.data || [];
 });
 
 const form = useForm({
@@ -139,12 +141,14 @@ async function searchPersonasAPI(query: string, page = 1) {
 
     try {
         const response = await fetch(
-            PersonaController.search({ query: { search: query, page, exclude_trabajadores: true } }).url,
+            PersonaController.search({
+                query: { search: query, page, exclude_trabajadores: true },
+            }).url,
             {
                 headers: {
                     Accept: 'application/json',
                 },
-            }
+            },
         );
 
         if (response.ok) {
@@ -159,8 +163,8 @@ async function searchPersonasAPI(query: string, page = 1) {
 
 watch(searchPersonaQuery, (val) => {
     if (searchPersonaTimeout) {
-clearTimeout(searchPersonaTimeout);
-}
+        clearTimeout(searchPersonaTimeout);
+    }
 
     searchPersonaTimeout = setTimeout(() => {
         searchPersonasAPI(val);
@@ -183,14 +187,14 @@ function isPersonaSelected(id: number) {
 
 function submitMasivo() {
     if (selectedPersonas.value.length === 0) {
-return;
-}
-    
+        return;
+    }
+
     form.trabajadores = selectedPersonas.value.map((persona) => ({
         persona_id: persona.id,
         activo: true,
     }));
-    
+
     form.post(TrabajadorController.store().url, {
         onSuccess: () => {
             showCreateModal.value = false;
@@ -202,7 +206,7 @@ return;
 <template>
     <Head title="Trabajadores" />
 
-    <div class="flex flex-col gap-4 p-4 ">
+    <div class="flex flex-col gap-4 p-4">
         <!-- Encabezado -->
         <div class="flex items-center justify-between">
             <div>
@@ -210,7 +214,8 @@ return;
                     Trabajadores
                 </h1>
                 <p class="text-sm text-muted-foreground">
-                    Gestión del personal registrado y sus códigos de trabajador asignados.
+                    Gestión del personal registrado y sus códigos de trabajador
+                    asignados.
                 </p>
             </div>
             <Button @click="openCreateModal">
@@ -230,11 +235,13 @@ return;
         </div>
 
         <!-- Tabla Principal -->
-        <div class="rounded-md border bg-card shadow-xs overflow-hidden">
+        <div class="overflow-hidden rounded-md border bg-card shadow-xs">
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead class="w-[180px]">Código Trabajador</TableHead>
+                        <TableHead class="w-[180px]"
+                            >Código Trabajador</TableHead
+                        >
                         <TableHead>Persona</TableHead>
                         <TableHead>Documento</TableHead>
                         <TableHead>Sexo</TableHead>
@@ -249,13 +256,16 @@ return;
                     >
                         <TableCell class="font-semibold text-primary">
                             <div class="flex items-center gap-1.5">
-                                <UserCheck class="h-4 w-4 text-muted-foreground shrink-0" />
+                                <UserCheck
+                                    class="h-4 w-4 shrink-0 text-muted-foreground"
+                                />
                                 {{ trabajador.codigo }}
                             </div>
                         </TableCell>
                         <TableCell>
-                            <div class="font-medium text-sm">
-                                {{ trabajador.persona?.paterno }} {{ trabajador.persona?.materno }}
+                            <div class="text-sm font-medium">
+                                {{ trabajador.persona?.paterno }}
+                                {{ trabajador.persona?.materno }}
                             </div>
                             <div class="text-xs text-muted-foreground">
                                 {{ trabajador.persona?.nombre }}
@@ -264,7 +274,8 @@ return;
                         <TableCell>
                             <div class="text-xs text-muted-foreground">
                                 {{
-                                    trabajador.persona?.tipoDocIdentidad?.abreviatura ||
+                                    trabajador.persona?.tipoDocIdentidad
+                                        ?.abreviatura ||
                                     trabajador.persona?.tipoDocIdentidad?.nombre
                                 }}
                             </div>
@@ -293,10 +304,16 @@ return;
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                                    <DropdownMenuLabel
+                                        >Acciones</DropdownMenuLabel
+                                    >
                                     <DropdownMenuItem as-child>
                                         <Link
-                                            :href="TrabajadorController.show({ trabajador: trabajador.id }).url"
+                                            :href="
+                                                TrabajadorController.show({
+                                                    trabajador: trabajador.id,
+                                                }).url
+                                            "
                                             class="flex items-center"
                                         >
                                             <Eye class="mr-2 h-4 w-4" />
@@ -305,7 +322,11 @@ return;
                                     </DropdownMenuItem>
                                     <DropdownMenuItem as-child>
                                         <Link
-                                            :href="TrabajadorController.edit({ trabajador: trabajador.id }).url"
+                                            :href="
+                                                TrabajadorController.edit({
+                                                    trabajador: trabajador.id,
+                                                }).url
+                                            "
                                             class="flex items-center"
                                         >
                                             <Pencil class="mr-2 h-4 w-4" />
@@ -325,7 +346,10 @@ return;
                         </TableCell>
                     </TableRow>
                     <TableRow v-if="props.trabajadores.data.length === 0">
-                        <TableCell colspan="6" class="h-24 text-center text-muted-foreground">
+                        <TableCell
+                            colspan="6"
+                            class="h-24 text-center text-muted-foreground"
+                        >
                             No hay trabajadores registrados.
                         </TableCell>
                     </TableRow>
@@ -339,7 +363,9 @@ return;
             >
                 <span class="text-sm text-muted-foreground">
                     Página {{ props.trabajadores.current_page }} de
-                    {{ props.trabajadores.last_page }} ({{ props.trabajadores.total }}
+                    {{ props.trabajadores.last_page }} ({{
+                        props.trabajadores.total
+                    }}
                     registros)
                 </span>
                 <div class="flex gap-2">
@@ -397,10 +423,11 @@ return;
             :processing="form.processing"
         >
             <template #default>
-                <div class="space-y-4 min-h-[400px]">
+                <div class="min-h-[400px] space-y-4">
                     <div class="flex items-center justify-between">
                         <p class="text-sm text-muted-foreground">
-                            Seleccione una o varias personas para asignarlas como trabajadores.
+                            Seleccione una o varias personas para asignarlas
+                            como trabajadores.
                         </p>
                         <div class="flex items-center gap-2">
                             <Button
@@ -411,30 +438,47 @@ return;
                                 class="h-7 text-xs"
                                 @click="showOnlySelected = !showOnlySelected"
                             >
-                                {{ showOnlySelected ? 'Ver Todos' : 'Ver Seleccionados' }}
+                                {{
+                                    showOnlySelected
+                                        ? 'Ver Todos'
+                                        : 'Ver Seleccionados'
+                                }}
                             </Button>
-                            <span class="text-xs font-semibold bg-primary/10 text-primary px-2 py-1 rounded-full">
+                            <span
+                                class="rounded-full bg-primary/10 px-2 py-1 text-xs font-semibold text-primary"
+                            >
                                 {{ selectedPersonas.length }} Seleccionados
                             </span>
                         </div>
                     </div>
 
                     <div v-if="!showOnlySelected" class="relative">
-                        <Search class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Search
+                            class="absolute top-2.5 left-3 h-4 w-4 text-muted-foreground"
+                        />
                         <Input
                             v-model="searchPersonaQuery"
                             placeholder="Buscar por DNI, apellidos o nombres..."
                             class="pl-9"
                         />
-                        <Loader2 v-if="isSearchingPersonas" class="absolute right-3 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />
+                        <Loader2
+                            v-if="isSearchingPersonas"
+                            class="absolute top-2.5 right-3 h-4 w-4 animate-spin text-muted-foreground"
+                        />
                     </div>
 
-                    <div class="rounded-md border overflow-hidden max-h-[300px] overflow-y-auto">
+                    <div
+                        class="max-h-[300px] overflow-hidden overflow-y-auto rounded-md border"
+                    >
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead class="w-[50px] text-center"></TableHead>
-                                    <TableHead class="w-[100px]">Doc.</TableHead>
+                                    <TableHead
+                                        class="w-[50px] text-center"
+                                    ></TableHead>
+                                    <TableHead class="w-[100px]"
+                                        >Doc.</TableHead
+                                    >
                                     <TableHead>Apellidos y Nombres</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -444,31 +488,49 @@ return;
                                     :key="persona.id"
                                     class="cursor-pointer hover:bg-muted/50"
                                     @click="togglePersonaSelection(persona)"
-                                    :class="{ 'bg-primary/5': isPersonaSelected(persona.id) }"
+                                    :class="{
+                                        'bg-primary/5': isPersonaSelected(
+                                            persona.id,
+                                        ),
+                                    }"
                                 >
                                     <TableCell class="text-center">
                                         <input
                                             type="checkbox"
                                             class="size-4 rounded border-input accent-primary"
-                                            :checked="isPersonaSelected(persona.id)"
-                                            @click.stop="togglePersonaSelection(persona)"
+                                            :checked="
+                                                isPersonaSelected(persona.id)
+                                            "
+                                            @click.stop="
+                                                togglePersonaSelection(persona)
+                                            "
                                         />
                                     </TableCell>
-                                    <TableCell class="font-medium text-xs">
+                                    <TableCell class="text-xs font-medium">
                                         {{ persona.docIdentidad }}
                                     </TableCell>
                                     <TableCell>
-                                        <div class="font-medium text-sm">
-                                            {{ persona.paterno }} {{ persona.materno }}
+                                        <div class="text-sm font-medium">
+                                            {{ persona.paterno }}
+                                            {{ persona.materno }}
                                         </div>
-                                        <div class="text-xs text-muted-foreground">
+                                        <div
+                                            class="text-xs text-muted-foreground"
+                                        >
                                             {{ persona.nombre }}
                                         </div>
                                     </TableCell>
                                 </TableRow>
                                 <TableRow v-if="displayedPersonas.length === 0">
-                                    <TableCell colspan="3" class="h-24 text-center text-muted-foreground text-sm">
-                                        {{ showOnlySelected ? 'No hay personas seleccionadas.' : 'No se encontraron personas con ese criterio.' }}
+                                    <TableCell
+                                        colspan="3"
+                                        class="h-24 text-center text-sm text-muted-foreground"
+                                    >
+                                        {{
+                                            showOnlySelected
+                                                ? 'No hay personas seleccionadas.'
+                                                : 'No se encontraron personas con ese criterio.'
+                                        }}
                                     </TableCell>
                                 </TableRow>
                             </TableBody>
@@ -476,22 +538,49 @@ return;
                     </div>
 
                     <!-- Paginación de Personas Modal -->
-                    <div v-if="!showOnlySelected && searchedPersonas && searchedPersonas.total > 0" class="flex justify-between items-center text-xs text-muted-foreground">
-                        <span>Página {{ searchedPersonas.current_page }} de {{ searchedPersonas.last_page }}</span>
+                    <div
+                        v-if="
+                            !showOnlySelected &&
+                            searchedPersonas &&
+                            searchedPersonas.total > 0
+                        "
+                        class="flex items-center justify-between text-xs text-muted-foreground"
+                    >
+                        <span
+                            >Página {{ searchedPersonas.current_page }} de
+                            {{ searchedPersonas.last_page }}</span
+                        >
                         <div class="flex gap-1">
                             <Button
                                 type="button"
-                                variant="ghost" size="sm" class="h-7 px-2"
+                                variant="ghost"
+                                size="sm"
+                                class="h-7 px-2"
                                 :disabled="searchedPersonas.current_page <= 1"
-                                @click="searchPersonasAPI(searchPersonaQuery, searchedPersonas.current_page - 1)"
+                                @click="
+                                    searchPersonasAPI(
+                                        searchPersonaQuery,
+                                        searchedPersonas.current_page - 1,
+                                    )
+                                "
                             >
                                 Anterior
                             </Button>
                             <Button
                                 type="button"
-                                variant="ghost" size="sm" class="h-7 px-2"
-                                :disabled="searchedPersonas.current_page >= searchedPersonas.last_page"
-                                @click="searchPersonasAPI(searchPersonaQuery, searchedPersonas.current_page + 1)"
+                                variant="ghost"
+                                size="sm"
+                                class="h-7 px-2"
+                                :disabled="
+                                    searchedPersonas.current_page >=
+                                    searchedPersonas.last_page
+                                "
+                                @click="
+                                    searchPersonasAPI(
+                                        searchPersonaQuery,
+                                        searchedPersonas.current_page + 1,
+                                    )
+                                "
                             >
                                 Siguiente
                             </Button>
@@ -499,7 +588,7 @@ return;
                     </div>
                 </div>
             </template>
-            
+
             <template #footer>
                 <div class="flex w-full justify-end gap-2">
                     <Button
@@ -509,13 +598,19 @@ return;
                     >
                         Cancelar
                     </Button>
-                    
+
                     <Button
                         type="submit"
-                        :disabled="form.processing || selectedPersonas.length === 0"
+                        :disabled="
+                            form.processing || selectedPersonas.length === 0
+                        "
                     >
                         <CheckCircle2 class="mr-2 h-4 w-4" />
-                        {{ form.processing ? 'Guardando...' : `Registrar (${selectedPersonas.length})` }}
+                        {{
+                            form.processing
+                                ? 'Guardando...'
+                                : `Registrar (${selectedPersonas.length})`
+                        }}
                     </Button>
                 </div>
             </template>

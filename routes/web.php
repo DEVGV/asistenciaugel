@@ -13,6 +13,7 @@ use App\Http\Controllers\Infraestructura\LocalController;
 use App\Http\Controllers\Infraestructura\LocalInstEducController;
 use App\Http\Controllers\Infraestructura\LocalMarcacionController;
 use App\Http\Controllers\Infraestructura\RelojController;
+use App\Http\Controllers\InstitucionEducativa\AltaMasivaIEController;
 use App\Http\Controllers\InstitucionEducativa\CursoIEController;
 use App\Http\Controllers\InstitucionEducativa\GradoIEController;
 use App\Http\Controllers\InstitucionEducativa\InstitucionEducativaController;
@@ -85,6 +86,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('instituciones', InstitucionEducativaController::class)
         ->except(['create', 'edit'])
         ->parameters(['instituciones' => 'institucione']);
+
+    // Tab Docentes/Personal de una IE (altas paginadas)
+    Route::get('instituciones/{institucione}/docentes', [InstitucionEducativaController::class, 'docentes'])
+        ->name('instituciones.docentes');
+
+    // Carga masiva de altas para una IE
+    Route::post('instituciones/{institucione}/altas-masivas', [AltaMasivaIEController::class, 'store'])
+        ->name('instituciones.altas-masivas.store');
 
     Route::resource('instituciones.cursos', CursoIEController::class)
         ->only(['store', 'update', 'destroy'])

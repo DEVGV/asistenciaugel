@@ -7,6 +7,7 @@ use App\Http\Requests\InstitucionEducativa\StoreInstEducRequest;
 use App\Http\Requests\InstitucionEducativa\UpdateInstEducRequest;
 use App\Models\InstitucionesEduc;
 use App\Services\InstitucionEducativa\InstitucionEducativaService;
+use App\Services\Trabajador\AltaTrabajadorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ class InstitucionEducativaController extends Controller
 {
     public function __construct(
         private InstitucionEducativaService $ieService,
+        private AltaTrabajadorService $altaService,
     ) {}
 
     public function index(Request $request): Response
@@ -64,6 +66,20 @@ class InstitucionEducativaController extends Controller
     {
         return Inertia::render('institucion-educativa/Show', [
             'institucion' => $this->ieService->obtenerConRelaciones($institucione),
+        ]);
+    }
+
+    /**
+     * Devuelve altas/docentes paginados de una IE (para el tab Docentes/Personal).
+     * Los datos de la IE se pasan separados para no recargar locales/cursos/etc.
+     */
+    public function docentes(InstitucionesEduc $institucione, Request $request): Response
+    {
+        return Inertia::render('institucion-educativa/Show', [
+            'institucion' => $this->ieService->obtenerConRelaciones($institucione),
+            'docentes' => $this->altaService->listarPorInstitucion($institucione, $request),
+            'docentesFiltros' => $request->only(['search', 'solo_activas', 'condicion_id']),
+            'activeTab' => 'docentes',
         ]);
     }
 

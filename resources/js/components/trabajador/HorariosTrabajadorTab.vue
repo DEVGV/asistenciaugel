@@ -43,7 +43,10 @@ const DAYS_OF_WEEK: Record<number, string> = {
     7: 'Domingo',
 };
 
-const TURNO_CONFIG: Record<number, { label: string; class: string; dot: string }> = {
+const TURNO_CONFIG: Record<
+    number,
+    { label: string; class: string; dot: string }
+> = {
     1: {
         label: 'MAÑANA',
         class: 'bg-amber-100 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-900/50',
@@ -67,8 +70,8 @@ function getTurno(turnoId: number | null) {
 
 function formatTime(timeStr: string | null): string {
     if (!timeStr) {
-return '—';
-}
+        return '—';
+    }
 
     const parts = timeStr.split(':');
 
@@ -77,8 +80,8 @@ return '—';
 
 function totalHoras(detalles: any[]): string {
     if (!detalles) {
-return '0.00';
-}
+        return '0.00';
+    }
 
     return detalles
         .filter((d) => d.aplicar)
@@ -97,8 +100,8 @@ async function loadHorarios() {
         );
 
         if (!res.ok) {
-throw new Error();
-}
+            throw new Error();
+        }
 
         const result = await res.json();
         horarios.value = result.data;
@@ -128,7 +131,11 @@ watch(selectedAnio, () => loadHorarios());
                         <SelectValue placeholder="Año" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem v-for="y in YEARS" :key="y" :value="String(y)">
+                        <SelectItem
+                            v-for="y in YEARS"
+                            :key="y"
+                            :value="String(y)"
+                        >
                             {{ y }}
                         </SelectItem>
                     </SelectContent>
@@ -142,7 +149,10 @@ watch(selectedAnio, () => loadHorarios());
                     :disabled="loading"
                     @click="loadHorarios"
                 >
-                    <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
+                    <RefreshCw
+                        class="h-4 w-4"
+                        :class="{ 'animate-spin': loading }"
+                    />
                 </Button>
             </div>
         </div>
@@ -158,7 +168,11 @@ watch(selectedAnio, () => loadHorarios());
 
         <!-- Skeleton -->
         <div v-else-if="loading" class="space-y-4">
-            <div v-for="i in 2" :key="i" class="h-40 animate-pulse rounded-xl border bg-muted/30" />
+            <div
+                v-for="i in 2"
+                :key="i"
+                class="h-40 animate-pulse rounded-xl border bg-muted/30"
+            />
         </div>
 
         <!-- Sin horarios -->
@@ -171,7 +185,8 @@ watch(selectedAnio, () => loadHorarios());
                 Sin horarios registrados para {{ selectedAnio }}.
             </p>
             <p class="mt-1 text-xs text-muted-foreground/70">
-                Los horarios se generan al asignar docentes a cursos en Planificación.
+                Los horarios se generan al asignar docentes a cursos en
+                Planificación.
             </p>
         </div>
 
@@ -183,36 +198,62 @@ watch(selectedAnio, () => loadHorarios());
                 class="overflow-hidden rounded-xl border bg-card shadow-sm"
             >
                 <!-- Header IE -->
-                <div class="flex flex-wrap items-start justify-between gap-3 border-b bg-muted/20 px-5 py-4">
+                <div
+                    class="flex flex-wrap items-start justify-between gap-3 border-b bg-muted/20 px-5 py-4"
+                >
                     <div class="space-y-1">
                         <div class="flex items-center gap-2">
                             <School class="h-4 w-4 text-emerald-500" />
                             <span class="font-bold text-foreground">
-                                {{ horario.institucion_educ?.nombreLegal ?? 'Institución' }}
+                                {{
+                                    horario.institucion_educ?.nombreLegal ??
+                                    'Institución'
+                                }}
                             </span>
                         </div>
-                        <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                            <span>Código: {{ horario.institucion_educ?.codigoInstitucion ?? '—' }}</span>
+                        <div
+                            class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground"
+                        >
+                            <span
+                                >Código:
+                                {{
+                                    horario.institucion_educ
+                                        ?.codigoInstitucion ?? '—'
+                                }}</span
+                            >
                             <span v-if="horario.alta_trabajador?.cargo">
-                                · Cargo: {{ horario.alta_trabajador.cargo.nombre }}
+                                · Cargo:
+                                {{ horario.alta_trabajador.cargo.nombre }}
                             </span>
                             <span>· {{ horario.anio }}</span>
                         </div>
                     </div>
 
                     <div class="flex items-center gap-3">
-                        <div class="rounded-lg border bg-blue-50 px-3 py-1.5 text-center dark:bg-blue-950/20">
-                            <p class="text-[10px] font-semibold uppercase tracking-wider text-blue-500 dark:text-blue-400">
+                        <div
+                            class="rounded-lg border bg-blue-50 px-3 py-1.5 text-center dark:bg-blue-950/20"
+                        >
+                            <p
+                                class="text-[10px] font-semibold tracking-wider text-blue-500 uppercase dark:text-blue-400"
+                            >
                                 Hrs / semana
                             </p>
-                            <p class="text-xl font-extrabold text-blue-700 dark:text-blue-200">
+                            <p
+                                class="text-xl font-extrabold text-blue-700 dark:text-blue-200"
+                            >
                                 {{ totalHoras(horario.detalles) }}
                             </p>
                         </div>
 
-                        <Button variant="outline" size="sm" class="h-8 text-xs" as-child>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            class="h-8 text-xs"
+                            as-child
+                        >
                             <Link :href="`/horarios-trabajador/${horario.id}`">
-                                Ver detalle <ArrowRight class="ml-1 h-3.5 w-3.5" />
+                                Ver detalle
+                                <ArrowRight class="ml-1 h-3.5 w-3.5" />
                             </Link>
                         </Button>
                     </div>
@@ -238,7 +279,10 @@ watch(selectedAnio, () => loadHorarios());
                         <!-- Día -->
                         <div class="w-24 shrink-0">
                             <span class="text-sm font-semibold">
-                                {{ DAYS_OF_WEEK[detalle.nroDia] ?? detalle.diaSemana }}
+                                {{
+                                    DAYS_OF_WEEK[detalle.nroDia] ??
+                                    detalle.diaSemana
+                                }}
                             </span>
                         </div>
 
@@ -252,20 +296,33 @@ watch(selectedAnio, () => loadHorarios());
                                     class="h-1.5 w-1.5 rounded-full"
                                     :class="getTurno(detalle.turno_id).dot"
                                 />
-                                {{ detalle.nombreTurno ?? getTurno(detalle.turno_id).label }}
+                                {{
+                                    detalle.nombreTurno ??
+                                    getTurno(detalle.turno_id).label
+                                }}
                             </span>
                         </div>
 
                         <!-- Entrada -->
-                        <div class="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 dark:border-emerald-900/40 dark:bg-emerald-950/20">
-                            <LogIn class="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                        <div
+                            class="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 dark:border-emerald-900/40 dark:bg-emerald-950/20"
+                        >
+                            <LogIn
+                                class="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400"
+                            />
                             <div>
-                                <p class="text-[10px] font-medium uppercase tracking-wider text-emerald-600/70 dark:text-emerald-400/60">
+                                <p
+                                    class="text-[10px] font-medium tracking-wider text-emerald-600/70 uppercase dark:text-emerald-400/60"
+                                >
                                     Entrada
                                 </p>
-                                <p class="font-mono text-sm font-bold leading-none text-emerald-700 dark:text-emerald-300">
+                                <p
+                                    class="font-mono text-sm leading-none font-bold text-emerald-700 dark:text-emerald-300"
+                                >
                                     {{ formatTime(detalle.entHoraInicio) }}
-                                    <span class="ml-1 text-[10px] font-normal text-emerald-600/50">
+                                    <span
+                                        class="ml-1 text-[10px] font-normal text-emerald-600/50"
+                                    >
                                         ±{{ detalle.entTolerancia ?? 0 }}'
                                     </span>
                                 </p>
@@ -273,15 +330,25 @@ watch(selectedAnio, () => loadHorarios());
                         </div>
 
                         <!-- Salida -->
-                        <div class="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 dark:border-red-900/40 dark:bg-red-950/20">
-                            <LogOut class="h-4 w-4 shrink-0 text-red-500 dark:text-red-400" />
+                        <div
+                            class="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 dark:border-red-900/40 dark:bg-red-950/20"
+                        >
+                            <LogOut
+                                class="h-4 w-4 shrink-0 text-red-500 dark:text-red-400"
+                            />
                             <div>
-                                <p class="text-[10px] font-medium uppercase tracking-wider text-red-500/70 dark:text-red-400/60">
+                                <p
+                                    class="text-[10px] font-medium tracking-wider text-red-500/70 uppercase dark:text-red-400/60"
+                                >
                                     Salida
                                 </p>
-                                <p class="font-mono text-sm font-bold leading-none text-red-600 dark:text-red-300">
+                                <p
+                                    class="font-mono text-sm leading-none font-bold text-red-600 dark:text-red-300"
+                                >
                                     {{ formatTime(detalle.salHoraInicio) }}
-                                    <span class="ml-1 text-[10px] font-normal text-red-500/50">
+                                    <span
+                                        class="ml-1 text-[10px] font-normal text-red-500/50"
+                                    >
                                         ±{{ detalle.salTolerancia ?? 0 }}'
                                     </span>
                                 </p>
@@ -292,16 +359,26 @@ watch(selectedAnio, () => loadHorarios());
                         <div class="flex items-center gap-1.5 text-sm">
                             <Timer class="h-4 w-4 text-muted-foreground/50" />
                             <span class="font-semibold tabular-nums">
-                                {{ Number(detalle.horaAcumula ?? 0).toFixed(2) }}
-                                <span class="text-xs font-normal text-muted-foreground">hrs</span>
+                                {{
+                                    Number(detalle.horaAcumula ?? 0).toFixed(2)
+                                }}
+                                <span
+                                    class="text-xs font-normal text-muted-foreground"
+                                    >hrs</span
+                                >
                             </span>
                         </div>
 
                         <!-- Curso inicial -->
-                        <div class="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                        <div
+                            class="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground"
+                        >
                             <BookOpen class="h-3.5 w-3.5 shrink-0" />
                             <span class="truncate">
-                                {{ detalle.horario_curso_ini?.curso?.nombre ?? '—' }}
+                                {{
+                                    detalle.horario_curso_ini?.curso?.nombre ??
+                                    '—'
+                                }}
                             </span>
                         </div>
                     </div>

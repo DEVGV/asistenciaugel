@@ -74,8 +74,8 @@ let searchTimeout: any = null;
 
 watch(search, (val) => {
     if (searchTimeout) {
-clearTimeout(searchTimeout);
-}
+        clearTimeout(searchTimeout);
+    }
 
     searchTimeout = setTimeout(() => {
         router.get(
@@ -171,8 +171,8 @@ function confirmDelete(persona: Persona) {
 
 function executeDelete() {
     if (!personaToDelete.value) {
-return;
-}
+        return;
+    }
 
     isDeleting.value = true;
     router.delete(

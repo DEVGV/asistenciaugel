@@ -115,8 +115,8 @@ function confirmDelete(cargo: Cargo) {
 
 function executeDelete() {
     if (!cargoToDelete.value) {
-return;
-}
+        return;
+    }
 
     isDeleting.value = true;
     router.delete(

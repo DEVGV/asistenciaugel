@@ -20,6 +20,8 @@ class DatabaseSeeder extends Seeder
             AreaCargoSeeder::class,
             CondicionesLaboralesSeeder::class,
             PersonasSeeder::class,
+            InstitucionesEducSeeder::class,
+            InstitucionCursosGradosSeeder::class,
         ]);
     }
 }

@@ -81,10 +81,7 @@ class HorarioCursoService
             // Eliminar las cargas horarias asociadas
             ConasisCargaHoraria::where('horarioCurso_id', $horarioCurso->id)->delete();
 
-            // Eliminar el horario del curso
-            $deleted = $horarioCurso->delete();
-
-            // Regenerar el horario para cada docente afectado
+            // Regenerar el horario para cada docente afectado ANTES de eliminar el horario del curso
             foreach ($cargas as $carga) {
                 $this->horarioTrabajadorService->regenerarDesdeCargas(
                     $carga->trabajador_id,
@@ -92,6 +89,9 @@ class HorarioCursoService
                     $ieId
                 );
             }
+
+            // Eliminar el horario del curso
+            $deleted = $horarioCurso->delete();
 
             return $deleted;
         });

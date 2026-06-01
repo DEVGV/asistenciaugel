@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import SearchSelect from '@/components/shared/SearchSelect.vue';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import InputError from '@/components/InputError.vue';
 import type { HorarioCurso } from '@/types/models/horario';
 import type { CursoIE } from '@/types/models/institucion-educativa';
+import { User } from 'lucide-vue-next';
 
 const props = defineProps<{
     seccionId: number;
     anio: number;
     cursos: CursoIE[];
     horarioCurso?: HorarioCurso | null;
+    ieId?: number | null;
 }>();
 
 const emit = defineEmits<{
@@ -19,10 +21,14 @@ const emit = defineEmits<{
     (e: 'cancel'): void;
 }>();
 
+// ── Datos del horario ──────────────────────────────────────────────────────────
 const cursoId = ref<number | null>(null);
 const nroDia = ref<number>(1);
 const horaInicio = ref<string>('08:00');
 const horaFin = ref<string>('09:30');
+
+const cursoError = ref<string | null>(null);
+const cursoContainerRef = ref<HTMLElement | null>(null);
 
 const DAYS = [
     { nro: 1, label: 'Lunes', char: 'L' },
@@ -34,6 +40,17 @@ const DAYS = [
     { nro: 7, label: 'Domingo', char: 'D' },
 ];
 
+// ── Datos del docente ──────────────────────────────────────────────────────────
+const workersList = ref<any[]>([]);
+const searchingWorkers = ref(false);
+const selectedWorkerId = ref<string | null>(null);
+const selectedWorker = ref<any>(null);
+const titularSuplencia = ref<'T' | 'S'>('T');
+const fechaInicioDocente = ref<string>('');
+const fechaFinDocente = ref<string>('');
+
+let workerSearchTimeout: any = null;
+
 // Adaptar cursos al formato que espera SearchSelect
 const cursosItems = computed(() =>
     props.cursos.map((c) => ({
@@ -42,8 +59,40 @@ const cursosItems = computed(() =>
     })),
 );
 
-onMounted(() => resetForm());
-watch(() => props.horarioCurso, () => resetForm());
+const workerItems = computed(() =>
+    workersList.value.map((w) => ({
+        id: String(w.id),
+        label: `${w.persona?.paterno ?? ''} ${w.persona?.materno ?? ''}, ${w.persona?.nombre ?? ''}`.trim(),
+        sublabel: `DNI: ${w.persona?.docIdentidad ?? '—'} | Cód: ${w.codigo ?? '—'}`,
+    })),
+);
+
+onMounted(() => {
+    resetForm();
+    triggerSearchWorkers('');
+});
+
+watch(
+    () => props.horarioCurso,
+    () => resetForm(),
+);
+
+watch(selectedWorkerId, (val) => {
+    if (!val) {
+        selectedWorker.value = null;
+        return;
+    }
+    const w = workersList.value.find((x) => String(x.id) === String(val));
+    if (w) {
+        selectedWorker.value = w;
+    }
+});
+
+watch(cursoId, () => {
+    if (cursoId.value) {
+        cursoError.value = null;
+    }
+});
 
 function resetForm() {
     if (props.horarioCurso) {
@@ -51,11 +100,34 @@ function resetForm() {
         nroDia.value = props.horarioCurso.nroDia;
         horaInicio.value = props.horarioCurso.horaInicio.substring(0, 5);
         horaFin.value = props.horarioCurso.horaFin.substring(0, 5);
+
+        // Pre-poblar docente si ya tiene asignación
+        const cargaExistente = (props.horarioCurso as any).cargas?.[0];
+        if (cargaExistente?.trabajador) {
+            const w = cargaExistente.trabajador;
+            workersList.value = [w];
+            selectedWorkerId.value = String(w.id);
+            selectedWorker.value = w;
+            titularSuplencia.value = cargaExistente.titularSuplencia ?? 'T';
+            fechaInicioDocente.value = cargaExistente.fechaInicio ?? '';
+            fechaFinDocente.value = cargaExistente.fechaFin ?? '';
+        } else {
+            selectedWorkerId.value = null;
+            selectedWorker.value = null;
+            titularSuplencia.value = 'T';
+            fechaInicioDocente.value = '';
+            fechaFinDocente.value = '';
+        }
     } else {
         cursoId.value = null;
         nroDia.value = 1;
         horaInicio.value = '08:00';
         horaFin.value = '09:30';
+        selectedWorkerId.value = null;
+        selectedWorker.value = null;
+        titularSuplencia.value = 'T';
+        fechaInicioDocente.value = '';
+        fechaFinDocente.value = '';
     }
 }
 
@@ -63,10 +135,43 @@ function getDiaSemanaChar(dayNum: number): string {
     return DAYS.find((d) => d.nro === dayNum)?.char ?? 'L';
 }
 
+async function triggerSearchWorkers(query = '') {
+    searchingWorkers.value = true;
+    try {
+        const params = new URLSearchParams();
+        if (query.trim()) params.set('search', query);
+        if (props.ieId) params.set('ie_id', String(props.ieId));
+        const res = await fetch(
+            `/api/trabajadores/search?${params.toString()}`,
+        );
+        if (res.ok) workersList.value = await res.json();
+    } catch (e) {
+        console.error(e);
+    } finally {
+        searchingWorkers.value = false;
+    }
+}
+
+function handleWorkerSearch(query: string) {
+    clearTimeout(workerSearchTimeout);
+    workerSearchTimeout = setTimeout(() => triggerSearchWorkers(query), 300);
+}
+
+function formatWorkerName(worker: any) {
+    if (!worker?.persona) return '';
+    return `${worker.persona.paterno} ${worker.persona.materno}, ${worker.persona.nombre}`;
+}
+
 function handleSubmit() {
     if (!cursoId.value) {
-return;
-}
+        cursoError.value = 'El curso es requerido.';
+        cursoContainerRef.value?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+        });
+        return;
+    }
+    cursoError.value = null;
 
     emit('submit', {
         id: props.horarioCurso?.id,
@@ -77,22 +182,36 @@ return;
         diaSemana: getDiaSemanaChar(nroDia.value),
         horaInicio: horaInicio.value,
         horaFin: horaFin.value,
+        // Datos del docente (opcionales)
+        trabajador_id: selectedWorker.value?.id ?? null,
+        titularSuplencia: titularSuplencia.value,
+        fechaInicioDocente: fechaInicioDocente.value || null,
+        fechaFinDocente: fechaFinDocente.value || null,
     });
 }
+
+defineExpose({ handleSubmit });
 </script>
 
 <template>
-    <div class="space-y-5">
+    <div class="space-y-6">
+        <!-- ── Horario ──────────────────────────────────────────────────────── -->
+
         <!-- Curso -->
-        <div class="space-y-1.5">
+        <div ref="cursoContainerRef" class="space-y-1.5">
             <Label class="text-sm font-semibold">Curso</Label>
             <SearchSelect
                 v-model="cursoId"
                 :items="cursosItems"
                 placeholder="Seleccione un curso..."
             />
-            <p v-if="cursos.length === 0" class="text-xs font-medium text-amber-500">
-                No hay cursos registrados para esta IE. Regístrelos en el módulo de IE primero.
+            <InputError :message="cursoError" class="mt-1" />
+            <p
+                v-if="cursos.length === 0"
+                class="text-xs font-medium text-amber-500"
+            >
+                No hay cursos registrados para esta IE. Regístrelos en el módulo
+                de IE primero.
             </p>
         </div>
 
@@ -117,24 +236,141 @@ return;
             </div>
         </div>
 
-        <!-- Horario -->
+        <!-- Horas -->
         <div class="grid grid-cols-2 gap-4">
             <div class="space-y-1.5">
-                <Label for="horaInicio" class="text-sm font-semibold">Hora de Inicio</Label>
-                <Input id="horaInicio" type="time" v-model="horaInicio" class="w-full" />
+                <Label for="horaInicio" class="text-sm font-semibold"
+                    >Hora de Inicio</Label
+                >
+                <Input
+                    id="horaInicio"
+                    type="time"
+                    v-model="horaInicio"
+                    class="w-full"
+                />
             </div>
             <div class="space-y-1.5">
-                <Label for="horaFin" class="text-sm font-semibold">Hora de Fin</Label>
-                <Input id="horaFin" type="time" v-model="horaFin" class="w-full" />
+                <Label for="horaFin" class="text-sm font-semibold"
+                    >Hora de Fin</Label
+                >
+                <Input
+                    id="horaFin"
+                    type="time"
+                    v-model="horaFin"
+                    class="w-full"
+                />
             </div>
         </div>
 
-        <!-- Footer -->
-        <div class="flex justify-end gap-2 border-t border-dashed pt-4">
-            <Button type="button" variant="outline" @click="emit('cancel')">Cancelar</Button>
-            <Button type="button" :disabled="!cursoId" @click="handleSubmit">
-                {{ horarioCurso ? 'Actualizar Horario' : 'Crear Horario' }}
-            </Button>
+        <!-- ── Divisor ──────────────────────────────────────────────────────── -->
+        <div class="flex items-center gap-3">
+            <div class="h-px flex-1 bg-border" />
+            <span
+                class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+            >
+                Docente (Opcional)
+            </span>
+            <div class="h-px flex-1 bg-border" />
         </div>
+
+        <!-- Buscador de docente -->
+        <div class="space-y-1.5">
+            <Label class="text-sm font-semibold">Docente / Trabajador</Label>
+            <SearchSelect
+                v-model="selectedWorkerId"
+                :items="workerItems"
+                placeholder="Buscar y seleccionar docente..."
+                :loading="searchingWorkers"
+                clearable
+                @search="handleWorkerSearch"
+            />
+        </div>
+
+        <!-- Info del docente seleccionado + fechas + condición -->
+        <template v-if="selectedWorker">
+            <!-- Card docente -->
+            <div
+                class="flex items-start gap-3 rounded-xl border bg-muted/20 p-4"
+            >
+                <div
+                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300"
+                >
+                    <User class="h-5 w-5" />
+                </div>
+                <div class="min-w-0">
+                    <p class="text-sm font-bold">
+                        {{ formatWorkerName(selectedWorker) }}
+                    </p>
+                    <p class="text-xs text-muted-foreground">
+                        DNI: {{ selectedWorker.persona?.docIdentidad }} | Cód:
+                        {{ selectedWorker.codigo }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Condición: Titular / Suplente -->
+            <div class="space-y-1.5">
+                <Label class="text-sm font-semibold">Condición del Cargo</Label>
+                <div class="flex gap-6">
+                    <label
+                        class="flex cursor-pointer items-center gap-2 text-sm font-medium"
+                    >
+                        <input
+                            type="radio"
+                            v-model="titularSuplencia"
+                            value="T"
+                            class="h-4 w-4"
+                        />
+                        Titular
+                    </label>
+                    <label
+                        class="flex cursor-pointer items-center gap-2 text-sm font-medium"
+                    >
+                        <input
+                            type="radio"
+                            v-model="titularSuplencia"
+                            value="S"
+                            class="h-4 w-4"
+                        />
+                        Suplente
+                    </label>
+                </div>
+            </div>
+
+            <!-- Fechas de la carga horaria -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1.5">
+                    <Label
+                        for="fechaInicioDocente"
+                        class="text-sm font-semibold"
+                    >
+                        Fecha Inicio
+                        <span class="font-normal text-muted-foreground"
+                            >(Opcional)</span
+                        >
+                    </Label>
+                    <Input
+                        id="fechaInicioDocente"
+                        type="date"
+                        v-model="fechaInicioDocente"
+                        class="w-full"
+                    />
+                </div>
+                <div class="space-y-1.5">
+                    <Label for="fechaFinDocente" class="text-sm font-semibold">
+                        Fecha Fin
+                        <span class="font-normal text-muted-foreground"
+                            >(Opcional)</span
+                        >
+                    </Label>
+                    <Input
+                        id="fechaFinDocente"
+                        type="date"
+                        v-model="fechaFinDocente"
+                        class="w-full"
+                    />
+                </div>
+            </div>
+        </template>
     </div>
 </template>

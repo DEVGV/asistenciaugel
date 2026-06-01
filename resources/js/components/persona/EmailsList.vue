@@ -81,8 +81,8 @@ function confirmDelete(item: Email) {
 
 function executeDelete() {
     if (!itemToDelete.value) {
-return;
-}
+        return;
+    }
 
     isDeleting.value = true;
     router.delete(

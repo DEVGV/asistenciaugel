@@ -8,7 +8,6 @@ import {
     UserCheck,
     ArrowRight,
     Sparkles,
-    CalendarDays,
     ChevronRight,
     BookOpen,
 } from 'lucide-vue-next';
@@ -20,8 +19,6 @@ import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import FormModal from '@/components/shared/FormModal.vue';
 import SearchSelect from '@/components/shared/SearchSelect.vue';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -37,6 +34,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Label } from '@/components/ui/label';
 
 const props = defineProps<{
     instituciones: any[];
@@ -62,14 +60,10 @@ const grados = computed(() => ieDetails.value?.grados || []);
 const cursos = computed(() => ieDetails.value?.cursos || []);
 
 const secciones = computed(() => {
-    if (!selectedGrado.value) {
-return [];
-}
-
+    if (!selectedGrado.value) return [];
     const g = grados.value.find(
         (x: any) => x.id === Number(selectedGrado.value),
     );
-
     return g?.secciones || [];
 });
 
@@ -90,13 +84,7 @@ const selectedSeccionLabel = computed(
             ?.nombre ?? '—',
 );
 
-// SearchSelect items para IE, Grado, Sección
-const ieItems = computed(() =>
-    props.instituciones.map((ie) => ({
-        id: String(ie.id),
-        label: ie.nombreLegal,
-    })),
-);
+// SearchSelect items
 const gradoItems = computed(() =>
     grados.value.map((g: any) => ({ id: String(g.id), label: g.nombre })),
 );
@@ -108,31 +96,11 @@ const seccionItems = computed(() =>
 const horarios = ref<any[]>([]);
 const loadingHorarios = ref(false);
 
-// ── Modal Crear / Editar HorarioCurso ─────────────────────────────────────────
+// ── Modal Crear / Editar HorarioCurso (unificado con asignación docente) ──────
 const showHorarioModal = ref(false);
 const editingHorario = ref<any>(null);
-
-// ── Modal Asignar Docente ─────────────────────────────────────────────────────
-const showAssignModal = ref(false);
-const targetHorario = ref<any>(null);
-const selectedWorker = ref<any>(null);
-const workersList = ref<any[]>([]);
-const searchingWorkers = ref(false);
-const selectedAltaId = ref<string>('');
-const fechaInicio = ref('');
-const fechaFin = ref('');
-const titularSuplencia = ref('T');
-const submittingAssign = ref(false);
-
-// Items para el SearchSelect de docente (se llenan al buscar)
-const workerItems = computed(() =>
-    workersList.value.map((w) => ({
-        id: String(w.id),
-        label: `${w.persona?.paterno ?? ''} ${w.persona?.materno ?? ''}, ${w.persona?.nombre ?? ''}`.trim(),
-        sublabel: `DNI: ${w.persona?.docIdentidad ?? '—'} | Cód: ${w.codigo ?? '—'}`,
-        _raw: w,
-    })),
-);
+const submittingHorario = ref(false);
+const horarioFormRef = ref<any>(null);
 
 // ── Modal Confirmación Eliminar ───────────────────────────────────────────────
 const showDeleteConfirm = ref(false);
@@ -153,9 +121,7 @@ const DAYS_LABEL: Record<number, string> = {
 let isInitializing = false;
 
 watch(selectedIE, () => {
-    if (!isInitializing) {
-loadIEDetails(false);
-}
+    if (!isInitializing) loadIEDetails(false);
 });
 
 watch([selectedSeccion, selectedAnio], () => loadHorarios());
@@ -168,11 +134,8 @@ onMounted(async () => {
     const seccionId = params.get('seccion_id');
     const anio = params.get('anio');
 
-    if (anio) {
-selectedAnio.value = anio;
-}
+    if (anio) selectedAnio.value = anio;
 
-    // Determinar IE: desde query param, o auto-seleccionar si hay solo una
     const resolvedIeId =
         ieId ??
         (props.instituciones.length === 1
@@ -186,10 +149,7 @@ selectedAnio.value = anio;
 
         if (gradoId) {
             selectedGrado.value = gradoId;
-
-            if (seccionId) {
-selectedSeccion.value = seccionId;
-}
+            if (seccionId) selectedSeccion.value = seccionId;
         }
 
         isInitializing = false;
@@ -210,7 +170,6 @@ async function loadIEDetails(keepSelections = false) {
         selectedGrado.value = '';
         selectedSeccion.value = '';
         horarios.value = [];
-
         return;
     }
 
@@ -239,7 +198,6 @@ async function loadIEDetails(keepSelections = false) {
 async function loadHorarios() {
     if (!selectedSeccion.value || !selectedAnio.value) {
         horarios.value = [];
-
         return;
     }
 
@@ -275,7 +233,10 @@ async function handleHorarioSubmit(data: any) {
     const url = isEdit ? `/horarios-cursos/${data.id}` : '/horarios-cursos';
     const method = isEdit ? 'PUT' : 'POST';
 
+    submittingHorario.value = true;
+
     try {
+        // 1. Guardar el horario de curso
         const res = await fetch(url, {
             method,
             headers: {
@@ -287,18 +248,67 @@ async function handleHorarioSubmit(data: any) {
         });
         const result = await res.json();
 
-        if (res.ok) {
+        if (!res.ok) {
+            toast.error(result.message || 'Error al procesar el formulario.');
+            return;
+        }
+
+        const horarioId = result.data?.id ?? data.id;
+
+        // 2. Si se eligió un docente, asignarlo al horario recién creado/editado
+        if (data.trabajador_id && horarioId) {
+            const cargaExistente = editingHorario.value?.cargas?.[0];
+            const cargaUrl = cargaExistente
+                ? `/cargas/${cargaExistente.id}`
+                : `/horarios-cursos/${horarioId}/cargas`;
+            const cargaMethod = cargaExistente ? 'PUT' : 'POST';
+
+            const cargaRes = await fetch(cargaUrl, {
+                method: cargaMethod,
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': csrfToken(),
+                },
+                body: JSON.stringify({
+                    horarioCurso_id: horarioId,
+                    trabajador_id: data.trabajador_id,
+                    altaTrabajador_id: data.altaTrabajador_id ?? null,
+                    titularSuplencia: data.titularSuplencia ?? 'T',
+                    fechaInicio: data.fechaInicioDocente ?? null,
+                    fechaFin: data.fechaFinDocente ?? null,
+                }),
+            });
+
+            if (!cargaRes.ok) {
+                const cargaErr = await cargaRes.json();
+                toast.warning(
+                    'Horario guardado, pero error al asignar docente: ' +
+                        (cargaErr.message ?? ''),
+                );
+                showHorarioModal.value = false;
+                loadHorarios();
+                return;
+            }
+
+            toast.success(
+                isEdit
+                    ? 'Horario y docente actualizados.'
+                    : 'Horario creado y docente asignado.',
+            );
+        } else {
             toast.success(
                 isEdit ? 'Horario actualizado.' : 'Horario registrado.',
             );
-            showHorarioModal.value = false;
-            loadHorarios();
-        } else {
-            toast.error(result.message || 'Error al procesar el formulario.');
         }
+
+        showHorarioModal.value = false;
+        loadHorarios();
     } catch (e) {
         console.error(e);
         toast.error('Error de conexión.');
+    } finally {
+        submittingHorario.value = false;
     }
 }
 
@@ -308,9 +318,7 @@ function confirmDeleteHorario(horario: any) {
 }
 
 async function executeDeleteHorario() {
-    if (!deletingHorario.value) {
-return;
-}
+    if (!deletingHorario.value) return;
 
     submittingDelete.value = true;
 
@@ -343,147 +351,10 @@ return;
     }
 }
 
-// ── Asignación Docente ────────────────────────────────────────────────────────
+// ── Asignación Docente — se abre el modal unificado ───────────────────────────
 function openAssignTeacher(horario: any) {
-    targetHorario.value = horario;
-    showAssignModal.value = true;
-
-    const cargaExistente = horario.cargas?.[0];
-
-    if (cargaExistente?.trabajador) {
-        // Pre-poblar con el docente ya asignado
-        const w = cargaExistente.trabajador;
-        workersList.value = [w];
-        selectedWorkerId.value = String(w.id);
-        selectedWorker.value = w;
-        selectedAltaId.value = cargaExistente.altaTrabajador_id
-            ? String(cargaExistente.altaTrabajador_id)
-            : '';
-        fechaInicio.value = cargaExistente.fechaInicio ?? '';
-        fechaFin.value = cargaExistente.fechaFin ?? '';
-        titularSuplencia.value = cargaExistente.titularSuplencia ?? 'T';
-    } else {
-        // Sin asignación previa — limpiar y buscar docentes
-        selectedWorkerId.value = null;
-        workersList.value = [];
-        selectedWorker.value = null;
-        selectedAltaId.value = '';
-        fechaInicio.value = '';
-        fechaFin.value = '';
-        titularSuplencia.value = 'T';
-        triggerSearchWorkers('');
-    }
-}
-
-async function triggerSearchWorkers(query = '') {
-    searchingWorkers.value = true;
-
-    try {
-        const params = new URLSearchParams();
-
-        if (query.trim()) {
-            params.set('search', query);
-        }
-
-        // Filtrar por IE seleccionada para mostrar solo docentes dados de alta ahí
-        if (selectedIE.value) {
-params.set('ie_id', selectedIE.value);
-}
-
-        const res = await fetch(
-            `/api/trabajadores/search?${params.toString()}`,
-        );
-
-        if (res.ok) {
-workersList.value = await res.json();
-}
-    } catch (e) {
-        console.error(e);
-    } finally {
-        searchingWorkers.value = false;
-    }
-}
-
-let workerSearchTimeout: any = null;
-function handleWorkerSearch(query: string) {
-    if (workerSearchTimeout) {
-        clearTimeout(workerSearchTimeout);
-    }
-
-    workerSearchTimeout = setTimeout(() => {
-        triggerSearchWorkers(query);
-    }, 300);
-}
-
-function onWorkerSelected(workerId: string | number | null) {
-    if (!workerId) {
-        selectedWorker.value = null;
-        selectedAltaId.value = '';
-
-        return;
-    }
-
-    const w = workersList.value.find((x) => String(x.id) === String(workerId));
-
-    if (w) {
-        selectedWorker.value = w;
-        selectedAltaId.value =
-            w.altas?.length === 1 ? String(w.altas[0].id) : '';
-    }
-}
-
-async function handleAssignSubmit() {
-    if (!selectedWorker.value || !targetHorario.value) {
-return;
-}
-
-    submittingAssign.value = true;
-
-    const cargaExistente = targetHorario.value.cargas?.[0];
-    const isEdit = !!cargaExistente;
-    const url = isEdit
-        ? `/cargas/${cargaExistente.id}`
-        : `/horarios-cursos/${targetHorario.value.id}/cargas`;
-    const method = isEdit ? 'PUT' : 'POST';
-
-    try {
-        const res = await fetch(url, {
-            method,
-            headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-                'X-CSRF-TOKEN': csrfToken(),
-            },
-            body: JSON.stringify({
-                horarioCurso_id: targetHorario.value.id,
-                trabajador_id: selectedWorker.value.id,
-                altaTrabajador_id: selectedAltaId.value
-                    ? Number(selectedAltaId.value)
-                    : null,
-                fechaInicio: fechaInicio.value || null,
-                fechaFin: fechaFin.value || null,
-                titularSuplencia: titularSuplencia.value,
-            }),
-        });
-        const result = await res.json();
-
-        if (res.ok) {
-            toast.success(
-                isEdit
-                    ? 'Asignación actualizada y horario recalculado.'
-                    : 'Docente asignado y horario consolidado exitosamente.',
-            );
-            showAssignModal.value = false;
-            loadHorarios();
-        } else {
-            toast.error(result.message || 'Error al procesar la asignación.');
-        }
-    } catch (e) {
-        console.error(e);
-        toast.error('Error en el servidor.');
-    } finally {
-        submittingAssign.value = false;
-    }
+    editingHorario.value = horario;
+    showHorarioModal.value = true;
 }
 
 async function removeAssign(cargaId: number) {
@@ -491,9 +362,8 @@ async function removeAssign(cargaId: number) {
         !confirm(
             '¿Desasignar al docente de este curso? Se recalculará su horario.',
         )
-    ) {
-return;
-}
+    )
+        return;
 
     try {
         const res = await fetch(`/horarios-cursos/cargas/${cargaId}`, {
@@ -518,16 +388,9 @@ return;
 }
 
 function formatWorkerName(worker: any) {
-    if (!worker?.persona) {
-return '';
-}
-
+    if (!worker?.persona) return '';
     return `${worker.persona.paterno} ${worker.persona.materno}, ${worker.persona.nombre}`;
 }
-
-// Reactivo de workerId para el SearchSelect de docente
-const selectedWorkerId = ref<string | null>(null);
-watch(selectedWorkerId, (val) => onWorkerSelected(val));
 </script>
 
 <template>
@@ -575,7 +438,7 @@ watch(selectedWorkerId, (val) => onWorkerSelected(val));
                     </Select>
                 </div>
 
-                <!-- IE — solo lectura, muestra la IE del contexto -->
+                <!-- IE — solo lectura -->
                 <div class="w-full space-y-1.5 sm:min-w-[300px] sm:flex-1">
                     <Label
                         class="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
@@ -830,7 +693,7 @@ watch(selectedWorkerId, (val) => onWorkerSelected(val));
         </div>
     </div>
 
-    <!-- ── Modal: Crear / Editar HorarioCurso ─────────────────────────────── -->
+    <!-- ── Modal: Crear / Editar HorarioCurso (con asignación de docente) ───── -->
     <FormModal
         v-model:show="showHorarioModal"
         :title="
@@ -844,13 +707,18 @@ watch(selectedWorkerId, (val) => onWorkerSelected(val));
                 : `Nuevo horario — Sección ${selectedSeccionLabel} · ${selectedGradoLabel} · ${selectedAnio}`
         "
         maxWidth="2xl"
+        :submitText="editingHorario ? 'Actualizar' : 'Crear Horario'"
+        :processing="submittingHorario"
+        @submit="horarioFormRef?.handleSubmit()"
         @close="showHorarioModal = false"
     >
         <HorarioForm
+            ref="horarioFormRef"
             :seccionId="Number(selectedSeccion)"
             :anio="Number(selectedAnio)"
             :cursos="cursos"
             :horarioCurso="editingHorario"
+            :ieId="Number(selectedIE) || null"
             @submit="handleHorarioSubmit"
             @cancel="showHorarioModal = false"
         />
@@ -867,142 +735,4 @@ watch(selectedWorkerId, (val) => onWorkerSelected(val));
         @confirm="executeDeleteHorario"
         @cancel="showDeleteConfirm = false"
     />
-
-    <!-- ── Modal: Asignar Docente ──────────────────────────────────────────── -->
-    <FormModal
-        v-model:show="showAssignModal"
-        :title="targetHorario?.cargas?.length ? 'Editar Docente Asignado' : 'Asignar Docente al Curso'"
-        :description="`${targetHorario?.curso?.nombre ?? ''} — ${DAYS_LABEL[targetHorario?.nroDia] ?? ''} ${targetHorario?.horaInicio?.substring(0, 5) ?? ''} - ${targetHorario?.horaFin?.substring(0, 5) ?? ''}`"
-        maxWidth="xl"
-        :submitText="selectedWorker ? (targetHorario?.cargas?.length ? 'Guardar Cambios' : 'Asignar Docente') : ''"
-        :processing="submittingAssign"
-        @submit="handleAssignSubmit"
-        @close="showAssignModal = false"
-    >
-        <div class="min-h-[350px] space-y-5">
-            <!-- Buscador de docentes con SearchSelect -->
-            <div class="space-y-1.5">
-                <Label class="text-sm font-semibold"
-                    >Docente / Trabajador</Label
-                >
-                <SearchSelect
-                    v-model="selectedWorkerId"
-                    :items="workerItems"
-                    placeholder="Buscar y seleccionar docente..."
-                    :loading="searchingWorkers"
-                    clearable
-                    @search="handleWorkerSearch"
-                />
-            </div>
-
-            <!-- Datos del docente seleccionado + formulario de asignación -->
-            <template v-if="selectedWorker">
-                <!-- Card docente -->
-                <div
-                    class="flex items-start gap-3 rounded-xl border bg-muted/20 p-4"
-                >
-                    <div
-                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300"
-                    >
-                        <User class="h-5 w-5" />
-                    </div>
-                    <div class="min-w-0">
-                        <p class="text-sm font-bold">
-                            {{ formatWorkerName(selectedWorker) }}
-                        </p>
-                        <p class="text-xs text-muted-foreground">
-                            DNI: {{ selectedWorker.persona?.docIdentidad }} |
-                            Cód: {{ selectedWorker.codigo }}
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Alta / Contrato -->
-                <div class="space-y-1.5">
-                    <Label class="text-sm font-semibold"
-                        >Contrato / Alta *</Label
-                    >
-                    <SearchSelect
-                        v-model="selectedAltaId"
-                        :items="
-                            (selectedWorker.altas ?? []).map((a: any) => ({
-                                id: String(a.id),
-                                label: `${a.codigoAirsp ? 'AIRSP: ' + a.codigoAirsp : 'Contrato activo'} — ${a.cargo?.nombre ?? 'Cargo general'}`,
-                                sublabel: `IE: ${a.institucion_educativa?.nombreLegal ?? '—'}`,
-                            }))
-                        "
-                        placeholder="Seleccione un contrato activo..."
-                    />
-                    <p
-                        v-if="!selectedWorker.altas?.length"
-                        class="text-xs font-medium text-red-500"
-                    >
-                        Este trabajador no tiene contratos activos.
-                    </p>
-                </div>
-
-                <!-- Condición -->
-                <div class="space-y-1.5">
-                    <Label class="text-sm font-semibold"
-                        >Condición del Cargo</Label
-                    >
-                    <div class="flex gap-6">
-                        <label
-                            class="flex cursor-pointer items-center gap-2 text-sm font-medium"
-                        >
-                            <input
-                                type="radio"
-                                v-model="titularSuplencia"
-                                value="T"
-                                class="h-4 w-4"
-                            />
-                            Titular
-                        </label>
-                        <label
-                            class="flex cursor-pointer items-center gap-2 text-sm font-medium"
-                        >
-                            <input
-                                type="radio"
-                                v-model="titularSuplencia"
-                                value="S"
-                                class="h-4 w-4"
-                            />
-                            Suplente
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Fechas -->
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="space-y-1.5">
-                        <Label class="text-xs font-semibold">
-                            Fecha Inicio
-                            <span class="font-normal text-muted-foreground"
-                                >(Opcional)</span
-                            >
-                        </Label>
-                        <Input type="date" v-model="fechaInicio" />
-                    </div>
-                    <div class="space-y-1.5">
-                        <Label class="text-xs font-semibold">
-                            Fecha Fin
-                            <span class="font-normal text-muted-foreground"
-                                >(Opcional)</span
-                            >
-                        </Label>
-                        <Input type="date" v-model="fechaFin" />
-                    </div>
-                </div>
-
-                <!-- Nota -->
-                <div
-                    class="flex items-center gap-2 rounded-lg border border-dashed bg-muted/10 px-3 py-2 text-xs text-muted-foreground"
-                >
-                    <CalendarDays class="h-3.5 w-3.5 shrink-0" />
-                    El horario del docente se recalculará automáticamente al
-                    guardar.
-                </div>
-            </template>
-        </div>
-    </FormModal>
 </template>

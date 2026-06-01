@@ -209,13 +209,13 @@ function executeDelete() {
         <div class="flex items-center gap-2">
             <div class="relative w-full max-w-md">
                 <Search
-                    class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"
+                    class="absolute top-2.5 left-3 h-4 w-4 text-muted-foreground"
                 />
                 <input
                     v-model="search"
                     type="text"
                     placeholder="Buscar por código, código modular o nombre..."
-                    class="flex h-9 w-full rounded-md border border-input bg-transparent py-1 pl-9 pr-3 text-sm shadow-xs placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:outline-none"
+                    class="flex h-9 w-full rounded-md border border-input bg-transparent py-1 pr-3 pl-9 text-sm shadow-xs placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:outline-none"
                 />
             </div>
         </div>
@@ -226,9 +226,7 @@ function executeDelete() {
                 <TableHeader>
                     <TableRow>
                         <TableHead class="w-[140px]">Código</TableHead>
-                        <TableHead class="w-[130px]"
-                            >Cód. Modular</TableHead
-                        >
+                        <TableHead class="w-[130px]">Cód. Modular</TableHead>
                         <TableHead>Nombre Legal</TableHead>
                         <TableHead>Tipo</TableHead>
                         <TableHead>Nivel/Ciclo</TableHead>
@@ -257,7 +255,7 @@ function executeDelete() {
                             </div>
                             <div
                                 v-if="ie.entidad_admin"
-                                class="inline-flex items-center rounded-md border border-muted px-2 py-0.5 text-xs font-medium bg-muted/50 text-muted-foreground"
+                                class="inline-flex items-center rounded-md border border-muted bg-muted/50 px-2 py-0.5 text-xs font-medium text-muted-foreground"
                             >
                                 {{ ie.entidad_admin.razonSocial }}
                             </div>
@@ -351,8 +349,7 @@ function executeDelete() {
                             router.get(
                                 InstitucionEducativaController.index().url,
                                 {
-                                    page:
-                                        props.instituciones.current_page - 1,
+                                    page: props.instituciones.current_page - 1,
                                     search: search || undefined,
                                 },
                             )
@@ -371,8 +368,7 @@ function executeDelete() {
                             router.get(
                                 InstitucionEducativaController.index().url,
                                 {
-                                    page:
-                                        props.instituciones.current_page + 1,
+                                    page: props.instituciones.current_page + 1,
                                     search: search || undefined,
                                 },
                             )
@@ -403,8 +399,7 @@ function executeDelete() {
                         v-model="form.codigoInstitucion"
                         placeholder="Ej: 0123456"
                         :class="{
-                            'border-destructive':
-                                form.errors.codigoInstitucion,
+                            'border-destructive': form.errors.codigoInstitucion,
                         }"
                     />
                     <p

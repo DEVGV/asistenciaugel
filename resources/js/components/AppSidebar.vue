@@ -94,7 +94,6 @@ const mainNavItems: NavItem[] = [
         ],
     },
 ];
-
 </script>
 
 <template>

@@ -126,8 +126,8 @@ function confirmDelete(condicion: CondicionLaboral) {
 
 function executeDelete() {
     if (!condicionToDelete.value) {
-return;
-}
+        return;
+    }
 
     isDeleting.value = true;
     router.delete(
@@ -182,7 +182,11 @@ return;
                             condicion.nombre
                         }}</TableCell>
                         <TableCell>
-                            <Badge v-if="condicion.abreviatura" variant="outline" class="font-semibold uppercase tracking-wider text-[10px] bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800">
+                            <Badge
+                                v-if="condicion.abreviatura"
+                                variant="outline"
+                                class="border-sky-200 bg-sky-50 text-[10px] font-semibold tracking-wider text-sky-700 uppercase dark:border-sky-800 dark:bg-sky-950 dark:text-sky-300"
+                            >
                                 {{ condicion.abreviatura }}
                             </Badge>
                             <span v-else>-</span>

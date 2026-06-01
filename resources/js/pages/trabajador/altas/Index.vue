@@ -15,7 +15,10 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import altasRoutes from '@/routes/altas';
-import type { AltaTrabajador, PaginatedResponse } from '@/types/models/trabajador';
+import type {
+    AltaTrabajador,
+    PaginatedResponse,
+} from '@/types/models/trabajador';
 
 defineOptions({
     layout: {
@@ -69,20 +72,38 @@ function estaActiva(alta: AltaTrabajador): boolean {
         <!-- Encabezado -->
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-bold tracking-tight">Altas de Trabajadores</h1>
-                <p class="text-sm text-muted-foreground">Listado global de vinculaciones laborales por institución educativa.</p>
+                <h1 class="text-2xl font-bold tracking-tight">
+                    Altas de Trabajadores
+                </h1>
+                <p class="text-sm text-muted-foreground">
+                    Listado global de vinculaciones laborales por institución
+                    educativa.
+                </p>
             </div>
         </div>
 
         <!-- Filtros -->
         <div class="flex flex-wrap items-center gap-3">
-            <div class="relative flex-1 min-w-[200px]">
-                <Search class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input v-model="search" placeholder="Buscar por trabajador, DNI..." class="pl-9" />
+            <div class="relative min-w-[200px] flex-1">
+                <Search
+                    class="absolute top-2.5 left-3 h-4 w-4 text-muted-foreground"
+                />
+                <Input
+                    v-model="search"
+                    placeholder="Buscar por trabajador, DNI..."
+                    class="pl-9"
+                />
             </div>
             <div class="flex items-center gap-2">
                 <Calendar class="h-4 w-4 text-muted-foreground" />
-                <Input v-model="anio" type="number" min="2000" max="2100" class="w-24" placeholder="Año" />
+                <Input
+                    v-model="anio"
+                    type="number"
+                    min="2000"
+                    max="2100"
+                    class="w-24"
+                    placeholder="Año"
+                />
             </div>
             <label class="flex cursor-pointer items-center gap-2 text-sm">
                 <input
@@ -95,7 +116,7 @@ function estaActiva(alta: AltaTrabajador): boolean {
         </div>
 
         <!-- Tabla -->
-        <div class="rounded-md border bg-card shadow-xs overflow-hidden">
+        <div class="overflow-hidden rounded-md border bg-card shadow-xs">
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -116,31 +137,74 @@ function estaActiva(alta: AltaTrabajador): boolean {
                     <TableRow v-for="alta in props.altas.data" :key="alta.id">
                         <TableCell>
                             <Link
-                                :href="TrabajadorController.show({ trabajador: alta.trabajador_id }).url"
+                                :href="
+                                    TrabajadorController.show({
+                                        trabajador: alta.trabajador_id,
+                                    }).url
+                                "
                                 class="group"
                             >
-                                <div class="text-sm font-medium group-hover:text-primary transition-colors">
-                                    {{ alta.trabajador?.persona?.paterno }} {{ alta.trabajador?.persona?.materno }}
+                                <div
+                                    class="text-sm font-medium transition-colors group-hover:text-primary"
+                                >
+                                    {{ alta.trabajador?.persona?.paterno }}
+                                    {{ alta.trabajador?.persona?.materno }}
                                 </div>
                                 <div class="text-xs text-muted-foreground">
-                                    {{ alta.trabajador?.codigo }} · {{ alta.trabajador?.persona?.docIdentidad }}
+                                    {{ alta.trabajador?.codigo }} ·
+                                    {{ alta.trabajador?.persona?.docIdentidad }}
                                 </div>
                             </Link>
                         </TableCell>
                         <TableCell>
-                            <div class="text-sm font-medium">{{ (alta.institucion_educativa || alta.institucionEducativa)?.nombreLegal || '-' }}</div>
-                            <div v-if="alta.codigoAirsp" class="text-xs text-muted-foreground">AIRSP: {{ alta.codigoAirsp }}</div>
+                            <div class="text-sm font-medium">
+                                {{
+                                    (
+                                        alta.institucion_educativa ||
+                                        alta.institucionEducativa
+                                    )?.nombreLegal || '-'
+                                }}
+                            </div>
+                            <div
+                                v-if="alta.codigoAirsp"
+                                class="text-xs text-muted-foreground"
+                            >
+                                AIRSP: {{ alta.codigoAirsp }}
+                            </div>
                         </TableCell>
                         <TableCell>
-                            <div class="text-xs font-medium">{{ (alta.condicion_laboral || alta.condicionLaboral)?.abreviatura || (alta.condicion_laboral || alta.condicionLaboral)?.nombre || '-' }}</div>
-                            <div class="text-xs text-muted-foreground">{{ (alta.rol_trabajador || alta.rolTrabajador)?.nombre || '-' }}</div>
+                            <div class="text-xs font-medium">
+                                {{
+                                    (
+                                        alta.condicion_laboral ||
+                                        alta.condicionLaboral
+                                    )?.abreviatura ||
+                                    (
+                                        alta.condicion_laboral ||
+                                        alta.condicionLaboral
+                                    )?.nombre ||
+                                    '-'
+                                }}
+                            </div>
+                            <div class="text-xs text-muted-foreground">
+                                {{
+                                    (alta.rol_trabajador || alta.rolTrabajador)
+                                        ?.nombre || '-'
+                                }}
+                            </div>
                         </TableCell>
-                        <TableCell class="text-xs">{{ alta.fechaInicio }}</TableCell>
+                        <TableCell class="text-xs">{{
+                            alta.fechaInicio
+                        }}</TableCell>
                         <TableCell class="text-xs">
                             <div v-if="alta.fechaBaja" class="text-destructive">
                                 {{ alta.fechaBaja }}
                             </div>
-                            <span v-else-if="alta.fechaFin" class="text-muted-foreground">{{ alta.fechaFin }}</span>
+                            <span
+                                v-else-if="alta.fechaFin"
+                                class="text-muted-foreground"
+                                >{{ alta.fechaFin }}</span
+                            >
                             <span v-else class="text-muted-foreground">—</span>
                         </TableCell>
                         <TableCell>
@@ -152,7 +216,10 @@ function estaActiva(alta: AltaTrabajador): boolean {
                         </TableCell>
                     </TableRow>
                     <TableRow v-if="!props.altas.data.length">
-                        <TableCell colspan="6" class="h-24 text-center text-muted-foreground">
+                        <TableCell
+                            colspan="6"
+                            class="h-24 text-center text-muted-foreground"
+                        >
                             No se encontraron altas con los filtros aplicados.
                         </TableCell>
                     </TableRow>
@@ -165,21 +232,46 @@ function estaActiva(alta: AltaTrabajador): boolean {
                 class="flex items-center justify-between border-t px-4 py-3"
             >
                 <span class="text-sm text-muted-foreground">
-                    Página {{ props.altas.current_page }} de {{ props.altas.last_page }}
-                    ({{ props.altas.total }} registros)
+                    Página {{ props.altas.current_page }} de
+                    {{ props.altas.last_page }} ({{ props.altas.total }}
+                    registros)
                 </span>
                 <div class="flex gap-2">
                     <Button
-                        variant="outline" size="sm"
+                        variant="outline"
+                        size="sm"
                         :disabled="props.altas.current_page <= 1"
-                        @click="router.get(altasRoutes.index().url, { page: props.altas.current_page - 1, search: search || undefined, anio: anio || undefined }, { preserveState: true })"
+                        @click="
+                            router.get(
+                                altasRoutes.index().url,
+                                {
+                                    page: props.altas.current_page - 1,
+                                    search: search || undefined,
+                                    anio: anio || undefined,
+                                },
+                                { preserveState: true },
+                            )
+                        "
                     >
                         Anterior
                     </Button>
                     <Button
-                        variant="outline" size="sm"
-                        :disabled="props.altas.current_page >= props.altas.last_page"
-                        @click="router.get(altasRoutes.index().url, { page: props.altas.current_page + 1, search: search || undefined, anio: anio || undefined }, { preserveState: true })"
+                        variant="outline"
+                        size="sm"
+                        :disabled="
+                            props.altas.current_page >= props.altas.last_page
+                        "
+                        @click="
+                            router.get(
+                                altasRoutes.index().url,
+                                {
+                                    page: props.altas.current_page + 1,
+                                    search: search || undefined,
+                                    anio: anio || undefined,
+                                },
+                                { preserveState: true },
+                            )
+                        "
                     >
                         Siguiente
                     </Button>

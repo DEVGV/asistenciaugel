@@ -65,8 +65,8 @@ const filteredItems = computed(() => {
     const q = searchQuery.value.toLowerCase().trim();
 
     if (!q) {
-return props.items.slice(0, 150);
-}
+        return props.items.slice(0, 150);
+    }
 
     return props.items
         .filter(
@@ -79,14 +79,14 @@ return props.items.slice(0, 150);
 
 function toggleDropdown() {
     if (props.disabled || props.loading) {
-return;
-}
+        return;
+    }
 
     isOpen.value = !isOpen.value;
 
     if (isOpen.value) {
-searchQuery.value = '';
-}
+        searchQuery.value = '';
+    }
 }
 
 function selectItem(item: T) {
@@ -111,8 +111,8 @@ watch(
             const found = props.items.find((i) => String(i.id) === String(val));
 
             if (found) {
-emit('update:item', found);
-}
+                emit('update:item', found);
+            }
         }
     },
 );

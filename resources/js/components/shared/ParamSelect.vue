@@ -111,8 +111,8 @@ watch(
             );
 
             if (item) {
-emit('update:item', item);
-}
+                emit('update:item', item);
+            }
         }
     },
 );
@@ -135,8 +135,8 @@ const filteredData = computed(() => {
 
 const selectedItemName = computed(() => {
     if (!props.modelValue) {
-return '';
-}
+        return '';
+    }
 
     const item = data.value.find(
         (i) => String(i.id) === String(props.modelValue),
@@ -147,8 +147,8 @@ return '';
 
 function toggleDropdown() {
     if (props.disabled || loading.value) {
-return;
-}
+        return;
+    }
 
     isOpen.value = !isOpen.value;
 

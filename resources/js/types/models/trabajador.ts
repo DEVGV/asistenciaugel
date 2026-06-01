@@ -32,10 +32,26 @@ export interface AltaTrabajador {
     created_by: number | null;
     // Relations
     trabajador?: Trabajador;
-    institucionEducativa?: { id: number; nombreLegal: string | null; codigoInstitucion: string | null };
-    institucion_educativa?: { id: number; nombreLegal: string | null; codigoInstitucion: string | null };
-    condicionLaboral?: { id: number; nombre: string | null; abreviatura: string | null };
-    condicion_laboral?: { id: number; nombre: string | null; abreviatura: string | null };
+    institucionEducativa?: {
+        id: number;
+        nombreLegal: string | null;
+        codigoInstitucion: string | null;
+    };
+    institucion_educativa?: {
+        id: number;
+        nombreLegal: string | null;
+        codigoInstitucion: string | null;
+    };
+    condicionLaboral?: {
+        id: number;
+        nombre: string | null;
+        abreviatura: string | null;
+    };
+    condicion_laboral?: {
+        id: number;
+        nombre: string | null;
+        abreviatura: string | null;
+    };
     tipoContrato?: { id: number; nombre: string | null };
     tipo_contrato?: { id: number; nombre: string | null };
     rolTrabajador?: { id: number; nombre: string | null };

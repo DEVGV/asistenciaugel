@@ -63,8 +63,8 @@ const mappedHorarios = computed(() => {
 // Calcular el total de horas semanales acumuladas
 const totalHorasSemanales = computed(() => {
     if (!props.horario.detalles) {
-return 0;
-}
+        return 0;
+    }
 
     return props.horario.detalles
         .filter((d: any) => d.aplicar)
