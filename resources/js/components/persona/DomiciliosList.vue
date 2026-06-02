@@ -5,8 +5,8 @@ import { ref } from 'vue';
 import DomicilioController from '@/actions/App/Http/Controllers/Persona/DomicilioController';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import FormModal from '@/components/shared/FormModal.vue';
-import StatusBadge from '@/components/shared/StatusBadge.vue';
 import ParamSelect from '@/components/shared/ParamSelect.vue';
+import StatusBadge from '@/components/shared/StatusBadge.vue';
 import ZonaSelect from '@/components/shared/ZonaSelect.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,7 +66,7 @@ async function openEdit(item: Domicilio) {
     form.ubigeo = item.ubigeo || '';
     form.fechaInicio = item.fechaInicio || '';
     form.fechaFin = item.fechaFin || '';
-    
+
     selectedDepartamento.value = null;
     selectedProvincia.value = null;
     selectedDistrito.value = null;
@@ -74,6 +74,7 @@ async function openEdit(item: Domicilio) {
     if (item.ubigeo) {
         try {
             const res = await fetch(`/api/params/ubigeo/${item.ubigeo}`);
+
             if (res.ok) {
                 const data = await res.json();
                 selectedDepartamento.value = data.departamento_id;
@@ -84,7 +85,7 @@ async function openEdit(item: Domicilio) {
             console.error('Error fetching ubigeo hierarchy', e);
         }
     }
-    
+
     showModal.value = true;
 }
 
@@ -114,8 +115,8 @@ function confirmDelete(item: Domicilio) {
 
 function executeDelete() {
     if (!itemToDelete.value) {
-return;
-}
+        return;
+    }
 
     isDeleting.value = true;
     router.delete(
@@ -210,15 +211,20 @@ return;
         >
             <div class="grid gap-6">
                 <!-- Fila 1: Dirección y Departamento -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="md:col-span-2 grid gap-2">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div class="grid gap-2 md:col-span-2">
                         <Label>Dirección *</Label>
                         <Input
                             v-model="form.domicilio"
                             placeholder="Av. / Jr. / Calle..."
-                            :class="{ 'border-destructive': form.errors.domicilio }"
+                            :class="{
+                                'border-destructive': form.errors.domicilio,
+                            }"
                         />
-                        <p v-if="form.errors.domicilio" class="text-sm text-destructive">
+                        <p
+                            v-if="form.errors.domicilio"
+                            class="text-sm text-destructive"
+                        >
                             {{ form.errors.domicilio }}
                         </p>
                     </div>
@@ -240,7 +246,7 @@ return;
                 </div>
 
                 <!-- Fila 2: Provincia, Distrito y Zona -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <div class="grid gap-2">
                         <ParamSelect
                             type="provincias"
@@ -265,9 +271,11 @@ return;
                             v-model="selectedDistrito"
                             placeholder="Seleccionar..."
                             :disabled="!selectedProvincia"
-                            @update:item="(item) => {
-                                form.ubigeo = item ? (item.codigo || '') : '';
-                            }"
+                            @update:item="
+                                (item) => {
+                                    form.ubigeo = item ? item.codigo || '' : '';
+                                }
+                            "
                         />
                     </div>
                     <div class="grid gap-2">
@@ -283,21 +291,26 @@ return;
                 </div>
 
                 <!-- Fila 3: Ubigeo y Fechas -->
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end border-t pt-4">
-                    <div class="md:col-span-1 grid gap-2">
-                        <Label class="text-xs font-bold text-muted-foreground uppercase">Ubigeo</Label>
+                <div
+                    class="grid grid-cols-1 items-end gap-4 border-t pt-4 md:grid-cols-5"
+                >
+                    <div class="grid gap-2 md:col-span-1">
+                        <Label
+                            class="text-xs font-bold text-muted-foreground uppercase"
+                            >Ubigeo</Label
+                        >
                         <Input
                             v-model="form.ubigeo"
                             placeholder="000000"
                             maxlength="6"
-                            class="h-9 font-mono font-bold bg-muted/30"
+                            class="h-9 bg-muted/30 font-mono font-bold"
                         />
                     </div>
-                    <div class="md:col-span-2 grid gap-2">
+                    <div class="grid gap-2 md:col-span-2">
                         <Label>Fecha Inicio</Label>
                         <Input v-model="form.fechaInicio" type="date" />
                     </div>
-                    <div class="md:col-span-2 grid gap-2">
+                    <div class="grid gap-2 md:col-span-2">
                         <Label>Fecha de Baja</Label>
                         <Input v-model="form.fechaFin" type="date" />
                     </div>

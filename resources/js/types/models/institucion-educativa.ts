@@ -1,5 +1,5 @@
-import type { ParamSimple } from './params';
 import type { LocalInstEduc } from './infraestructura';
+import type { ParamSimple } from './params';
 
 export interface Entidad {
     id: number;
@@ -66,6 +66,8 @@ export interface SeccionIE {
     sigla: string | null;
     created_by: number;
     activo: boolean;
+    // Relations
+    grado?: GradoIE;
 }
 
 export interface PaginatedResponse<T> {

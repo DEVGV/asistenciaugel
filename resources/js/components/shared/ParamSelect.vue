@@ -21,29 +21,50 @@ const emit = defineEmits<{
     (e: 'update:item', item: ParamSimple | null): void;
 }>();
 
+// Determina si este select requiere parentId para cargar datos
+const requiresParent = ['provincias', 'distritos'].includes(props.type);
+
 const data = ref<ParamSimple[]>([]);
-const loading = ref(true);
+const loading = ref(false);
 const isOpen = ref(false);
 const searchQuery = ref('');
 const target = ref(null);
+
+// AbortController para cancelar fetches en vuelo cuando llega uno nuevo
+let abortController: AbortController | null = null;
 
 onClickOutside(target, () => {
     isOpen.value = false;
 });
 
 async function fetchData() {
+    // Si requiere padre y no lo tiene, limpiar y no fetchear
+    if (requiresParent && !props.parentId) {
+        data.value = [];
+        loading.value = false;
+        return;
+    }
+
+    // Cancelar fetch anterior si sigue en vuelo
+    if (abortController) {
+        abortController.abort();
+    }
+    abortController = new AbortController();
+    const signal = abortController.signal;
+
     loading.value = true;
+    data.value = [];
 
     try {
         const url = props.parentId
             ? `/api/params/${props.type}?parent_id=${props.parentId}`
             : `/api/params/${props.type}`;
 
-        const response = await fetch(url);
+        const response = await fetch(url, { signal });
 
         if (!response.ok) {
-throw new Error('Network response was not ok');
-}
+            throw new Error('Network response was not ok');
+        }
 
         const json = await response.json();
         data.value = json.data;
@@ -57,8 +78,10 @@ throw new Error('Network response was not ok');
                 emit('update:item', initialItem);
             }
         }
-    } catch (e) {
-        console.error(`Error loading params for ${props.type}`, e);
+    } catch (e: any) {
+        if (e?.name !== 'AbortError') {
+            console.error(`Error loading params for ${props.type}`, e);
+        }
     } finally {
         loading.value = false;
     }
@@ -70,8 +93,10 @@ onMounted(() => {
 
 watch(
     () => props.parentId,
-    () => {
-        fetchData();
+    (newVal, oldVal) => {
+        if (newVal !== oldVal) {
+            fetchData();
+        }
     },
 );
 
@@ -86,8 +111,8 @@ watch(
             );
 
             if (item) {
-emit('update:item', item);
-}
+                emit('update:item', item);
+            }
         }
     },
 );
@@ -110,8 +135,8 @@ const filteredData = computed(() => {
 
 const selectedItemName = computed(() => {
     if (!props.modelValue) {
-return '';
-}
+        return '';
+    }
 
     const item = data.value.find(
         (i) => String(i.id) === String(props.modelValue),
@@ -122,8 +147,8 @@ return '';
 
 function toggleDropdown() {
     if (props.disabled || loading.value) {
-return;
-}
+        return;
+    }
 
     isOpen.value = !isOpen.value;
 

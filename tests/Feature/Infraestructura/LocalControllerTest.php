@@ -5,10 +5,8 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 use function Pest\Laravel\actingAs;
-use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
 use function Pest\Laravel\post;
-use function Pest\Laravel\put;
 
 uses(DatabaseTransactions::class);
 
@@ -24,9 +22,10 @@ it('can list locales', function () {
 });
 
 it('can store a new local', function () {
-    post(route('locales.store'), [
-        'nombre' => 'Local Test '.fake()->word(),
-    ])->assertRedirect(route('locales.index'));
+    $this->from(route('locales.index'))
+        ->post(route('locales.store'), [
+            'nombre' => 'Local Test '.fake()->word(),
+        ])->assertRedirect(route('locales.index'));
 
     expect(ConasisLocales::where('activo', true)->count())->toBeGreaterThan(0);
 });
@@ -43,9 +42,10 @@ it('can update a local', function () {
         'activo' => true,
     ]);
 
-    put(route('locales.update', $local), [
-        'nombre' => 'Local Updated',
-    ])->assertRedirect(route('locales.index'));
+    $this->from(route('locales.index'))
+        ->put(route('locales.update', $local), [
+            'nombre' => 'Local Updated',
+        ])->assertRedirect(route('locales.index'));
 
     expect($local->fresh()->nombre)->toBe('Local Updated');
 });
@@ -57,7 +57,8 @@ it('can soft-delete a local', function () {
         'activo' => true,
     ]);
 
-    delete(route('locales.destroy', $local))
+    $this->from(route('locales.index'))
+        ->delete(route('locales.destroy', $local))
         ->assertRedirect(route('locales.index'));
 
     expect($local->fresh()->activo)->toBeFalse();

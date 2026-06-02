@@ -5,11 +5,15 @@ use App\Http\Controllers\Configuracion\CargoController;
 use App\Http\Controllers\Configuracion\CondicionLaboralController;
 use App\Http\Controllers\Configuracion\ZonaController;
 use App\Http\Controllers\Entidad\EntidadController;
+use App\Http\Controllers\Horario\CargaHorariaController;
+use App\Http\Controllers\Horario\HorarioCursoController;
+use App\Http\Controllers\Horario\HorarioTrabajadorController;
 use App\Http\Controllers\Infraestructura\DispositivoMarcaController;
 use App\Http\Controllers\Infraestructura\LocalController;
 use App\Http\Controllers\Infraestructura\LocalInstEducController;
 use App\Http\Controllers\Infraestructura\LocalMarcacionController;
 use App\Http\Controllers\Infraestructura\RelojController;
+use App\Http\Controllers\InstitucionEducativa\AltaMasivaIEController;
 use App\Http\Controllers\InstitucionEducativa\CursoIEController;
 use App\Http\Controllers\InstitucionEducativa\GradoIEController;
 use App\Http\Controllers\InstitucionEducativa\InstitucionEducativaController;
@@ -18,6 +22,8 @@ use App\Http\Controllers\Persona\DomicilioController;
 use App\Http\Controllers\Persona\EmailController;
 use App\Http\Controllers\Persona\PersonaController;
 use App\Http\Controllers\Persona\TelefonoController;
+use App\Http\Controllers\Trabajador\AltaTrabajadorController;
+use App\Http\Controllers\Trabajador\RegistroTrabajadorController;
 use App\Http\Controllers\Trabajador\TrabajadorController;
 use Illuminate\Support\Facades\Route;
 
@@ -48,6 +54,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('personas', PersonaController::class)
         ->only(['index', 'show', 'store', 'update', 'destroy']);
+    Route::post('personas/{persona}/convertir-trabajador', [PersonaController::class, 'convertirTrabajador'])
+        ->name('personas.convertir-trabajador');
 
     Route::resource('personas.telefonos', TelefonoController::class)
         ->only(['store', 'update', 'destroy'])
@@ -65,9 +73,38 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->except(['create'])
         ->parameters(['trabajadores' => 'trabajador']);
 
+    // Registro unificado de trabajador (persona + usuario + alta + perfil)
+    Route::get('registro-trabajador', [RegistroTrabajadorController::class, 'create'])
+        ->name('registro-trabajador.create');
+    Route::post('registro-trabajador', [RegistroTrabajadorController::class, 'store'])
+        ->name('registro-trabajador.store');
+    Route::post('trabajadores-masivos', [RegistroTrabajadorController::class, 'storeMasivo'])
+        ->name('trabajadores.masivo.store');
+
+    // Sub-recurso shallow: store/update/destroy por trabajador o por alta directamente
+    Route::resource('trabajadores.altas', AltaTrabajadorController::class)
+        ->only(['store', 'update', 'destroy'])
+        ->shallow()
+        ->parameters(['trabajadores' => 'trabajador', 'altas' => 'alta']);
+
+    // Ruta global paginada de todas las altas del sistema
+    Route::get('altas', [AltaTrabajadorController::class, 'index'])->name('altas.index');
+
+    // Registrar baja de un alta activa
+    Route::post('altas/{alta}/baja', [AltaTrabajadorController::class, 'darBaja'])
+        ->name('altas.baja');
+
     Route::resource('instituciones', InstitucionEducativaController::class)
         ->except(['create', 'edit'])
         ->parameters(['instituciones' => 'institucione']);
+
+    // Tab Docentes/Personal de una IE (altas paginadas)
+    Route::get('instituciones/{institucione}/docentes', [InstitucionEducativaController::class, 'docentes'])
+        ->name('instituciones.docentes');
+
+    // Carga masiva de altas para una IE
+    Route::post('instituciones/{institucione}/altas-masivas', [AltaMasivaIEController::class, 'store'])
+        ->name('instituciones.altas-masivas.store');
 
     Route::resource('instituciones.cursos', CursoIEController::class)
         ->only(['store', 'update', 'destroy'])
@@ -107,6 +144,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->only(['store', 'destroy'])
         ->shallow()
         ->parameters(['locales-ie' => 'localesIe', 'marcaciones-local' => 'marcacionesLocal']);
+
+    Route::resource('horarios-cursos', HorarioCursoController::class)
+        ->only(['index', 'store', 'update', 'destroy'])
+        ->parameters(['horarios-cursos' => 'horarioCurso']);
+
+    Route::resource('horarios-cursos.cargas', CargaHorariaController::class)
+        ->only(['store', 'update', 'destroy'])
+        ->shallow()
+        ->parameters(['horarios-cursos' => 'horarioCurso', 'cargas' => 'cargaHoraria']);
+
+    Route::resource('horarios-trabajador', HorarioTrabajadorController::class)
+        ->only(['index', 'show'])
+        ->parameters(['horarios-trabajador' => 'horarioTrabajador']);
+
+    // API: listar todos los horarios activos de un trabajador (para el tab Horarios en Show)
+    Route::get('trabajadores/{trabajador}/horarios', [HorarioTrabajadorController::class, 'porTrabajador'])
+        ->name('trabajadores.horarios');
 });
 
 require __DIR__.'/settings.php';

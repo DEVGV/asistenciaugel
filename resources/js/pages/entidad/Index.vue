@@ -120,8 +120,8 @@ function confirmDeleteEntidad(entidad: Entidad) {
 
 function executeDelete() {
     if (!entidadToDelete.value) {
-return;
-}
+        return;
+    }
 
     isDeleting.value = true;
     router.delete(

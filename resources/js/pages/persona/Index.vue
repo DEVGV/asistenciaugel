@@ -10,6 +10,7 @@ import {
     Mail,
     MapPin,
     ChevronDown,
+    UserCheck,
 } from 'lucide-vue-next';
 import { ref, watch, computed } from 'vue';
 import PersonaController from '@/actions/App/Http/Controllers/Persona/PersonaController';
@@ -21,6 +22,7 @@ import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import FormModal from '@/components/shared/FormModal.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
     Dialog,
     DialogContent,
@@ -44,15 +46,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import type { Persona } from '@/types/models/persona';
-
-export interface PaginatedResponse<T> {
-    data: T[];
-    current_page: number;
-    last_page: number;
-    per_page: number;
-    total: number;
-}
+import type { Persona, PaginatedResponse } from '@/types/models/persona';
 
 defineOptions({
     layout: {
@@ -74,8 +68,8 @@ let searchTimeout: any = null;
 
 watch(search, (val) => {
     if (searchTimeout) {
-clearTimeout(searchTimeout);
-}
+        clearTimeout(searchTimeout);
+    }
 
     searchTimeout = setTimeout(() => {
         router.get(
@@ -106,6 +100,7 @@ const form = useForm({
     ubigeo: '',
     foto: '',
     activo: true,
+    es_trabajador: false,
 });
 
 watch(showModal, (val) => {
@@ -171,8 +166,8 @@ function confirmDelete(persona: Persona) {
 
 function executeDelete() {
     if (!personaToDelete.value) {
-return;
-}
+        return;
+    }
 
     isDeleting.value = true;
     router.delete(
@@ -184,6 +179,37 @@ return;
             },
             onFinish: () => {
                 isDeleting.value = false;
+            },
+        },
+    );
+}
+
+// ─── Modal Marcar como Trabajador ───
+const showWorkerModal = ref(false);
+const personaToMarkWorker = ref<Persona | null>(null);
+const isMarkingWorker = ref(false);
+
+function confirmMarkAsWorker(persona: Persona) {
+    personaToMarkWorker.value = persona;
+    showWorkerModal.value = true;
+}
+
+function executeMarkAsWorker() {
+    if (!personaToMarkWorker.value) {
+        return;
+    }
+
+    isMarkingWorker.value = true;
+    router.post(
+        PersonaController.convertirTrabajador({ persona: personaToMarkWorker.value.id }).url,
+        {},
+        {
+            onSuccess: () => {
+                showWorkerModal.value = false;
+                personaToMarkWorker.value = null;
+            },
+            onFinish: () => {
+                isMarkingWorker.value = false;
             },
         },
     );
@@ -278,6 +304,7 @@ const tabs = [
                         <TableHead>Documento</TableHead>
                         <TableHead>Apellidos y Nombres</TableHead>
                         <TableHead>Sexo</TableHead>
+                        <TableHead>Trabajador</TableHead>
                         <TableHead>Estado</TableHead>
                         <TableHead class="text-right">Acciones</TableHead>
                     </TableRow>
@@ -305,6 +332,22 @@ const tabs = [
                             </div>
                         </TableCell>
                         <TableCell>{{ persona.sexo?.nombre || '-' }}</TableCell>
+                        <TableCell>
+                            <Badge
+                                v-if="persona.trabajador && persona.trabajador.activo"
+                                variant="outline"
+                                class="rounded-md border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-green-700 uppercase dark:border-green-800 dark:bg-green-950/30 dark:text-green-400"
+                            >
+                                Sí
+                            </Badge>
+                            <Badge
+                                v-else
+                                variant="outline"
+                                class="rounded-md border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-amber-700 uppercase dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400"
+                            >
+                                No
+                            </Badge>
+                        </TableCell>
                         <TableCell>
                             <StatusBadge :active="persona.activo" />
                         </TableCell>
@@ -338,6 +381,13 @@ const tabs = [
                                         <Pencil class="mr-2 h-4 w-4" />
                                         <span>Editar</span>
                                     </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        v-if="!persona.trabajador || !persona.trabajador.activo"
+                                        @click="confirmMarkAsWorker(persona)"
+                                    >
+                                        <UserCheck class="mr-2 h-4 w-4" />
+                                        <span>Marcar como Trabajador</span>
+                                    </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
                                         @click="confirmDelete(persona)"
@@ -351,7 +401,7 @@ const tabs = [
                         </TableCell>
                     </TableRow>
                     <TableRow v-if="props.personas.data.length === 0">
-                        <TableCell colspan="5" class="h-24 text-center">
+                        <TableCell colspan="6" class="h-24 text-center">
                             No hay personas registradas.
                         </TableCell>
                     </TableRow>
@@ -409,7 +459,7 @@ const tabs = [
             max-width="lg"
             @submit="submitForm"
         >
-            <PersonaForm :form="form" />
+            <PersonaForm :form="form" :is-editing="isEditing" />
         </FormModal>
 
         <!-- Modal Confirmar Eliminación -->
@@ -422,6 +472,17 @@ const tabs = [
             :processing="isDeleting"
             @confirm="executeDelete"
             @cancel="personaToDelete = null"
+        />
+
+        <!-- Modal Confirmar Marcar como Trabajador -->
+        <ConfirmModal
+            v-model:show="showWorkerModal"
+            title="Marcar como Trabajador"
+            :description="`¿Estás seguro de que deseas registrar a ${personaToMarkWorker?.paterno} ${personaToMarkWorker?.materno}, ${personaToMarkWorker?.nombre} como trabajador? Se le creará un usuario con su documento de identidad.`"
+            confirm-text="Confirmar"
+            :processing="isMarkingWorker"
+            @confirm="executeMarkAsWorker"
+            @cancel="personaToMarkWorker = null"
         />
 
         <!-- Modal Detalle con Tabs -->

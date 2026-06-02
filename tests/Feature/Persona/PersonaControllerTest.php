@@ -122,3 +122,72 @@ test('authenticated users can view persona detail', function () {
     $response = $this->get(route('personas.show', $persona));
     $response->assertSuccessful();
 });
+
+test('authenticated users can create a persona and mark them as worker', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $doc = fake()->numerify('########');
+    $data = [
+        'tipoDocIdentidad_id' => 1,
+        'docIdentidad' => $doc,
+        'paterno' => 'WORKER',
+        'materno' => 'TEST',
+        'nombre' => 'JUAN',
+        'sexo_id' => 1,
+        'pais_id' => 1,
+        'activo' => true,
+        'es_trabajador' => true,
+    ];
+
+    $response = $this->post(route('personas.store'), $data);
+
+    $response->assertRedirect(route('personas.index'));
+    $this->assertDatabaseHas('t_personas', [
+        'docIdentidad' => $doc,
+        'paterno' => 'WORKER',
+    ]);
+
+    $persona = Personas::where('docIdentidad', $doc)->first();
+
+    $this->assertDatabaseHas('t_trabajador', [
+        'persona_id' => $persona->id,
+        'activo' => true,
+    ]);
+
+    expect($persona->trabajador)->not->toBeNull();
+    expect($persona->trabajador->user)->not->toBeNull();
+    expect($persona->trabajador->user->login)->toBe($doc);
+});
+
+test('authenticated users can convert an existing persona to a worker', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $doc = fake()->numerify('########');
+    $persona = Personas::create([
+        'tipoDocIdentidad_id' => 1,
+        'docIdentidad' => $doc,
+        'paterno' => 'TO_CONVERT',
+        'materno' => 'TEST',
+        'nombre' => 'JUAN',
+        'sexo_id' => 1,
+        'pais_id' => 1,
+        'created_by' => $user->id,
+        'activo' => true,
+    ]);
+
+    // load relation explicitly
+    $persona->load('trabajador');
+    expect($persona->trabajador)->toBeNull();
+
+    $response = $this->post(route('personas.convertir-trabajador', $persona));
+
+    $response->assertRedirect(route('personas.index'));
+
+    $persona->refresh();
+    expect($persona->trabajador)->not->toBeNull();
+    expect($persona->trabajador->activo)->toBeTrue();
+    expect($persona->trabajador->user)->not->toBeNull();
+    expect($persona->trabajador->user->login)->toBe($doc);
+});

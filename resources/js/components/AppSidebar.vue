@@ -4,6 +4,7 @@ import {
     LayoutGrid,
     Users,
     UserCheck,
+    UserPlus,
     School,
     Building2,
     Settings,
@@ -94,7 +95,6 @@ const mainNavItems: NavItem[] = [
         ],
     },
 ];
-
 </script>
 
 <template>

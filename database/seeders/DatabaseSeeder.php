@@ -17,6 +17,11 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             AdminSeeder::class,
+            AreaCargoSeeder::class,
+            CondicionesLaboralesSeeder::class,
+            PersonasSeeder::class,
+            InstitucionesEducSeeder::class,
+            InstitucionCursosGradosSeeder::class,
         ]);
     }
 }

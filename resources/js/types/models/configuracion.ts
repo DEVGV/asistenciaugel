@@ -41,7 +41,11 @@ export interface Zona {
     created_by: number | null;
     activo: boolean;
     // Relations
-    tipoZona?: { id: number; nombre: string | null; abreviatura: string | null };
+    tipoZona?: {
+        id: number;
+        nombre: string | null;
+        abreviatura: string | null;
+    };
     distrito?: {
         id: number;
         nombre: string | null;
