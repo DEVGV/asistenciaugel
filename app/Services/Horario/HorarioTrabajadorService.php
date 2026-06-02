@@ -13,14 +13,19 @@ use Illuminate\Support\Facades\DB;
 class HorarioTrabajadorService
 {
     /**
-     * Listar horarios del trabajador por año.
+     * Listar horarios del trabajador por año con todas las relaciones para la vista JSON.
      *
      * @return Collection<int, ConasisHorariosTrabajador>
      */
-    public function listarPorTrabajador(int $trabajadorId, int $anio)
+    public function listarPorTrabajador(int $trabajadorId, int $anio): Collection
     {
         return ConasisHorariosTrabajador::query()
-            ->with(['institucionEduc', 'altaTrabajador'])
+            ->with([
+                'detalles.horarioCursoIni.curso',
+                'detalles.horarioCursoIni.seccion.grado',
+                'institucionEduc',
+                'altaTrabajador.cargo',
+            ])
             ->where('trabajador_id', $trabajadorId)
             ->where('anio', $anio)
             ->where('activo', true)
@@ -40,6 +45,61 @@ class HorarioTrabajadorService
             'trabajador.persona',
             'altaTrabajador',
         ]);
+    }
+
+    /**
+     * Lista las instituciones educativas activas para el selector del índice de horarios.
+     *
+     * @return Collection<int, \App\Models\InstitucionesEduc>
+     */
+    public function listarInstitucionesActivas(): Collection
+    {
+        return \App\Models\InstitucionesEduc::query()
+            ->where(function ($q) {
+                $q->whereNull('fechaFin')
+                    ->orWhere('fechaFin', '>=', now()->toDateString());
+            })
+            ->orderBy('nombreLegal')
+            ->get();
+    }
+
+    /**
+     * Resuelve un HorarioTrabajador por su ID o, en su defecto, por trabajador_id + año.
+     * Devuelve null si no se encuentra.
+     */
+    public function resolverHorario(int $id, int $anio): ?ConasisHorariosTrabajador
+    {
+        $horario = ConasisHorariosTrabajador::find($id);
+
+        if (! $horario) {
+            $horario = ConasisHorariosTrabajador::where('trabajador_id', $id)
+                ->where('anio', $anio)
+                ->first();
+        }
+
+        return $horario;
+    }
+
+    /**
+     * Carga las cargas horarias del trabajador/año/IE para la vista Show.
+     *
+     * @return Collection<int, ConasisCargaHoraria>
+     */
+    public function listarCargasParaShow(ConasisHorariosTrabajador $horario): Collection
+    {
+        return ConasisCargaHoraria::query()
+            ->where('trabajador_id', $horario->trabajador_id)
+            ->whereHas('horarioCurso', function ($query) use ($horario) {
+                $query->where('anio', $horario->anio)
+                    ->whereHas('seccion.grado', function ($q) use ($horario) {
+                        $q->where('institucionEduc_id', $horario->institucionEduc_id);
+                    });
+            })
+            ->with([
+                'horarioCurso.curso',
+                'horarioCurso.seccion.grado',
+            ])
+            ->get();
     }
 
     /**

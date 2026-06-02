@@ -19,21 +19,14 @@ class AltaTrabajadorController extends Controller
         private AltaTrabajadorService $altaService,
     ) {}
 
-    /**
-     * Vista global paginada de todas las altas del sistema.
-     * Soporta filtros: search, institucion_id, trabajador_id, anio, solo_activas.
-     */
     public function index(Request $request): Response
     {
         return Inertia::render('trabajador/altas/Index', [
-            'altas' => $this->altaService->listarPaginado($request),
+            'altas'   => $this->altaService->listarPaginado($request),
             'filters' => $request->only(['search', 'institucion_id', 'trabajador_id', 'anio', 'solo_activas']),
         ]);
     }
 
-    /**
-     * Crea un alta para el trabajador especificado (ruta anidada).
-     */
     public function store(StoreAltaTrabajadorRequest $request, Trabajador $trabajador): RedirectResponse
     {
         $this->altaService->crear($request->toDTO());
@@ -41,22 +34,13 @@ class AltaTrabajadorController extends Controller
         return back()->with('success', 'Alta registrada exitosamente.');
     }
 
-    /**
-     * Actualiza los datos de un alta existente (ruta shallow).
-     */
     public function update(StoreAltaTrabajadorRequest $request, AltasTrabajadores $alta): RedirectResponse
     {
-        $datos = $request->validated();
-        unset($datos['trabajador_id']); // No se cambia el trabajador en edición
-
-        $this->altaService->actualizar($alta, $datos);
+        $this->altaService->actualizar($alta, $request->validated());
 
         return back()->with('success', 'Alta actualizada exitosamente.');
     }
 
-    /**
-     * Elimina un alta (solo si no tiene baja registrada).
-     */
     public function destroy(AltasTrabajadores $alta): RedirectResponse
     {
         $this->altaService->eliminar($alta);
@@ -64,9 +48,6 @@ class AltaTrabajadorController extends Controller
         return back()->with('success', 'Alta eliminada exitosamente.');
     }
 
-    /**
-     * Registra la baja de un alta activa.
-     */
     public function darBaja(BajaTrabajadorRequest $request, AltasTrabajadores $alta): RedirectResponse
     {
         $this->altaService->darBaja(

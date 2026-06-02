@@ -7,6 +7,7 @@ use App\Http\Controllers\Configuracion\ZonaController;
 use App\Http\Controllers\Entidad\EntidadController;
 use App\Http\Controllers\Horario\CargaHorariaController;
 use App\Http\Controllers\Horario\HorarioCursoController;
+use App\Http\Controllers\Horario\HorarioMasivoController;
 use App\Http\Controllers\Horario\HorarioTrabajadorController;
 use App\Http\Controllers\Infraestructura\DispositivoMarcaController;
 use App\Http\Controllers\Infraestructura\LocalController;
@@ -163,6 +164,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('horarios-cursos', HorarioCursoController::class)
         ->only(['index', 'store', 'update', 'destroy'])
         ->parameters(['horarios-cursos' => 'horarioCurso']);
+
+    // Carga masiva de horarios (crear + editar + asignar docente en lote)
+    Route::post('horarios-masivos', [HorarioMasivoController::class, 'store'])
+        ->name('horarios-masivos.store');
 
     Route::resource('horarios-cursos.cargas', CargaHorariaController::class)
         ->only(['store', 'update', 'destroy'])

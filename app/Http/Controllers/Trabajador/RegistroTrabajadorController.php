@@ -3,14 +3,11 @@
 namespace App\Http\Controllers\Trabajador;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Trabajador\StoreRegistroMasivoRequest;
 use App\Http\Requests\Trabajador\StoreRegistroTrabajadorRequest;
-use App\Models\Auth\Perfil;
 use App\Services\Trabajador\RegistroTrabajadorService;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Inertia\Inertia;
-use Inertia\Response;
+use Illuminate\Http\RedirectResponse;
 
 class RegistroTrabajadorController extends Controller
 {
@@ -31,13 +28,9 @@ class RegistroTrabajadorController extends Controller
             ->with('success', 'Trabajador registrado exitosamente. Se creó usuario con documento como login y contraseña por defecto.');
     }
 
-    public function storeMasivo(Request $request): JsonResponse
+    public function storeMasivo(StoreRegistroMasivoRequest $request): JsonResponse
     {
-        $request->validate([
-            'filas' => 'required|array|min:1',
-        ]);
-
-        $resultado = $this->registroService->registrarMasivo($request->json('filas'));
+        $resultado = $this->registroService->registrarMasivo($request->filas());
 
         return response()->json($resultado);
     }

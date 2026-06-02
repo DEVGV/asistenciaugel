@@ -48,6 +48,30 @@ class InstitucionEducativaService
         ]);
     }
 
+    /**
+     * Búsqueda de IE para selects/typeaheads (paginada).
+     *
+     * @return \Illuminate\Pagination\LengthAwarePaginator<InstitucionesEduc>
+     */
+    public function buscarParaSelect(Request $request): \Illuminate\Pagination\LengthAwarePaginator
+    {
+        $query = InstitucionesEduc::query()
+            ->select(['id', 'nombreLegal', 'codigoInstitucion', 'codigoModular']);
+
+        if ($request->filled('search')) {
+            $term = '%'.$request->string('search').'%';
+            $query->where(function ($q) use ($term) {
+                $q->whereRaw('LOWER("nombreLegal") LIKE LOWER(?)', [$term])
+                    ->orWhereRaw('LOWER("codigoInstitucion") LIKE LOWER(?)', [$term])
+                    ->orWhereRaw('LOWER("codigoModular") LIKE LOWER(?)', [$term]);
+            });
+        }
+
+        $perPage = min((int) $request->get('per_page', 30), 100);
+
+        return $query->orderBy('nombreLegal')->paginate($perPage);
+    }
+
     public function crear(CreateInstEducDTO $dto): InstitucionesEduc
     {
         return InstitucionesEduc::create($dto->toArray());

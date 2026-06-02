@@ -25,33 +25,13 @@ class InstitucionEducativaController extends Controller
     {
         return Inertia::render('institucion-educativa/Index', [
             'instituciones' => $this->ieService->listarPaginado($request),
-            'filters' => $request->only(['search']),
+            'filters'       => $request->only(['search']),
         ]);
     }
 
-    /**
-     * Búsqueda rápida de IE para selects con typeahead.
-     *
-     * GET /api/instituciones/search?search=...&per_page=30
-     */
     public function search(Request $request): JsonResponse
     {
-        $query = InstitucionesEduc::query()
-            ->select(['id', 'nombreLegal', 'codigoInstitucion', 'codigoModular']);
-
-        if ($request->filled('search')) {
-            $term = '%'.$request->string('search').'%';
-            $query->where(function ($q) use ($term) {
-                $q->whereRaw('LOWER("nombreLegal") LIKE LOWER(?)', [$term])
-                    ->orWhereRaw('LOWER("codigoInstitucion") LIKE LOWER(?)', [$term])
-                    ->orWhereRaw('LOWER("codigoModular") LIKE LOWER(?)', [$term]);
-            });
-        }
-
-        $perPage = min((int) $request->get('per_page', 30), 100);
-        $results = $query->orderBy('nombreLegal')->paginate($perPage);
-
-        return response()->json($results);
+        return response()->json($this->ieService->buscarParaSelect($request));
     }
 
     public function store(StoreInstEducRequest $request): RedirectResponse
@@ -69,17 +49,13 @@ class InstitucionEducativaController extends Controller
         ]);
     }
 
-    /**
-     * Devuelve altas/docentes paginados de una IE (para el tab Docentes/Personal).
-     * Los datos de la IE se pasan separados para no recargar locales/cursos/etc.
-     */
     public function docentes(InstitucionesEduc $institucione, Request $request): Response
     {
         return Inertia::render('institucion-educativa/Show', [
-            'institucion' => $this->ieService->obtenerConRelaciones($institucione),
-            'docentes' => $this->altaService->listarPorInstitucion($institucione, $request),
+            'institucion'     => $this->ieService->obtenerConRelaciones($institucione),
+            'docentes'        => $this->altaService->listarPorInstitucion($institucione, $request),
             'docentesFiltros' => $request->only(['search', 'solo_activas', 'condicion_id']),
-            'activeTab' => 'docentes',
+            'activeTab'       => 'docentes',
         ]);
     }
 

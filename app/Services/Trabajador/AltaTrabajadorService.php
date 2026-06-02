@@ -274,7 +274,8 @@ class AltaTrabajadorService
     {
         return DB::transaction(function () use ($alta, $datos) {
             $perfilId = $datos['perfil_id'] ?? null;
-            unset($datos['perfil_id']);
+            // trabajador_id no se modifica en edición; se descarta aquí, no en el controller
+            unset($datos['perfil_id'], $datos['trabajador_id']);
 
             $oldIeId = $alta->getOriginal('institucionEducativa_id');
 

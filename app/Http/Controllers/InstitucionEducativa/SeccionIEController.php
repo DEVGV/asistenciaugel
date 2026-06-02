@@ -25,21 +25,19 @@ class SeccionIEController extends Controller
 
     public function update(StoreSubRecursoIERequest $request, SeccionesIE $seccione): RedirectResponse
     {
-        $gradoId = $seccione->grado_id;
+        $ieId = $this->seccionService->obtenerIeId($seccione);
         $this->seccionService->actualizar($seccione, $request->validated());
 
-        $grado = GradosIE::find($gradoId);
-
-        return redirect()->route('instituciones.show', $grado->institucionEduc_id)
+        return redirect()->route('instituciones.show', $ieId)
             ->with('success', 'Sección actualizada exitosamente.');
     }
 
     public function destroy(SeccionesIE $seccione): RedirectResponse
     {
-        $grado = GradosIE::find($seccione->grado_id);
+        $ieId = $this->seccionService->obtenerIeId($seccione);
         $this->seccionService->eliminar($seccione);
 
-        return redirect()->route('instituciones.show', $grado->institucionEduc_id)
+        return redirect()->route('instituciones.show', $ieId)
             ->with('success', 'Sección desactivada exitosamente.');
     }
 }

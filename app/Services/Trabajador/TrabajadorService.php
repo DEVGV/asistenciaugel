@@ -55,6 +55,51 @@ class TrabajadorService
         ]);
     }
 
+    /**
+     * Carga las relaciones mínimas necesarias para el formulario de edición.
+     */
+    public function obtenerParaEdicion(Trabajador $trabajador): Trabajador
+    {
+        return $trabajador->load(['persona.tipoDocIdentidad', 'persona.sexo']);
+    }
+
+    /**
+     * Búsqueda de trabajadores para selects/typeaheads.
+     * Filtra opcionalmente por IE activa y término de búsqueda.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, Trabajador>
+     */
+    public function buscarParaAsignacion(Request $request): \Illuminate\Database\Eloquent\Collection
+    {
+        $query = Trabajador::query()
+            ->with(['persona', 'altas' => function ($q) {
+                $q->whereNull('fechaBaja')->with(['cargo', 'institucionEducativa']);
+            }])
+            ->where('activo', true);
+
+        if ($request->filled('ie_id')) {
+            $ieId = $request->integer('ie_id');
+            $query->whereHas('altas', function ($q) use ($ieId) {
+                $q->where('institucionEducativa_id', $ieId)->whereNull('fechaBaja');
+            });
+        }
+
+        if ($request->filled('search')) {
+            $term = '%'.$request->string('search').'%';
+            $query->where(function ($q) use ($term) {
+                $q->where('codigo', 'ilike', $term)
+                    ->orWhereHas('persona', function ($qp) use ($term) {
+                        $qp->where('docIdentidad', 'like', $term)
+                            ->orWhere('paterno', 'ilike', $term)
+                            ->orWhere('materno', 'ilike', $term)
+                            ->orWhere('nombre', 'ilike', $term);
+                    });
+            });
+        }
+
+        return $query->orderByDesc('id')->take(20)->get();
+    }
+
     public function crear(CreateTrabajadorDTO $dto): Trabajador
     {
         return Trabajador::create($dto->toArray());

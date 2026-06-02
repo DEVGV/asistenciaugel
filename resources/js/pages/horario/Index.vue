@@ -2,6 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import {
     Plus,
+    Upload,
     User,
     Trash2,
     Clock,
@@ -15,6 +16,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { toast } from 'vue-sonner';
 import DetalleHorarioGrid from '@/components/horario/DetalleHorarioGrid.vue';
 import HorarioForm from '@/components/horario/HorarioForm.vue';
+import HorarioMasivoGrid from '@/components/horario/HorarioMasivoGrid.vue';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import FormModal from '@/components/shared/FormModal.vue';
 import SearchSelect from '@/components/shared/SearchSelect.vue';
@@ -95,6 +97,13 @@ const seccionItems = computed(() =>
 // ── Horarios de curso ─────────────────────────────────────────────────────────
 const horarios = ref<any[]>([]);
 const loadingHorarios = ref(false);
+
+// ── Modal Carga Masiva de Horarios ────────────────────────────────────────────
+const showMasivoModal = ref(false);
+
+function onMasivoSuccess() {
+    loadHorarios();
+}
 
 // ── Modal Crear / Editar HorarioCurso (unificado con asignación docente) ──────
 const showHorarioModal = ref(false);
@@ -409,9 +418,19 @@ function formatWorkerName(worker: any) {
                 </p>
             </div>
 
-            <Button v-if="selectedSeccion" @click="openCreateHorario">
-                <Plus class="mr-2 h-4 w-4" /> Agregar Horario
-            </Button>
+            <div v-if="selectedSeccion" class="flex items-center gap-2">
+                <Button
+                    variant="outline"
+                    @click="showMasivoModal = true"
+                    class="gap-1.5 border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 dark:border-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-950/20"
+                >
+                    <Upload class="h-4 w-4" />
+                    Carga Masiva
+                </Button>
+                <Button @click="openCreateHorario">
+                    <Plus class="mr-2 h-4 w-4" /> Agregar Horario
+                </Button>
+            </div>
         </div>
 
         <!-- ── Panel de filtros ───────────────────────────────────────────── -->
@@ -734,5 +753,17 @@ function formatWorkerName(worker: any) {
         :processing="submittingDelete"
         @confirm="executeDeleteHorario"
         @cancel="showDeleteConfirm = false"
+    />
+
+    <!-- ── Modal: Carga Masiva de Horarios ───────────────────────────────── -->
+    <HorarioMasivoGrid
+        v-if="showMasivoModal"
+        :seccion-id="Number(selectedSeccion)"
+        :anio="Number(selectedAnio)"
+        :cursos="cursos"
+        :ie-id="Number(selectedIE) || null"
+        :horarios-existentes="horarios"
+        @close="showMasivoModal = false"
+        @success="onMasivoSuccess"
     />
 </template>
