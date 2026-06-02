@@ -1,10 +1,13 @@
 <?php
 
+use App\Http\Controllers\Api\MobileController;
 use App\Http\Controllers\Api\ParamController;
 use App\Http\Controllers\Api\SunatController;
 use App\Http\Controllers\Configuracion\ZonaController;
 use App\Http\Controllers\Entidad\EntidadController;
 use App\Http\Controllers\Persona\PersonaController;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -15,6 +18,13 @@ use Illuminate\Support\Facades\Route;
 | Rutas de la API JSON del sistema. Requieren autenticación.
 |
 */
+
+Route::prefix('api/mobile')
+    ->withoutMiddleware([ValidateCsrfToken::class, PreventRequestForgery::class])
+    ->name('api.mobile.')
+    ->group(function () {
+        Route::post('login', [MobileController::class, 'login'])->name('login');
+    });
 
 Route::middleware(['auth'])->prefix('api')->group(function () {
     // Parámetros (tablas de solo lectura del schema param)
@@ -34,4 +44,17 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
 
     // Búsqueda de Entidades
     Route::get('entidades/search', [EntidadController::class, 'search'])->name('api.entidades.search');
+    Route::prefix('mobile')
+        ->withoutMiddleware([ValidateCsrfToken::class, PreventRequestForgery::class])
+        ->name('api.mobile.')
+        ->group(function () {
+            Route::get('me', [MobileController::class, 'me'])->name('me');
+            Route::post('logout', [MobileController::class, 'logout'])->name('logout');
+            Route::post('biometria/enrolar-rostro', [MobileController::class, 'enrollFace'])->name('biometria.enroll-face');
+            Route::post('biometria/local-device/habilitar', [MobileController::class, 'enableLocalBiometric'])->name('biometria.enable-local');
+            Route::post('marcaciones/prevalidar', [MobileController::class, 'prevalidate'])->name('marcaciones.prevalidate');
+            Route::post('marcaciones', [MobileController::class, 'storeMark'])->name('marcaciones.store');
+            Route::get('marcaciones', [MobileController::class, 'marks'])->name('marcaciones.index');
+            Route::get('horario', [MobileController::class, 'schedule'])->name('horario.index');
+        });
 });
