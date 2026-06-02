@@ -21,6 +21,9 @@ import {
 } from 'lucide-vue-next';
 import { ref, watch, computed } from 'vue';
 import AltaMasivaGrid from '@/components/institucion-educativa/AltaMasivaGrid.vue';
+import GradosMasivaGrid from '@/components/institucion-educativa/GradosMasivaGrid.vue';
+import CursosMasivaGrid from '@/components/institucion-educativa/CursosMasivaGrid.vue';
+import RelojesMasivaGrid from '@/components/institucion-educativa/RelojesMasivaGrid.vue';
 import HorarioTrabajadorController from '@/actions/App/Http/Controllers/Horario/HorarioTrabajadorController';
 import LocalController from '@/actions/App/Http/Controllers/Infraestructura/LocalController';
 import LocalInstEducController from '@/actions/App/Http/Controllers/Infraestructura/LocalInstEducController';
@@ -521,12 +524,42 @@ function switchToDocentes() {
     }
 }
 
-// ─── Carga Masiva Grid ─────────────────────────────────────────────────────
+// ─── Carga Masiva Grid (Altas) ────────────────────────────────────────────────
 const showMasivaModal = ref(false);
 
 function onMasivaSuccess(_count: number) {
     showMasivaModal.value = false;
     setTimeout(() => cargarDocentes(), 400);
+}
+
+// ─── Carga Masiva Grados y Secciones ─────────────────────────────────────────
+const showGradosMasivaModal = ref(false);
+
+function onGradosMasivaSuccess(_grados: number, _secciones: number) {
+    showGradosMasivaModal.value = false;
+    router.reload({ only: ['institucion'] });
+}
+
+// ─── Carga Masiva Cursos ──────────────────────────────────────────────────────
+const showCursosMasivaModal = ref(false);
+
+function onCursosMasivaSuccess(_count: number) {
+    showCursosMasivaModal.value = false;
+    router.reload({ only: ['institucion'] });
+}
+
+// ─── Carga Masiva Relojes ─────────────────────────────────────────────────────
+const relojesMasivaLocalId = ref<number | null>(null);
+const relojesMasivaLocalNombre = ref<string>('');
+
+function openRelojesMasiva(localId: number, localNombre: string) {
+    relojesMasivaLocalId.value = localId;
+    relojesMasivaLocalNombre.value = localNombre;
+}
+
+function onRelojesMasivaSuccess(_count: number) {
+    relojesMasivaLocalId.value = null;
+    router.reload({ only: ['institucion'] });
 }
 
 const tabs = [
@@ -660,9 +693,20 @@ const tabs = [
         <div v-if="activeTab === 'cursos'" class="space-y-3">
             <div class="flex items-center justify-between">
                 <h2 class="text-lg font-semibold">Cursos</h2>
-                <Button size="sm" @click="openSubCreate('curso')"
-                    ><Plus class="mr-2 h-4 w-4" /> Nuevo Curso</Button
-                >
+                <div class="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        @click="showCursosMasivaModal = true"
+                        class="gap-1.5 border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 dark:border-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-950/20"
+                    >
+                        <Upload class="h-4 w-4" />
+                        Carga Masiva
+                    </Button>
+                    <Button size="sm" @click="openSubCreate('curso')"
+                        ><Plus class="mr-2 h-4 w-4" /> Nuevo Curso</Button
+                    >
+                </div>
             </div>
             <div class="overflow-hidden rounded-md border bg-card">
                 <Table>
@@ -742,9 +786,20 @@ const tabs = [
         <div v-if="activeTab === 'grados'" class="space-y-4">
             <div class="flex items-center justify-between">
                 <h2 class="text-lg font-semibold">Grados y Secciones</h2>
-                <Button size="sm" @click="openSubCreate('grado')"
-                    ><Plus class="mr-2 h-4 w-4" /> Nuevo Grado</Button
-                >
+                <div class="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        @click="showGradosMasivaModal = true"
+                        class="gap-1.5 border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 dark:border-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-950/20"
+                    >
+                        <Upload class="h-4 w-4" />
+                        Carga Masiva
+                    </Button>
+                    <Button size="sm" @click="openSubCreate('grado')"
+                        ><Plus class="mr-2 h-4 w-4" /> Nuevo Grado</Button
+                    >
+                </div>
             </div>
             <div
                 v-for="grado in props.institucion.grados || []"
@@ -1054,13 +1109,24 @@ const tabs = [
                             lie.local?.nombre || 'Sin nombre'
                         }}</span>
                     </div>
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        @click="openRelojCreate(lie.id)"
-                    >
-                        <Plus class="mr-2 h-4 w-4" /> Nuevo Reloj
-                    </Button>
+                    <div class="flex items-center gap-2">
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            @click="openRelojesMasiva(lie.id, lie.local?.nombre || 'Sin nombre')"
+                            class="gap-1.5 border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 dark:border-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-950/20"
+                        >
+                            <Upload class="h-4 w-4" />
+                            Carga Masiva
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            @click="openRelojCreate(lie.id)"
+                        >
+                            <Plus class="mr-2 h-4 w-4" /> Nuevo Reloj
+                        </Button>
+                    </div>
                 </div>
 
                 <div class="overflow-hidden rounded-md border bg-card">
@@ -1374,12 +1440,37 @@ const tabs = [
             </div>
         </div>
 
-        <!-- Modal Carga Masiva Grid -->
+        <!-- Modal Carga Masiva Grid (Altas) -->
         <AltaMasivaGrid
             v-if="showMasivaModal"
             :institucion-id="props.institucion.id"
             @close="showMasivaModal = false"
             @success="onMasivaSuccess"
+        />
+
+        <!-- Modal Carga Masiva Grados y Secciones -->
+        <GradosMasivaGrid
+            v-if="showGradosMasivaModal"
+            :institucion-id="props.institucion.id"
+            @close="showGradosMasivaModal = false"
+            @success="onGradosMasivaSuccess"
+        />
+
+        <!-- Modal Carga Masiva Cursos -->
+        <CursosMasivaGrid
+            v-if="showCursosMasivaModal"
+            :institucion-id="props.institucion.id"
+            @close="showCursosMasivaModal = false"
+            @success="onCursosMasivaSuccess"
+        />
+
+        <!-- Modal Carga Masiva Relojes (por local) -->
+        <RelojesMasivaGrid
+            v-if="relojesMasivaLocalId !== null"
+            :local-inst-educ-id="relojesMasivaLocalId"
+            :local-nombre="relojesMasivaLocalNombre"
+            @close="relojesMasivaLocalId = null"
+            @success="onRelojesMasivaSuccess"
         />
 
         <!-- Modal Sub-recurso (Curso/Grado/Sección) -->
