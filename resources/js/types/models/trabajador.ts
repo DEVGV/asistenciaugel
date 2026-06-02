@@ -62,6 +62,18 @@ export interface AltaTrabajador {
     cargo?: { id: number; nombre: string | null };
     motivoBaja?: { id: number; nombre: string | null };
     motivo_baja?: { id: number; nombre: string | null };
+    perfil_ie?: {
+        id: number;
+        user_id: number;
+        perfil_id: number;
+        institucionEducativa_id: number;
+        activo: boolean;
+        perfil?: {
+            id: number;
+            nombre: string;
+            descripcion: string | null;
+        };
+    } | null;
 }
 
 export type { PaginatedResponse };

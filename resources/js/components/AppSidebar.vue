@@ -4,6 +4,7 @@ import {
     LayoutGrid,
     Users,
     UserCheck,
+    UserPlus,
     School,
     Building2,
     Settings,

@@ -6,6 +6,8 @@ use App\DTOs\Trabajador\CreateAltaTrabajadorDTO;
 use App\Models\AltasTrabajadores;
 use App\Models\InstitucionesEduc;
 use App\Models\Trabajador;
+use App\Models\User;
+use App\Models\Auth\UsuarioPerfilIe;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -20,7 +22,7 @@ class AltaTrabajadorService
      */
     public function listarPorTrabajador(Trabajador $trabajador): Collection
     {
-        return AltasTrabajadores::query()
+        $altas = AltasTrabajadores::query()
             ->with([
                 'institucionEducativa',
                 'condicionLaboral',
@@ -34,6 +36,21 @@ class AltaTrabajadorService
             ->where('trabajador_id', $trabajador->id)
             ->orderByDesc('fechaInicio')
             ->get();
+
+        $user = User::where('trabajador_id', $trabajador->id)->first();
+        if ($user) {
+            $perfilesIe = UsuarioPerfilIe::where('user_id', $user->id)
+                ->where('activo', true)
+                ->with('perfil')
+                ->get()
+                ->keyBy('institucionEducativa_id');
+
+            foreach ($altas as $alta) {
+                $alta->perfil_ie = $perfilesIe->get($alta->institucionEducativa_id);
+            }
+        }
+
+        return $altas;
     }
 
     /**
@@ -88,6 +105,31 @@ class AltaTrabajadorService
             ->orderByDesc('fechaInicio')
             ->paginate(20)
             ->withQueryString();
+
+        $trabajadorIds = $paginator->pluck('trabajador_id')->unique()->toArray();
+        if (!empty($trabajadorIds)) {
+            $users = User::whereIn('trabajador_id', $trabajadorIds)->get()->keyBy('trabajador_id');
+            $userIds = $users->pluck('id')->toArray();
+            if (!empty($userIds)) {
+                $perfilesIe = UsuarioPerfilIe::whereIn('user_id', $userIds)
+                    ->where('activo', true)
+                    ->with('perfil')
+                    ->get()
+                    ->groupBy('user_id');
+
+                foreach ($paginator->items() as $alta) {
+                    $user = $users->get($alta->trabajador_id);
+                    if ($user) {
+                        $userPerfiles = $perfilesIe->get($user->id) ?? collect();
+                        $alta->perfil_ie = $userPerfiles->firstWhere('institucionEducativa_id', $alta->institucionEducativa_id);
+                    } else {
+                        $alta->perfil_ie = null;
+                    }
+                }
+            }
+        }
+
+        return $paginator;
     }
 
     /**
@@ -144,6 +186,27 @@ class AltaTrabajadorService
             ->orderByDesc('fechaInicio')
             ->paginate(25)
             ->withQueryString();
+
+        $trabajadorIds = $paginator->pluck('trabajador_id')->unique()->toArray();
+        if (!empty($trabajadorIds)) {
+            $users = User::whereIn('trabajador_id', $trabajadorIds)->get()->keyBy('trabajador_id');
+            $userIds = $users->pluck('id')->toArray();
+            if (!empty($userIds)) {
+                $perfilesIe = UsuarioPerfilIe::whereIn('user_id', $userIds)
+                    ->where('institucionEducativa_id', $ie->id)
+                    ->where('activo', true)
+                    ->with('perfil')
+                    ->get()
+                    ->keyBy('user_id');
+
+                foreach ($paginator->items() as $alta) {
+                    $user = $users->get($alta->trabajador_id);
+                    $alta->perfil_ie = $user ? $perfilesIe->get($user->id) : null;
+                }
+            }
+        }
+
+        return $paginator;
     }
 
     /**
@@ -179,7 +242,29 @@ class AltaTrabajadorService
 
     public function crear(CreateAltaTrabajadorDTO $dto): AltasTrabajadores
     {
-        return DB::transaction(fn () => AltasTrabajadores::create($dto->toArray()));
+        return DB::transaction(function () use ($dto) {
+            $datos = $dto->toArray();
+            unset($datos['perfil_id']);
+
+            $alta = AltasTrabajadores::create($datos);
+
+            $user = User::where('trabajador_id', $dto->trabajador_id)->first();
+            if ($user && $dto->perfil_id) {
+                UsuarioPerfilIe::updateOrCreate(
+                    [
+                        'user_id' => $user->id,
+                        'institucionEducativa_id' => $dto->institucionEducativa_id,
+                    ],
+                    [
+                        'perfil_id' => $dto->perfil_id,
+                        'activo' => true,
+                        'created_by' => auth()->id() ?? 1,
+                    ]
+                );
+            }
+
+            return $alta;
+        });
     }
 
     /**
@@ -187,7 +272,43 @@ class AltaTrabajadorService
      */
     public function actualizar(AltasTrabajadores $alta, array $datos): bool
     {
-        return DB::transaction(fn () => $alta->update($datos));
+        return DB::transaction(function () use ($alta, $datos) {
+            $perfilId = $datos['perfil_id'] ?? null;
+            unset($datos['perfil_id']);
+
+            $oldIeId = $alta->getOriginal('institucionEducativa_id');
+
+            $res = $alta->update($datos);
+
+            $user = User::where('trabajador_id', $alta->trabajador_id)->first();
+            if ($user) {
+                if ($oldIeId && $oldIeId != $alta->institucionEducativa_id) {
+                    UsuarioPerfilIe::where('user_id', $user->id)
+                        ->where('institucionEducativa_id', $oldIeId)
+                        ->delete();
+                }
+
+                if ($perfilId) {
+                    UsuarioPerfilIe::updateOrCreate(
+                        [
+                            'user_id' => $user->id,
+                            'institucionEducativa_id' => $alta->institucionEducativa_id,
+                        ],
+                        [
+                            'perfil_id' => $perfilId,
+                            'activo' => true,
+                            'created_by' => auth()->id() ?? 1,
+                        ]
+                    );
+                } else {
+                    UsuarioPerfilIe::where('user_id', $user->id)
+                        ->where('institucionEducativa_id', $alta->institucionEducativa_id)
+                        ->delete();
+                }
+            }
+
+            return $res;
+        });
     }
 
     /**
@@ -195,10 +316,21 @@ class AltaTrabajadorService
      */
     public function darBaja(AltasTrabajadores $alta, string $fechaBaja, int $motivoBaja_id): bool
     {
-        return DB::transaction(fn () => $alta->update([
-            'fechaBaja' => $fechaBaja,
-            'motivoBaja_id' => $motivoBaja_id,
-        ]));
+        return DB::transaction(function () use ($alta, $fechaBaja, $motivoBaja_id) {
+            $res = $alta->update([
+                'fechaBaja' => $fechaBaja,
+                'motivoBaja_id' => $motivoBaja_id,
+            ]);
+
+            $user = User::where('trabajador_id', $alta->trabajador_id)->first();
+            if ($user) {
+                UsuarioPerfilIe::where('user_id', $user->id)
+                    ->where('institucionEducativa_id', $alta->institucionEducativa_id)
+                    ->update(['activo' => false]);
+            }
+
+            return $res;
+        });
     }
 
     /**
@@ -206,6 +338,17 @@ class AltaTrabajadorService
      */
     public function eliminar(AltasTrabajadores $alta): bool
     {
-        return DB::transaction(fn () => $alta->delete());
+        return DB::transaction(function () use ($alta) {
+            $res = $alta->delete();
+
+            $user = User::where('trabajador_id', $alta->trabajador_id)->first();
+            if ($user) {
+                UsuarioPerfilIe::where('user_id', $user->id)
+                    ->where('institucionEducativa_id', $alta->institucionEducativa_id)
+                    ->delete();
+            }
+
+            return $res;
+        });
     }
 }

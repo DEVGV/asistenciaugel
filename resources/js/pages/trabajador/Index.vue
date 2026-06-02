@@ -6,18 +6,22 @@ import {
     Trash2,
     Eye,
     ChevronDown,
+    ChevronRight,
     UserCheck,
     Search,
     Loader2,
     CheckCircle2,
+    UserPlus,
+    Upload,
 } from 'lucide-vue-next';
 import { ref, watch, computed } from 'vue';
-import PersonaController from '@/actions/App/Http/Controllers/Persona/PersonaController';
 import TrabajadorController from '@/actions/App/Http/Controllers/Trabajador/TrabajadorController';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import FormModal from '@/components/shared/FormModal.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
+import ParamSelect from '@/components/shared/ParamSelect.vue';
 import { Button } from '@/components/ui/button';
+import TrabajadorMasivoGrid from '@/components/trabajador/TrabajadorMasivoGrid.vue';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -27,6 +31,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Table,
     TableBody,
@@ -35,8 +40,8 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import type { Persona } from '@/types/models/persona';
 import type { Trabajador, PaginatedResponse } from '@/types/models/trabajador';
+import type { ParamSimple } from '@/types/models/params';
 
 defineOptions({
     layout: {
@@ -49,6 +54,7 @@ defineOptions({
 const props = defineProps<{
     trabajadores: PaginatedResponse<Trabajador>;
     filters: { search?: string };
+    perfiles: { id: number; nombre: string; descripcion: string | null }[];
 }>();
 
 // ─── Búsqueda en Vivo en el Index ───
@@ -104,102 +110,145 @@ function executeDelete() {
     );
 }
 
-// ─── Modal de Creación Masiva ───
-const showCreateModal = ref(false);
-const searchPersonaQuery = ref('');
-const isSearchingPersonas = ref(false);
-const searchedPersonas = ref<PaginatedResponse<Persona> | null>(null);
-let searchPersonaTimeout: any = null;
+// ─── Modal de Registro de Trabajador ───
+const showRegisterModal = ref(false);
+const showAlta = ref(false);
 
-// Formularios y Selecciones
-const selectedPersonas = ref<Persona[]>([]);
-const showOnlySelected = ref(false);
-
-const displayedPersonas = computed(() => {
-    return showOnlySelected.value
-        ? selectedPersonas.value
-        : searchedPersonas.value?.data || [];
-});
-
+// Form
 const form = useForm({
-    trabajadores: [] as { persona_id: number; activo: boolean }[],
+    // Persona
+    tipoDocIdentidad_id: null as number | null,
+    docIdentidad: '',
+    paterno: '',
+    materno: '',
+    nombre: '',
+    sexo_id: null as number | null,
+    fechaNac: '',
+    pais_id: null as number | null,
+    ubigeo: '',
+
+    // Alta (opcional)
+    incluir_alta: false,
+    institucionEducativa_id: null as number | null,
+    condicionLaboral_id: null as number | null,
+    tipoContrato_id: null as number | null,
+    rolTrabajador_id: null as number | null,
+    situacionLaboral_id: null as number | null,
+    area_id: null as number | null,
+    cargo_id: null as number | null,
+    codigoAirsp: '',
+    fechaInicio: '',
+    fechaFin: '',
+    fechaAlta: '',
+    observacion: '',
+
+    // Perfil
+    perfil_id: null as number | null,
 });
 
-function openCreateModal() {
-    showCreateModal.value = true;
-    showOnlySelected.value = false;
-    searchPersonaQuery.value = '';
-    searchedPersonas.value = null;
-    selectedPersonas.value = [];
-    form.reset();
-    form.clearErrors();
-    searchPersonasAPI('');
+// Sync showAlta con form.incluir_alta
+watch(showAlta, (v) => {
+    form.incluir_alta = v;
+});
+
+// ─── RENIEC Auto-fill ───
+const selectedDocTypeAbrev = ref<string | null>(null);
+const isSearchingReniec = ref(false);
+const searchError = ref<string | null>(null);
+
+function onDocTypeChange(item: ParamSimple | null) {
+    selectedDocTypeAbrev.value = item?.abreviatura || null;
 }
 
-async function searchPersonasAPI(query: string, page = 1) {
-    isSearchingPersonas.value = true;
+async function buscarReniec() {
+    if (!form.docIdentidad || form.docIdentidad.length !== 8) return;
+    if (selectedDocTypeAbrev.value !== 'DNI') return;
+
+    isSearchingReniec.value = true;
+    searchError.value = null;
 
     try {
-        const response = await fetch(
-            PersonaController.search({
-                query: { search: query, page, exclude_trabajadores: true },
-            }).url,
-            {
-                headers: {
-                    Accept: 'application/json',
-                },
-            },
-        );
-
-        if (response.ok) {
-            searchedPersonas.value = await response.json();
+        const response = await fetch('/api/sunat/dni', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ dni: form.docIdentidad }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.message || 'Error al buscar el DNI');
+        if (result.data) {
+            form.nombre = result.data.nombres || '';
+            form.paterno = result.data.apellido_paterno || '';
+            form.materno = result.data.apellido_materno || '';
+            form.clearErrors('nombre', 'paterno', 'materno');
         }
-    } catch (e) {
-        console.error('Error buscando personas', e);
+    } catch (e: any) {
+        searchError.value = e.message;
     } finally {
-        isSearchingPersonas.value = false;
+        isSearchingReniec.value = false;
     }
 }
 
-watch(searchPersonaQuery, (val) => {
-    if (searchPersonaTimeout) {
-        clearTimeout(searchPersonaTimeout);
+watch(() => form.docIdentidad, (newVal) => {
+    if (newVal?.length === 8 && selectedDocTypeAbrev.value === 'DNI') {
+        buscarReniec();
     }
+});
 
-    searchPersonaTimeout = setTimeout(() => {
-        searchPersonasAPI(val);
+// ─── IE Search ───
+const ieQuery = ref('');
+const ieOptions = ref<{ id: number; nombre: string }[]>([]);
+const ieLoading = ref(false);
+let ieTimeout: ReturnType<typeof setTimeout>;
+
+watch(ieQuery, (q) => {
+    clearTimeout(ieTimeout);
+    ieTimeout = setTimeout(async () => {
+        if (!q) return;
+        ieLoading.value = true;
+        try {
+            const res = await fetch(`/api/instituciones/search?search=${encodeURIComponent(q)}&per_page=30`);
+            const data = await res.json();
+            ieOptions.value = (data.data || []).map((ie: any) => ({
+                id: ie.id,
+                nombre: ie.nombreLegal ?? ie.codigoInstitucion ?? String(ie.id),
+            }));
+        } catch {
+            ieOptions.value = [];
+        } finally {
+            ieLoading.value = false;
+        }
     }, 300);
 });
 
-function togglePersonaSelection(persona: Persona) {
-    const index = selectedPersonas.value.findIndex((p) => p.id === persona.id);
+// ─── Resumen usuario ───
+const loginPreview = computed(() => form.docIdentidad || '(documento)');
 
-    if (index === -1) {
-        selectedPersonas.value.push(persona);
-    } else {
-        selectedPersonas.value.splice(index, 1);
-    }
+function openRegisterModal() {
+    showRegisterModal.value = true;
+    showAlta.value = false;
+    selectedDocTypeAbrev.value = null;
+    searchError.value = null;
+    ieQuery.value = '';
+    ieOptions.value = [];
+    form.reset();
+    form.clearErrors();
 }
 
-function isPersonaSelected(id: number) {
-    return selectedPersonas.value.some((p) => p.id === id);
-}
-
-function submitMasivo() {
-    if (selectedPersonas.value.length === 0) {
-        return;
-    }
-
-    form.trabajadores = selectedPersonas.value.map((persona) => ({
-        persona_id: persona.id,
-        activo: true,
-    }));
-
-    form.post(TrabajadorController.store().url, {
+function submit() {
+    form.post('/registro-trabajador', {
         onSuccess: () => {
-            showCreateModal.value = false;
+            showRegisterModal.value = false;
+            form.reset();
         },
     });
+}
+
+// ─── Carga Masiva Grid ─────────────────────────────────────────────────────
+const showMasivoModal = ref(false);
+
+function onMasivoSuccess(count: number) {
+    showMasivoModal.value = false;
+    router.reload({ only: ['trabajadores'] });
 }
 </script>
 
@@ -218,10 +267,16 @@ function submitMasivo() {
                     asignados.
                 </p>
             </div>
-            <Button @click="openCreateModal">
-                <Plus class="mr-2 h-4 w-4" />
-                Nuevo Trabajador
-            </Button>
+            <div class="flex items-center gap-2">
+                <Button variant="outline" @click="showMasivoModal = true">
+                    <Upload class="mr-2 h-4 w-4" />
+                    Carga Masiva
+                </Button>
+                <Button @click="openRegisterModal">
+                    <Plus class="mr-2 h-4 w-4" />
+                    Nuevo Trabajador
+                </Button>
+            </div>
         </div>
 
         <!-- Barra de Búsqueda -->
@@ -414,206 +469,316 @@ function submitMasivo() {
             @cancel="trabajadorToDelete = null"
         />
 
-        <!-- Modal de Creación Masiva -->
+        <!-- Modal de Registro de Trabajador -->
         <FormModal
-            v-model:show="showCreateModal"
-            title="Registrar Trabajadores"
-            max-width="4xl"
-            @submit="submitMasivo"
+            v-model:show="showRegisterModal"
+            title="Registrar Trabajador"
+            description="Formulario unificado: persona + trabajador + usuario + alta laboral."
+            max-width="5xl"
+            @submit="submit"
             :processing="form.processing"
         >
-            <template #default>
-                <div class="min-h-[400px] space-y-4">
-                    <div class="flex items-center justify-between">
-                        <p class="text-sm text-muted-foreground">
-                            Seleccione una o varias personas para asignarlas
-                            como trabajadores.
-                        </p>
-                        <div class="flex items-center gap-2">
-                            <Button
-                                v-if="selectedPersonas.length > 0"
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                class="h-7 text-xs"
-                                @click="showOnlySelected = !showOnlySelected"
-                            >
-                                {{
-                                    showOnlySelected
-                                        ? 'Ver Todos'
-                                        : 'Ver Seleccionados'
-                                }}
-                            </Button>
-                            <span
-                                class="rounded-full bg-primary/10 px-2 py-1 text-xs font-semibold text-primary"
-                            >
-                                {{ selectedPersonas.length }} Seleccionados
-                            </span>
-                        </div>
-                    </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                <!-- Columna Izquierda: Persona + Usuario -->
+                <div class="space-y-6">
+                    <!-- SECCIÓN 1: DATOS DE PERSONA -->
+                    <div class="rounded-xl border bg-card p-6 shadow-xs">
+                        <h2 class="mb-4 text-lg font-semibold text-foreground">
+                            Datos de Persona
+                        </h2>
 
-                    <div v-if="!showOnlySelected" class="relative">
-                        <Search
-                            class="absolute top-2.5 left-3 h-4 w-4 text-muted-foreground"
-                        />
-                        <Input
-                            v-model="searchPersonaQuery"
-                            placeholder="Buscar por DNI, apellidos o nombres..."
-                            class="pl-9"
-                        />
-                        <Loader2
-                            v-if="isSearchingPersonas"
-                            class="absolute top-2.5 right-3 h-4 w-4 animate-spin text-muted-foreground"
-                        />
-                    </div>
-
-                    <div
-                        class="max-h-[300px] overflow-hidden overflow-y-auto rounded-md border"
-                    >
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead
-                                        class="w-[50px] text-center"
-                                    ></TableHead>
-                                    <TableHead class="w-[100px]"
-                                        >Doc.</TableHead
-                                    >
-                                    <TableHead>Apellidos y Nombres</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                <TableRow
-                                    v-for="persona in displayedPersonas"
-                                    :key="persona.id"
-                                    class="cursor-pointer hover:bg-muted/50"
-                                    @click="togglePersonaSelection(persona)"
-                                    :class="{
-                                        'bg-primary/5': isPersonaSelected(
-                                            persona.id,
-                                        ),
-                                    }"
-                                >
-                                    <TableCell class="text-center">
-                                        <input
-                                            type="checkbox"
-                                            class="size-4 rounded border-input accent-primary"
-                                            :checked="
-                                                isPersonaSelected(persona.id)
-                                            "
-                                            @click.stop="
-                                                togglePersonaSelection(persona)
-                                            "
+                        <div class="grid gap-5">
+                            <!-- Tipo Doc + Nro Documento -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <ParamSelect
+                                    v-model="form.tipoDocIdentidad_id"
+                                    type="tipos-doc-identidad"
+                                    label="Tipo Doc. *"
+                                    :error="form.errors.tipoDocIdentidad_id"
+                                    @update:item="onDocTypeChange"
+                                />
+                                <div class="grid gap-2">
+                                    <Label for="docIdentidad">N° Documento *</Label>
+                                    <div class="relative flex items-center">
+                                        <Input
+                                            id="docIdentidad"
+                                            v-model="form.docIdentidad"
+                                            placeholder="N° documento"
+                                            maxlength="20"
+                                            :class="{ 'pr-10': selectedDocTypeAbrev === 'DNI' }"
                                         />
-                                    </TableCell>
-                                    <TableCell class="text-xs font-medium">
-                                        {{ persona.docIdentidad }}
-                                    </TableCell>
-                                    <TableCell>
-                                        <div class="text-sm font-medium">
-                                            {{ persona.paterno }}
-                                            {{ persona.materno }}
-                                        </div>
-                                        <div
-                                            class="text-xs text-muted-foreground"
+                                        <Button
+                                            v-if="selectedDocTypeAbrev === 'DNI'"
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            class="absolute right-0 h-full px-3 py-2 hover:bg-transparent"
+                                            @click="buscarReniec"
+                                            :disabled="isSearchingReniec || form.docIdentidad?.length !== 8"
                                         >
-                                            {{ persona.nombre }}
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                                <TableRow v-if="displayedPersonas.length === 0">
-                                    <TableCell
-                                        colspan="3"
-                                        class="h-24 text-center text-sm text-muted-foreground"
-                                    >
-                                        {{
-                                            showOnlySelected
-                                                ? 'No hay personas seleccionadas.'
-                                                : 'No se encontraron personas con ese criterio.'
-                                        }}
-                                    </TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
+                                            <Loader2 v-if="isSearchingReniec" class="h-4 w-4 animate-spin text-muted-foreground" />
+                                            <Search v-else class="h-4 w-4 text-muted-foreground" />
+                                        </Button>
+                                    </div>
+                                    <p v-if="searchError" class="text-sm text-amber-500">{{ searchError }}</p>
+                                    <p v-if="form.errors.docIdentidad" class="text-sm text-destructive">{{ form.errors.docIdentidad }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Apellidos -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="grid gap-2">
+                                    <Label for="paterno">Ap. Paterno *</Label>
+                                    <Input id="paterno" v-model="form.paterno" placeholder="Apellido paterno" />
+                                    <p v-if="form.errors.paterno" class="text-sm text-destructive">{{ form.errors.paterno }}</p>
+                                </div>
+                                <div class="grid gap-2">
+                                    <Label for="materno">Ap. Materno *</Label>
+                                    <Input id="materno" v-model="form.materno" placeholder="Apellido materno" />
+                                    <p v-if="form.errors.materno" class="text-sm text-destructive">{{ form.errors.materno }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Nombres -->
+                            <div class="grid gap-2">
+                                <Label for="nombre">Nombres *</Label>
+                                <Input id="nombre" v-model="form.nombre" placeholder="Nombres completos" />
+                                <p v-if="form.errors.nombre" class="text-sm text-destructive">{{ form.errors.nombre }}</p>
+                            </div>
+
+                            <!-- Sexo + País -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <ParamSelect
+                                    v-model="form.sexo_id"
+                                    type="sexos"
+                                    label="Sexo *"
+                                    :error="form.errors.sexo_id"
+                                />
+                                <ParamSelect
+                                    v-model="form.pais_id"
+                                    type="paises"
+                                    label="País *"
+                                    :error="form.errors.pais_id"
+                                />
+                            </div>
+
+                            <!-- Fecha Nacimiento -->
+                            <div class="grid gap-2">
+                                <Label for="fechaNac">Fecha Nacimiento</Label>
+                                <Input id="fechaNac" v-model="form.fechaNac" type="date" />
+                                <p v-if="form.errors.fechaNac" class="text-sm text-destructive">{{ form.errors.fechaNac }}</p>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Paginación de Personas Modal -->
-                    <div
-                        v-if="
-                            !showOnlySelected &&
-                            searchedPersonas &&
-                            searchedPersonas.total > 0
-                        "
-                        class="flex items-center justify-between text-xs text-muted-foreground"
-                    >
-                        <span
-                            >Página {{ searchedPersonas.current_page }} de
-                            {{ searchedPersonas.last_page }}</span
-                        >
-                        <div class="flex gap-1">
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                class="h-7 px-2"
-                                :disabled="searchedPersonas.current_page <= 1"
-                                @click="
-                                    searchPersonasAPI(
-                                        searchPersonaQuery,
-                                        searchedPersonas.current_page - 1,
-                                    )
-                                "
-                            >
-                                Anterior
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                class="h-7 px-2"
-                                :disabled="
-                                    searchedPersonas.current_page >=
-                                    searchedPersonas.last_page
-                                "
-                                @click="
-                                    searchPersonasAPI(
-                                        searchPersonaQuery,
-                                        searchedPersonas.current_page + 1,
-                                    )
-                                "
-                            >
-                                Siguiente
-                            </Button>
-                        </div>
+                    <!-- SECCIÓN 2: ACCESO AL SISTEMA (Compacto y Destacado) -->
+                    <div class="rounded-xl border border-blue-200/50 bg-blue-50/50 p-5 shadow-xs dark:border-blue-900/50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-300">
+                        <p class="text-sm font-semibold flex items-center gap-2">
+                            <span class="inline-block w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
+                            Acceso al Sistema
+                        </p>
+                        <p class="text-xs mt-2 leading-relaxed text-muted-foreground">
+                            Se creará automáticamente una cuenta de usuario asignada a este trabajador.
+                            Su <strong>nombre de usuario</strong> y <strong>contraseña inicial</strong> serán el número de documento:
+                            <code class="ml-1 px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 font-mono font-bold text-blue-800 dark:text-blue-200">{{ loginPreview }}</code>.
+                        </p>
                     </div>
                 </div>
-            </template>
+
+                <!-- Columna Derecha: Alta Laboral -->
+                <div class="rounded-xl border bg-card p-6 shadow-xs">
+                    <div class="flex items-center justify-between mb-4 pb-2 border-b">
+                        <h2 class="text-lg font-semibold text-foreground">
+                            Alta Laboral
+                        </h2>
+                        <div class="flex items-center space-x-2">
+                            <input
+                                id="incluir_alta"
+                                type="checkbox"
+                                v-model="showAlta"
+                                class="h-4 w-4 rounded border-input text-primary focus:ring-primary cursor-pointer accent-primary"
+                            />
+                            <label for="incluir_alta" class="text-sm font-medium text-foreground cursor-pointer select-none">
+                                Registrar Alta Laboral
+                            </label>
+                        </div>
+                    </div>
+
+                    <div v-if="showAlta" class="space-y-4 animate-in fade-in-50 duration-200">
+                        <!-- IE -->
+                        <div class="grid gap-2">
+                            <Label>Institución Educativa *</Label>
+                            <div class="relative">
+                                <input
+                                    v-model="ieQuery"
+                                    type="text"
+                                    placeholder="Buscar institución..."
+                                    class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:outline-none"
+                                />
+                            </div>
+                            <div v-if="form.institucionEducativa_id" class="text-xs text-muted-foreground">
+                                IE seleccionada ID: {{ form.institucionEducativa_id }}
+                            </div>
+                            <div
+                                v-if="ieOptions.length && ieQuery"
+                                class="max-h-48 overflow-y-auto rounded-md border bg-background shadow-lg animate-in fade-in-50 duration-200"
+                            >
+                                <button
+                                    v-for="ie in ieOptions"
+                                    :key="ie.id"
+                                    type="button"
+                                    class="w-full px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                                    :class="{ 'bg-primary/10 font-medium text-primary': form.institucionEducativa_id === ie.id }"
+                                    @click="form.institucionEducativa_id = ie.id; ieQuery = ie.nombre; ieOptions = [];"
+                                >
+                                    {{ ie.nombre }}
+                                </button>
+                            </div>
+                            <p v-if="form.errors.institucionEducativa_id" class="text-sm text-destructive">
+                                {{ form.errors.institucionEducativa_id }}
+                            </p>
+                        </div>
+
+                        <!-- Código AIRSP + Condición Laboral -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="grid gap-2">
+                                <Label>Código AIRSP</Label>
+                                <Input v-model="form.codigoAirsp" placeholder="Ej: 28001234" />
+                                <p v-if="form.errors.codigoAirsp" class="text-sm text-destructive">{{ form.errors.codigoAirsp }}</p>
+                            </div>
+                            <ParamSelect
+                                type="condiciones-laborales"
+                                label="Condición Laboral *"
+                                v-model="form.condicionLaboral_id"
+                                :error="form.errors.condicionLaboral_id"
+                            />
+                        </div>
+
+                        <!-- Tipo de Contrato + Situación Laboral -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <ParamSelect
+                                type="tipos-contrato"
+                                label="Tipo de Contrato *"
+                                v-model="form.tipoContrato_id"
+                                :error="form.errors.tipoContrato_id"
+                            />
+                            <ParamSelect
+                                type="situaciones-laborales"
+                                label="Situación Laboral *"
+                                v-model="form.situacionLaboral_id"
+                                :error="form.errors.situacionLaboral_id"
+                            />
+                        </div>
+
+                        <!-- Rol del Trabajador + Área -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <ParamSelect
+                                type="roles-trabajador"
+                                label="Rol del Trabajador"
+                                v-model="form.rolTrabajador_id"
+                                :error="form.errors.rolTrabajador_id"
+                            />
+                            <ParamSelect
+                                type="areas"
+                                label="Área *"
+                                v-model="form.area_id"
+                                :error="form.errors.area_id"
+                            />
+                        </div>
+
+                        <!-- Cargo -->
+                        <ParamSelect
+                            type="cargos"
+                            label="Cargo *"
+                            v-model="form.cargo_id"
+                            :error="form.errors.cargo_id"
+                        />
+
+                        <!-- Fechas (Inicio, Fin, Alta) -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t pt-4">
+                            <div class="grid gap-2">
+                                <Label>Fecha Inicio *</Label>
+                                <Input v-model="form.fechaInicio" type="date" :class="{ 'border-destructive': form.errors.fechaInicio }" />
+                                <p v-if="form.errors.fechaInicio" class="text-sm text-destructive">{{ form.errors.fechaInicio }}</p>
+                            </div>
+                            <div class="grid gap-2">
+                                <Label>Fecha Fin</Label>
+                                <Input v-model="form.fechaFin" type="date" />
+                                <p v-if="form.errors.fechaFin" class="text-sm text-destructive">{{ form.errors.fechaFin }}</p>
+                            </div>
+                            <div class="grid gap-2">
+                                <Label>Fecha Alta</Label>
+                                <Input v-model="form.fechaAlta" type="date" />
+                                <p v-if="form.errors.fechaAlta" class="text-sm text-destructive">{{ form.errors.fechaAlta }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Observación -->
+                        <div class="grid gap-2">
+                            <Label>Observación</Label>
+                            <textarea
+                                v-model="form.observacion"
+                                rows="2"
+                                placeholder="Observaciones adicionales..."
+                                class="flex min-h-[60px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:outline-none"
+                            />
+                            <p v-if="form.errors.observacion" class="text-sm text-destructive">{{ form.errors.observacion }}</p>
+                        </div>
+
+                        <!-- Perfil -->
+                        <div class="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-4">
+                            <h3 class="mb-2 text-sm font-semibold text-foreground">
+                                Perfil de Usuario en esta IE
+                            </h3>
+                            <p class="mb-3 text-xs text-muted-foreground leading-relaxed">
+                                Asigne el rol y permisos que tendrá el usuario en esta institución educativa.
+                            </p>
+                            <div class="grid gap-2">
+                                <Label>Perfil</Label>
+                                <ParamSelect
+                                    type="perfiles"
+                                    v-model="form.perfil_id"
+                                    placeholder="Seleccionar perfil..."
+                                    :error="form.errors.perfil_id"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <div v-else class="flex flex-col items-center justify-center py-16 text-center border border-dashed rounded-lg bg-muted/20">
+                        <p class="text-sm font-medium text-muted-foreground">Alta laboral omitida</p>
+                        <p class="text-xs text-muted-foreground/80 mt-1 max-w-[240px]">
+                            El trabajador se creará sin vinculación inicial a una Institución Educativa.
+                        </p>
+                    </div>
+                </div>
+            </div>
 
             <template #footer>
                 <div class="flex w-full justify-end gap-2">
                     <Button
                         type="button"
                         variant="outline"
-                        @click="showCreateModal = false"
+                        @click="showRegisterModal = false"
                     >
                         Cancelar
                     </Button>
 
                     <Button
                         type="submit"
-                        :disabled="
-                            form.processing || selectedPersonas.length === 0
-                        "
+                        :disabled="form.processing"
                     >
-                        <CheckCircle2 class="mr-2 h-4 w-4" />
-                        {{
-                            form.processing
-                                ? 'Guardando...'
-                                : `Registrar (${selectedPersonas.length})`
-                        }}
+                        <UserPlus class="mr-2 h-4 w-4" />
+                        {{ form.processing ? 'Registrando...' : 'Registrar Trabajador' }}
                     </Button>
                 </div>
             </template>
         </FormModal>
+
+        <!-- Modal Carga Masiva Grid -->
+        <TrabajadorMasivoGrid
+            v-if="showMasivoModal"
+            @close="showMasivoModal = false"
+            @success="onMasivoSuccess"
+        />
     </div>
 </template>

@@ -10,6 +10,7 @@ use App\Models\InstitucionesEduc;
 use App\Models\Param\ParamRolTrabajador;
 use App\Models\Param\ParamSituacionLaboral;
 use App\Models\Param\ParamTipoContrato;
+use App\Models\Auth\Perfil;
 use App\Models\Trabajador;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -74,6 +75,7 @@ class StoreAltaTrabajadorRequest extends FormRequest
             'fechaFin' => ['nullable', 'date', 'after_or_equal:fechaInicio'],
             'fechaAlta' => ['nullable', 'date'],
             'observacion' => ['nullable', 'string', 'max:500'],
+            'perfil_id' => ['nullable', 'integer', Rule::exists(Perfil::class, 'id')],
         ];
     }
 

@@ -181,6 +181,11 @@ function estaActiva(alta: AltaTrabajador): boolean {
                                         ?.nombre || '-'
                                 }}
                             </div>
+                            <div v-if="alta.perfil_ie?.perfil" class="mt-1">
+                                <span class="inline-flex items-center rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 ring-1 ring-blue-700/10 dark:bg-blue-950/30 dark:text-blue-400 dark:ring-blue-400/20">
+                                    Perfil: {{ alta.perfil_ie.perfil.nombre }}
+                                </span>
+                            </div>
                         </TableCell>
                         <TableCell>
                             <div class="text-xs font-medium">

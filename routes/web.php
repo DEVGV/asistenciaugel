@@ -23,6 +23,7 @@ use App\Http\Controllers\Persona\EmailController;
 use App\Http\Controllers\Persona\PersonaController;
 use App\Http\Controllers\Persona\TelefonoController;
 use App\Http\Controllers\Trabajador\AltaTrabajadorController;
+use App\Http\Controllers\Trabajador\RegistroTrabajadorController;
 use App\Http\Controllers\Trabajador\TrabajadorController;
 use Illuminate\Support\Facades\Route;
 
@@ -53,6 +54,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('personas', PersonaController::class)
         ->only(['index', 'show', 'store', 'update', 'destroy']);
+    Route::post('personas/{persona}/convertir-trabajador', [PersonaController::class, 'convertirTrabajador'])
+        ->name('personas.convertir-trabajador');
 
     Route::resource('personas.telefonos', TelefonoController::class)
         ->only(['store', 'update', 'destroy'])
@@ -69,6 +72,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('trabajadores', TrabajadorController::class)
         ->except(['create'])
         ->parameters(['trabajadores' => 'trabajador']);
+
+    // Registro unificado de trabajador (persona + usuario + alta + perfil)
+    Route::get('registro-trabajador', [RegistroTrabajadorController::class, 'create'])
+        ->name('registro-trabajador.create');
+    Route::post('registro-trabajador', [RegistroTrabajadorController::class, 'store'])
+        ->name('registro-trabajador.store');
+    Route::post('trabajadores-masivos', [RegistroTrabajadorController::class, 'storeMasivo'])
+        ->name('trabajadores.masivo.store');
 
     // Sub-recurso shallow: store/update/destroy por trabajador o por alta directamente
     Route::resource('trabajadores.altas', AltaTrabajadorController::class)

@@ -3,6 +3,7 @@
 namespace App\Services\Param;
 
 use App\Models\Areas;
+use App\Models\Auth\Perfil;
 use App\Models\Cargos;
 use App\Models\CondicionesLaborales;
 use App\Models\Param\ParamDepartamento;
@@ -73,6 +74,7 @@ class ParamService
         'condiciones-laborales' => CondicionesLaborales::class,
         'areas' => Areas::class,
         'cargos' => Cargos::class,
+        'perfiles' => Perfil::class,
     ];
 
     /**

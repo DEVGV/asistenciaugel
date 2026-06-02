@@ -19,6 +19,7 @@ final readonly class CreateAltaTrabajadorDTO
         public string $fechaAlta,
         public ?string $observacion,
         public int $created_by,
+        public ?int $perfil_id = null,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -39,6 +40,7 @@ final readonly class CreateAltaTrabajadorDTO
             fechaAlta: $data['fechaAlta'] ?? now()->toDateString(),
             observacion: $data['observacion'] ?? null,
             created_by: auth()->id() ?? 1,
+            perfil_id: isset($data['perfil_id']) ? (int) $data['perfil_id'] : null,
         );
     }
 

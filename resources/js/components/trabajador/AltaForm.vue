@@ -34,6 +34,7 @@ const form = useForm({
     fechaFin: '',
     fechaAlta: '',
     observacion: '',
+    perfil_id: null as number | null,
 });
 
 watch(
@@ -53,6 +54,7 @@ watch(
             form.fechaFin = props.alta.fechaFin ?? '';
             form.fechaAlta = props.alta.fechaAlta ?? '';
             form.observacion = props.alta.observacion ?? '';
+            form.perfil_id = props.alta.perfil_ie ? (props.alta.perfil_ie.perfil_id ?? null) : null;
         } else if (visible && !props.isEditing) {
             form.reset();
             form.trabajador_id = props.trabajadorId;
@@ -274,6 +276,25 @@ function submit() {
                     placeholder="Observaciones adicionales..."
                     class="flex min-h-[60px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:outline-none"
                 />
+            </div>
+
+            <!-- Perfil de Usuario -->
+            <div class="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-4">
+                <h3 class="mb-2 text-sm font-semibold text-foreground">
+                    Perfil de Usuario en esta IE
+                </h3>
+                <p class="mb-3 text-xs text-muted-foreground leading-relaxed">
+                    Asigne el rol y permisos que tendrá el usuario en esta institución educativa.
+                </p>
+                <div class="grid gap-2">
+                    <Label>Perfil</Label>
+                    <ParamSelect
+                        type="perfiles"
+                        v-model="form.perfil_id"
+                        placeholder="Seleccionar perfil..."
+                        :error="form.errors.perfil_id"
+                    />
+                </div>
             </div>
         </div>
     </FormModal>

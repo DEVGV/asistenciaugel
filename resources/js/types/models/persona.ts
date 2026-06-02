@@ -1,4 +1,5 @@
 import type { ParamSimple } from './params';
+import type { Trabajador } from './trabajador';
 
 export interface Persona {
     id: number;
@@ -23,6 +24,7 @@ export interface Persona {
     telefonos?: Telefono[];
     emails?: Email[];
     domicilios?: Domicilio[];
+    trabajador?: Trabajador | null;
 }
 
 export interface Telefono {
@@ -68,3 +70,12 @@ export interface Domicilio {
     // Relations
     zona?: { id: number; nombre: string };
 }
+
+export interface PaginatedResponse<T> {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+}
+
