@@ -13,7 +13,10 @@ use App\Http\Controllers\Infraestructura\LocalController;
 use App\Http\Controllers\Infraestructura\LocalInstEducController;
 use App\Http\Controllers\Infraestructura\LocalMarcacionController;
 use App\Http\Controllers\Infraestructura\RelojController;
+use App\Http\Controllers\Infraestructura\RelojesMasivaController;
 use App\Http\Controllers\InstitucionEducativa\AltaMasivaIEController;
+use App\Http\Controllers\InstitucionEducativa\CursosMasivaIEController;
+use App\Http\Controllers\InstitucionEducativa\GradosMasivaIEController;
 use App\Http\Controllers\InstitucionEducativa\CursoIEController;
 use App\Http\Controllers\InstitucionEducativa\GradoIEController;
 use App\Http\Controllers\InstitucionEducativa\InstitucionEducativaController;
@@ -106,6 +109,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('instituciones/{institucione}/altas-masivas', [AltaMasivaIEController::class, 'store'])
         ->name('instituciones.altas-masivas.store');
 
+    // Carga masiva de grados y secciones para una IE
+    Route::post('instituciones/{institucione}/grados-masivos', [GradosMasivaIEController::class, 'store'])
+        ->name('instituciones.grados-masivos.store');
+
+    // Carga masiva de cursos para una IE
+    Route::post('instituciones/{institucione}/cursos-masivos', [CursosMasivaIEController::class, 'store'])
+        ->name('instituciones.cursos-masivos.store');
+
     Route::resource('instituciones.cursos', CursoIEController::class)
         ->only(['store', 'update', 'destroy'])
         ->shallow()
@@ -139,6 +150,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->only(['store', 'update', 'destroy'])
         ->shallow()
         ->parameters(['locales-ie' => 'localesIe', 'relojes' => 'reloje']);
+
+    // Carga masiva de relojes para un local de IE
+    Route::post('locales-ie/{localesIe}/relojes-masivos', [RelojesMasivaController::class, 'store'])
+        ->name('locales-ie.relojes-masivos.store');
 
     Route::resource('locales-ie.marcaciones-local', LocalMarcacionController::class)
         ->only(['store', 'destroy'])
