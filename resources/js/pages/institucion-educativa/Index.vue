@@ -8,9 +8,11 @@ import {
     ChevronDown,
     School,
     Search,
+    Upload,
 } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import InstitucionEducativaController from '@/actions/App/Http/Controllers/InstitucionEducativa/InstitucionEducativaController';
+import InstitucionMasivaGrid from '@/components/institucion-educativa/InstitucionMasivaGrid.vue';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import EntidadSelect from '@/components/shared/EntidadSelect.vue';
 import FormModal from '@/components/shared/FormModal.vue';
@@ -182,6 +184,12 @@ function executeDelete() {
         },
     );
 }
+// ─── Modal Carga Masiva ───
+const showMasivoModal = ref(false);
+
+function onMasivoSuccess() {
+    router.reload({ only: ['instituciones'] });
+}
 </script>
 
 <template>
@@ -199,10 +207,16 @@ function executeDelete() {
                     secciones.
                 </p>
             </div>
-            <Button @click="openCreateModal">
-                <Plus class="mr-2 h-4 w-4" />
-                Nueva Institución
-            </Button>
+            <div class="flex items-center gap-2">
+                <Button variant="outline" @click="showMasivoModal = true">
+                    <Upload class="mr-2 h-4 w-4" />
+                    Carga Masiva
+                </Button>
+                <Button @click="openCreateModal">
+                    <Plus class="mr-2 h-4 w-4" />
+                    Nueva Institución
+                </Button>
+            </div>
         </div>
 
         <!-- Barra de Búsqueda -->
@@ -501,6 +515,12 @@ function executeDelete() {
             :processing="isDeleting"
             @confirm="executeDelete"
             @cancel="ieToDelete = null"
+        />
+        <!-- Modal Carga Masiva -->
+        <InstitucionMasivaGrid
+            v-if="showMasivoModal"
+            @close="showMasivoModal = false"
+            @success="onMasivoSuccess"
         />
     </div>
 </template>

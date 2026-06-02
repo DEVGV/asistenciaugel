@@ -9,7 +9,6 @@ use function Pest\Laravel\actingAs;
 use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
 use function Pest\Laravel\post;
-use function Pest\Laravel\put;
 
 uses(DatabaseTransactions::class);
 
@@ -80,58 +79,6 @@ it('can visit the show detail page', function () {
     get(route('trabajadores.show', $trabajador))
         ->assertOk()
         ->assertInertia(fn ($page) => $page->component('trabajador/Show'));
-});
-
-it('can visit the edit page', function () {
-    $persona = Personas::create([
-        'tipoDocIdentidad_id' => 1,
-        'docIdentidad' => fake()->unique()->numerify('########'),
-        'paterno' => 'EDIT',
-        'materno' => 'TEST',
-        'nombre' => 'WORKER',
-        'sexo_id' => 1,
-        'pais_id' => 1,
-        'created_by' => $this->user->id,
-        'activo' => true,
-    ]);
-
-    $trabajador = Trabajador::create([
-        'persona_id' => $persona->id,
-        'created_by' => $this->user->id,
-        'activo' => true,
-    ]);
-
-    get(route('trabajadores.edit', $trabajador))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('trabajador/Edit'));
-});
-
-it('can update a trabajador', function () {
-    $persona = Personas::create([
-        'tipoDocIdentidad_id' => 1,
-        'docIdentidad' => fake()->unique()->numerify('########'),
-        'paterno' => 'UPDATE',
-        'materno' => 'TEST',
-        'nombre' => 'WORKER',
-        'sexo_id' => 1,
-        'pais_id' => 1,
-        'created_by' => $this->user->id,
-        'activo' => true,
-    ]);
-
-    $trabajador = Trabajador::create([
-        'persona_id' => $persona->id,
-        'created_by' => $this->user->id,
-        'activo' => true,
-    ]);
-
-    $originalCodigo = $trabajador->codigo;
-
-    put(route('trabajadores.update', $trabajador), [
-        'activo' => true,
-    ])->assertRedirect(route('trabajadores.index'));
-
-    expect($trabajador->fresh()->codigo)->toBe($originalCodigo);
 });
 
 it('can deactivate a trabajador', function () {

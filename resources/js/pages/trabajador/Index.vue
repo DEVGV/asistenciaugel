@@ -375,19 +375,6 @@ function onMasivoSuccess(count: number) {
                                             <span>Ver Detalles</span>
                                         </Link>
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem as-child>
-                                        <Link
-                                            :href="
-                                                TrabajadorController.edit({
-                                                    trabajador: trabajador.id,
-                                                }).url
-                                            "
-                                            class="flex items-center"
-                                        >
-                                            <Pencil class="mr-2 h-4 w-4" />
-                                            <span>Editar</span>
-                                        </Link>
-                                    </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
                                         @click="confirmDelete(trabajador)"

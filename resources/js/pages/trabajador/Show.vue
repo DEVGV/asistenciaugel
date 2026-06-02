@@ -8,7 +8,6 @@ import {
     Phone,
     Mail,
     MapPin,
-    Pencil,
 } from 'lucide-vue-next';
 import { ref } from 'vue';
 import TrabajadorController from '@/actions/App/Http/Controllers/Trabajador/TrabajadorController';
@@ -83,17 +82,6 @@ const tabs = [
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <Button variant="outline" as-child size="sm">
-                    <Link
-                        :href="
-                            TrabajadorController.edit({
-                                trabajador: props.trabajador.id,
-                            }).url
-                        "
-                    >
-                        <Pencil class="mr-2 h-4 w-4" /> Editar Asignación
-                    </Link>
-                </Button>
                 <Button variant="outline" as-child size="sm">
                     <Link :href="TrabajadorController.index().url">
                         <ArrowLeft class="mr-2 h-4 w-4" /> Volver

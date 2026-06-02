@@ -11,12 +11,14 @@ import {
     MapPin,
     ChevronDown,
     UserCheck,
+    Upload,
 } from 'lucide-vue-next';
 import { ref, watch, computed } from 'vue';
 import PersonaController from '@/actions/App/Http/Controllers/Persona/PersonaController';
 import DomiciliosList from '@/components/persona/DomiciliosList.vue';
 import EmailsList from '@/components/persona/EmailsList.vue';
 import PersonaForm from '@/components/persona/PersonaForm.vue';
+import PersonaMasivaGrid from '@/components/persona/PersonaMasivaGrid.vue';
 import TelefonosList from '@/components/persona/TelefonosList.vue';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import FormModal from '@/components/shared/FormModal.vue';
@@ -184,6 +186,15 @@ function executeDelete() {
     );
 }
 
+// ─── Carga Masiva Grid ────────────────────────────────────────────────────────
+const showMasivoModal = ref(false);
+
+function onMasivoSuccess(count: number) {
+    showMasivoModal.value = false;
+    router.reload({ only: ['personas'] });
+    console.log(`${count} personas registradas en lote.`);
+}
+
 // ─── Modal Marcar como Trabajador ───
 const showWorkerModal = ref(false);
 const personaToMarkWorker = ref<Persona | null>(null);
@@ -280,10 +291,16 @@ const tabs = [
     <div class="flex flex-col gap-4 p-4">
         <div class="flex items-center justify-between">
             <h1 class="text-2xl font-bold tracking-tight">Personas</h1>
-            <Button @click="openCreateModal">
-                <Plus class="mr-2 h-4 w-4" />
-                Nueva Persona
-            </Button>
+            <div class="flex items-center gap-2">
+                <Button variant="outline" @click="showMasivoModal = true">
+                    <Upload class="mr-2 h-4 w-4" />
+                    Carga Masiva
+                </Button>
+                <Button @click="openCreateModal">
+                    <Plus class="mr-2 h-4 w-4" />
+                    Nueva Persona
+                </Button>
+            </div>
         </div>
 
         <!-- Buscador -->
@@ -626,5 +643,12 @@ const tabs = [
                 </div>
             </DialogContent>
         </Dialog>
+
+        <!-- Modal Carga Masiva Grid -->
+        <PersonaMasivaGrid
+            v-if="showMasivoModal"
+            @close="showMasivoModal = false"
+            @success="onMasivoSuccess"
+        />
     </div>
 </template>

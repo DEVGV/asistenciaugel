@@ -16,15 +16,17 @@ use App\Http\Controllers\Infraestructura\LocalMarcacionController;
 use App\Http\Controllers\Infraestructura\RelojController;
 use App\Http\Controllers\Infraestructura\RelojesMasivaController;
 use App\Http\Controllers\InstitucionEducativa\AltaMasivaIEController;
-use App\Http\Controllers\InstitucionEducativa\CursosMasivaIEController;
-use App\Http\Controllers\InstitucionEducativa\GradosMasivaIEController;
+use App\Http\Controllers\InstitucionEducativa\InstitucionEducativaMasivaController;
 use App\Http\Controllers\InstitucionEducativa\CursoIEController;
+use App\Http\Controllers\InstitucionEducativa\CursosMasivaIEController;
 use App\Http\Controllers\InstitucionEducativa\GradoIEController;
+use App\Http\Controllers\InstitucionEducativa\GradosMasivaIEController;
 use App\Http\Controllers\InstitucionEducativa\InstitucionEducativaController;
 use App\Http\Controllers\InstitucionEducativa\SeccionIEController;
 use App\Http\Controllers\Persona\DomicilioController;
 use App\Http\Controllers\Persona\EmailController;
 use App\Http\Controllers\Persona\PersonaController;
+use App\Http\Controllers\Persona\PersonaMasivaController;
 use App\Http\Controllers\Persona\TelefonoController;
 use App\Http\Controllers\Trabajador\AltaTrabajadorController;
 use App\Http\Controllers\Trabajador\RegistroTrabajadorController;
@@ -60,6 +62,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->only(['index', 'show', 'store', 'update', 'destroy']);
     Route::post('personas/{persona}/convertir-trabajador', [PersonaController::class, 'convertirTrabajador'])
         ->name('personas.convertir-trabajador');
+    Route::post('personas-masivas', [PersonaMasivaController::class, 'store'])
+        ->name('personas.masivo.store');
 
     Route::resource('personas.telefonos', TelefonoController::class)
         ->only(['store', 'update', 'destroy'])
@@ -74,7 +78,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->shallow();
 
     Route::resource('trabajadores', TrabajadorController::class)
-        ->except(['create'])
+        ->except(['create', 'edit', 'update'])
         ->parameters(['trabajadores' => 'trabajador']);
 
     // Registro unificado de trabajador (persona + usuario + alta + perfil)
@@ -101,6 +105,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('instituciones', InstitucionEducativaController::class)
         ->except(['create', 'edit'])
         ->parameters(['instituciones' => 'institucione']);
+
+    // Carga masiva de nuevas Instituciones Educativas
+    Route::post('instituciones-masivas', [InstitucionEducativaMasivaController::class, 'store'])
+        ->name('instituciones.masivo.store');
 
     // Tab Docentes/Personal de una IE (altas paginadas)
     Route::get('instituciones/{institucione}/docentes', [InstitucionEducativaController::class, 'docentes'])

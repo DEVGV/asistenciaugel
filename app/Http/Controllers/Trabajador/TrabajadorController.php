@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Trabajador;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Trabajador\StoreTrabajadorRequest;
-use App\Http\Requests\Trabajador\UpdateTrabajadorRequest;
 use App\Models\Auth\Perfil;
 use App\Models\Trabajador;
 use App\Services\Trabajador\TrabajadorService;
@@ -24,8 +23,8 @@ class TrabajadorController extends Controller
     {
         return Inertia::render('trabajador/Index', [
             'trabajadores' => $this->trabajadorService->listarPaginado($request),
-            'filters'      => $request->only(['search']),
-            'perfiles'     => Perfil::where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'descripcion']),
+            'filters' => $request->only(['search']),
+            'perfiles' => Perfil::where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'descripcion']),
         ]);
     }
 
@@ -49,21 +48,6 @@ class TrabajadorController extends Controller
         return Inertia::render('trabajador/Show', [
             'trabajador' => $this->trabajadorService->obtenerConRelaciones($trabajador),
         ]);
-    }
-
-    public function edit(Trabajador $trabajador): Response
-    {
-        return Inertia::render('trabajador/Edit', [
-            'trabajador' => $this->trabajadorService->obtenerParaEdicion($trabajador),
-        ]);
-    }
-
-    public function update(UpdateTrabajadorRequest $request, Trabajador $trabajador): RedirectResponse
-    {
-        $this->trabajadorService->actualizar($trabajador, $request->toDTO());
-
-        return redirect()->route('trabajadores.index')
-            ->with('success', 'Trabajador actualizado exitosamente.');
     }
 
     public function destroy(Trabajador $trabajador): RedirectResponse
