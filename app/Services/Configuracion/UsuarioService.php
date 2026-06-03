@@ -3,8 +3,8 @@
 namespace App\Services\Configuracion;
 
 use App\Models\AltasTrabajadores;
+use App\Models\Auth\UsuarioPerfilIe;
 use App\Models\Auth\UsuarioPermisoIe;
-use App\Models\InstitucionesEduc;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -39,7 +39,7 @@ class UsuarioService
 
     public function toggleActivo(User $user): void
     {
-        $user->update(['activo' => !$user->activo]);
+        $user->update(['activo' => ! $user->activo]);
     }
 
     /**
@@ -48,7 +48,7 @@ class UsuarioService
      */
     public function ieDisponiblesParaUsuario(User $user): array
     {
-        if (!$user->trabajador_id) {
+        if (! $user->trabajador_id) {
             return [['id' => null, 'label' => 'Global (UGEL)', 'codModular' => null]];
         }
 
@@ -58,8 +58,8 @@ class UsuarioService
             ->with('institucionEducativa')
             ->get()
             ->map(fn ($a) => [
-                'id'         => $a->institucionEducativa_id,
-                'label'      => $a->institucionEducativa?->nombreLegal ?? "IE #{$a->institucionEducativa_id}",
+                'id' => $a->institucionEducativa_id,
+                'label' => $a->institucionEducativa?->nombreLegal ?? "IE #{$a->institucionEducativa_id}",
                 'codModular' => $a->institucionEducativa?->codigoModular,
             ])
             ->unique('id')
@@ -108,16 +108,54 @@ class UsuarioService
             ->delete();
 
         // Insertar los nuevos
-        if (!empty($permisoIds)) {
+        if (! empty($permisoIds)) {
             $rows = array_map(fn ($pid) => [
-                'user_id'                => $user->id,
-                'permiso_id'             => $pid,
+                'user_id' => $user->id,
+                'permiso_id' => $pid,
                 'institucionEducativa_id' => $ieId,
-                'created_by'             => auth()->id(),
-                'created_at'             => now(),
+                'created_by' => auth()->id(),
+                'created_at' => now(),
             ], $permisoIds);
 
             UsuarioPermisoIe::insert($rows);
         }
+    }
+
+    /**
+     * Obtiene los perfiles asignados al usuario.
+     *
+     * @return Collection<int, UsuarioPerfilIe>
+     */
+    public function perfilesDelUsuario(User $user): Collection
+    {
+        return UsuarioPerfilIe::where('user_id', $user->id)
+            ->with(['perfil', 'institucionEducativa'])
+            ->get();
+    }
+
+    /**
+     * Asigna un perfil al usuario para una IE concreta.
+     */
+    public function asignarPerfil(User $user, int $perfilId, ?int $ieId): void
+    {
+        UsuarioPerfilIe::updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'institucionEducativa_id' => $ieId,
+            ],
+            [
+                'perfil_id' => $perfilId,
+                'activo' => true,
+                'created_by' => auth()->id() ?? 1,
+            ]
+        );
+    }
+
+    /**
+     * Revoca una asignación de perfil.
+     */
+    public function revocarPerfil(UsuarioPerfilIe $perfilIe): void
+    {
+        $perfilIe->delete();
     }
 }
