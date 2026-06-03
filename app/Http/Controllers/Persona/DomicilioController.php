@@ -17,7 +17,10 @@ class DomicilioController extends Controller
 
     public function store(StoreDomicilioRequest $request, Personas $persona): RedirectResponse
     {
-        $this->domicilioService->crear($persona, $request->validated());
+        $data = $request->validated();
+        $data['fechaInicio'] = now()->toDateString();
+
+        $this->domicilioService->crear($persona, $data);
 
         return redirect()->route('personas.show', $persona)
             ->with('success', 'Domicilio agregado exitosamente.');
@@ -29,6 +32,14 @@ class DomicilioController extends Controller
 
         return redirect()->route('personas.show', $domicilio->persona_id)
             ->with('success', 'Domicilio actualizado exitosamente.');
+    }
+
+    public function darDeBaja(Domicilios $domicilio): RedirectResponse
+    {
+        $this->domicilioService->darDeBaja($domicilio);
+
+        return redirect()->route('personas.show', $domicilio->persona_id)
+            ->with('success', 'Domicilio dado de baja exitosamente.');
     }
 
     public function destroy(Domicilios $domicilio): RedirectResponse

@@ -95,14 +95,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('personas.telefonos', TelefonoController::class)
         ->only(['store', 'update', 'destroy'])
         ->shallow();
+    Route::patch('telefonos/{telefono}/dar-de-baja', [TelefonoController::class, 'darDeBaja'])
+        ->name('telefonos.dar-de-baja');
 
     Route::resource('personas.emails', EmailController::class)
         ->only(['store', 'update', 'destroy'])
         ->shallow();
+    Route::patch('emails/{email}/dar-de-baja', [EmailController::class, 'darDeBaja'])
+        ->name('emails.dar-de-baja');
 
     Route::resource('personas.domicilios', DomicilioController::class)
         ->only(['store', 'update', 'destroy'])
         ->shallow();
+    Route::patch('domicilios/{domicilio}/dar-de-baja', [DomicilioController::class, 'darDeBaja'])
+        ->name('domicilios.dar-de-baja');
 
     Route::resource('trabajadores', TrabajadorController::class)
         ->except(['create', 'edit', 'update'])

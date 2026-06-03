@@ -93,7 +93,11 @@ const nombreTrabajador = computed(() => {
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <Button variant="outline" size="sm" @click="showUsuarioModal = true">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    @click="showUsuarioModal = true"
+                >
                     <ShieldCheck class="mr-2 h-4 w-4" />
                     Usuario
                 </Button>

@@ -8,7 +8,7 @@ const send = {
     form: () => ({
         action: '/email/verification-notification',
         method: 'post' as const,
-    })
+    }),
 };
 
 defineOptions({

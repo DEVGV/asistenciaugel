@@ -116,7 +116,10 @@ function validar(): boolean {
     filas.value.forEach((fila) => {
         fila._errors = {};
         // Ignorar filas completamente vacías
-        if (fila.grado_nombre.trim() === '' && fila.secciones.every((s) => s.trim() === ''))
+        if (
+            fila.grado_nombre.trim() === '' &&
+            fila.secciones.every((s) => s.trim() === '')
+        )
             return;
         if (fila.grado_nombre.trim() === '') {
             fila._errors['grado_nombre'] = 'Requerido';
@@ -149,9 +152,7 @@ async function enviar() {
     const payload = filasFiltradas.map((f) => ({
         grado_nombre: f.grado_nombre.trim(),
         grado_sigla: f.grado_sigla.trim() || null,
-        secciones: f.secciones
-            .map((s) => s.trim())
-            .filter((s) => s !== ''),
+        secciones: f.secciones.map((s) => s.trim()).filter((s) => s !== ''),
     }));
 
     try {
@@ -220,8 +221,8 @@ function secLabel(i: number) {
                             Carga Masiva de Grados y Secciones
                         </h2>
                         <span class="text-xs text-muted-foreground">
-                            1ª columna = grado · siguientes = secciones de ese grado.
-                            Presiona
+                            1ª columna = grado · siguientes = secciones de ese
+                            grado. Presiona
                             <strong>Guardar</strong> cuando termines.
                         </span>
                         <span
@@ -265,7 +266,9 @@ function secLabel(i: number) {
                             v-if="Object.keys(resultado.errores).length"
                             class="text-xs text-amber-700 dark:text-amber-400"
                         >
-                            <span class="font-semibold">Filas con errores:</span>
+                            <span class="font-semibold"
+                                >Filas con errores:</span
+                            >
                             <span
                                 v-for="(msg, row) in resultado.errores"
                                 :key="row"
@@ -329,7 +332,9 @@ function secLabel(i: number) {
                                         class="border-b px-2 py-1.5 text-center"
                                         style="min-width: 60px"
                                     >
-                                        <div class="flex items-center justify-center gap-0.5">
+                                        <div
+                                            class="flex items-center justify-center gap-0.5"
+                                        >
                                             <button
                                                 type="button"
                                                 @click="quitarColumna"
@@ -358,7 +363,9 @@ function secLabel(i: number) {
                                     :key="fila._id"
                                     class="group transition-colors hover:bg-muted/30"
                                     :class="{
-                                        'bg-destructive/5': Object.keys(fila._errors).length,
+                                        'bg-destructive/5': Object.keys(
+                                            fila._errors,
+                                        ).length,
                                     }"
                                 >
                                     <!-- N° -->
@@ -373,7 +380,10 @@ function secLabel(i: number) {
                                         <input
                                             type="text"
                                             v-model="fila.grado_nombre"
-                                            @input="fila._errors['grado_nombre'] = ''"
+                                            @input="
+                                                fila._errors['grado_nombre'] =
+                                                    ''
+                                            "
                                             placeholder="Ej: Primero, 1°, Inicial 3 años…"
                                             class="w-full bg-transparent px-2.5 py-1.5 text-xs outline-none placeholder:text-muted-foreground/50"
                                             :class="
@@ -451,20 +461,31 @@ function secLabel(i: number) {
                         >
                             Limpiar vacías
                         </button>
-                        <div class="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
+                        <div
+                            class="ml-auto flex items-center gap-1 text-xs text-muted-foreground"
+                        >
                             <Columns class="h-3.5 w-3.5" />
-                            <span>{{ numSecciones }} col{{ numSecciones !== 1 ? 's' : '' }} de sección</span>
+                            <span
+                                >{{ numSecciones }} col{{
+                                    numSecciones !== 1 ? 's' : ''
+                                }}
+                                de sección</span
+                            >
                             <button
                                 type="button"
                                 @click="quitarColumna"
                                 :disabled="numSecciones <= 1"
-                                class="ml-1 rounded px-1.5 py-0.5 border border-dashed text-muted-foreground transition hover:border-rose-400/60 hover:text-rose-500 disabled:opacity-30"
-                            >−</button>
+                                class="ml-1 rounded border border-dashed px-1.5 py-0.5 text-muted-foreground transition hover:border-rose-400/60 hover:text-rose-500 disabled:opacity-30"
+                            >
+                                −
+                            </button>
                             <button
                                 type="button"
                                 @click="agregarColumna"
-                                class="rounded px-1.5 py-0.5 border border-dashed text-muted-foreground transition hover:border-primary/50 hover:text-primary"
-                            >+</button>
+                                class="rounded border border-dashed px-1.5 py-0.5 text-muted-foreground transition hover:border-primary/50 hover:text-primary"
+                            >
+                                +
+                            </button>
                         </div>
                     </div>
 

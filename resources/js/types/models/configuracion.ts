@@ -54,7 +54,11 @@ export interface UsuarioPerfilIe {
     perfil_id: number;
     perfil: Perfil;
     institucionEducativa_id: number | null;
-    institucionEducativa: { id: number; nombreLegal: string; codigoModular: string | null } | null;
+    institucionEducativa: {
+        id: number;
+        nombreLegal: string;
+        codigoModular: string | null;
+    } | null;
     activo: boolean;
 }
 

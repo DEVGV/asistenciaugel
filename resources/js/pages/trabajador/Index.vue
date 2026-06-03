@@ -170,11 +170,15 @@ async function buscarReniec() {
     try {
         const response = await fetch('/api/sunat/dni', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            },
             body: JSON.stringify({ dni: form.docIdentidad }),
         });
         const result = await response.json();
-        if (!response.ok) throw new Error(result.message || 'Error al buscar el DNI');
+        if (!response.ok)
+            throw new Error(result.message || 'Error al buscar el DNI');
         if (result.data) {
             form.nombre = result.data.nombres || '';
             form.paterno = result.data.apellido_paterno || '';
@@ -188,11 +192,14 @@ async function buscarReniec() {
     }
 }
 
-watch(() => form.docIdentidad, (newVal) => {
-    if (newVal?.length === 8 && selectedDocTypeAbrev.value === 'DNI') {
-        buscarReniec();
-    }
-});
+watch(
+    () => form.docIdentidad,
+    (newVal) => {
+        if (newVal?.length === 8 && selectedDocTypeAbrev.value === 'DNI') {
+            buscarReniec();
+        }
+    },
+);
 
 // ─── IE Search ───
 const ieQuery = ref('');
@@ -206,7 +213,9 @@ watch(ieQuery, (q) => {
         if (!q) return;
         ieLoading.value = true;
         try {
-            const res = await fetch(`/api/instituciones/search?search=${encodeURIComponent(q)}&per_page=30`);
+            const res = await fetch(
+                `/api/instituciones/search?search=${encodeURIComponent(q)}&per_page=30`,
+            );
             const data = await res.json();
             ieOptions.value = (data.data || []).map((ie: any) => ({
                 id: ie.id,
@@ -465,7 +474,7 @@ function onMasivoSuccess(count: number) {
             @submit="submit"
             :processing="form.processing"
         >
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
                 <!-- Columna Izquierda: Persona + Usuario -->
                 <div class="space-y-6">
                     <!-- SECCIÓN 1: DATOS DE PERSONA -->
@@ -476,7 +485,7 @@ function onMasivoSuccess(count: number) {
 
                         <div class="grid gap-5">
                             <!-- Tipo Doc + Nro Documento -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <ParamSelect
                                     v-model="form.tipoDocIdentidad_id"
                                     type="tipos-doc-identidad"
@@ -485,56 +494,110 @@ function onMasivoSuccess(count: number) {
                                     @update:item="onDocTypeChange"
                                 />
                                 <div class="grid gap-2">
-                                    <Label for="docIdentidad">N° Documento *</Label>
+                                    <Label for="docIdentidad"
+                                        >N° Documento *</Label
+                                    >
                                     <div class="relative flex items-center">
                                         <Input
                                             id="docIdentidad"
                                             v-model="form.docIdentidad"
                                             placeholder="N° documento"
                                             maxlength="20"
-                                            :class="{ 'pr-10': selectedDocTypeAbrev === 'DNI' }"
+                                            :class="{
+                                                'pr-10':
+                                                    selectedDocTypeAbrev ===
+                                                    'DNI',
+                                            }"
                                         />
                                         <Button
-                                            v-if="selectedDocTypeAbrev === 'DNI'"
+                                            v-if="
+                                                selectedDocTypeAbrev === 'DNI'
+                                            "
                                             type="button"
                                             variant="ghost"
                                             size="icon"
                                             class="absolute right-0 h-full px-3 py-2 hover:bg-transparent"
                                             @click="buscarReniec"
-                                            :disabled="isSearchingReniec || form.docIdentidad?.length !== 8"
+                                            :disabled="
+                                                isSearchingReniec ||
+                                                form.docIdentidad?.length !== 8
+                                            "
                                         >
-                                            <Loader2 v-if="isSearchingReniec" class="h-4 w-4 animate-spin text-muted-foreground" />
-                                            <Search v-else class="h-4 w-4 text-muted-foreground" />
+                                            <Loader2
+                                                v-if="isSearchingReniec"
+                                                class="h-4 w-4 animate-spin text-muted-foreground"
+                                            />
+                                            <Search
+                                                v-else
+                                                class="h-4 w-4 text-muted-foreground"
+                                            />
                                         </Button>
                                     </div>
-                                    <p v-if="searchError" class="text-sm text-amber-500">{{ searchError }}</p>
-                                    <p v-if="form.errors.docIdentidad" class="text-sm text-destructive">{{ form.errors.docIdentidad }}</p>
+                                    <p
+                                        v-if="searchError"
+                                        class="text-sm text-amber-500"
+                                    >
+                                        {{ searchError }}
+                                    </p>
+                                    <p
+                                        v-if="form.errors.docIdentidad"
+                                        class="text-sm text-destructive"
+                                    >
+                                        {{ form.errors.docIdentidad }}
+                                    </p>
                                 </div>
                             </div>
 
                             <!-- Apellidos -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div class="grid gap-2">
                                     <Label for="paterno">Ap. Paterno *</Label>
-                                    <Input id="paterno" v-model="form.paterno" placeholder="Apellido paterno" />
-                                    <p v-if="form.errors.paterno" class="text-sm text-destructive">{{ form.errors.paterno }}</p>
+                                    <Input
+                                        id="paterno"
+                                        v-model="form.paterno"
+                                        placeholder="Apellido paterno"
+                                    />
+                                    <p
+                                        v-if="form.errors.paterno"
+                                        class="text-sm text-destructive"
+                                    >
+                                        {{ form.errors.paterno }}
+                                    </p>
                                 </div>
                                 <div class="grid gap-2">
                                     <Label for="materno">Ap. Materno *</Label>
-                                    <Input id="materno" v-model="form.materno" placeholder="Apellido materno" />
-                                    <p v-if="form.errors.materno" class="text-sm text-destructive">{{ form.errors.materno }}</p>
+                                    <Input
+                                        id="materno"
+                                        v-model="form.materno"
+                                        placeholder="Apellido materno"
+                                    />
+                                    <p
+                                        v-if="form.errors.materno"
+                                        class="text-sm text-destructive"
+                                    >
+                                        {{ form.errors.materno }}
+                                    </p>
                                 </div>
                             </div>
 
                             <!-- Nombres -->
                             <div class="grid gap-2">
                                 <Label for="nombre">Nombres *</Label>
-                                <Input id="nombre" v-model="form.nombre" placeholder="Nombres completos" />
-                                <p v-if="form.errors.nombre" class="text-sm text-destructive">{{ form.errors.nombre }}</p>
+                                <Input
+                                    id="nombre"
+                                    v-model="form.nombre"
+                                    placeholder="Nombres completos"
+                                />
+                                <p
+                                    v-if="form.errors.nombre"
+                                    class="text-sm text-destructive"
+                                >
+                                    {{ form.errors.nombre }}
+                                </p>
                             </div>
 
                             <!-- Sexo + País -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <ParamSelect
                                     v-model="form.sexo_id"
                                     type="sexos"
@@ -552,29 +615,54 @@ function onMasivoSuccess(count: number) {
                             <!-- Fecha Nacimiento -->
                             <div class="grid gap-2">
                                 <Label for="fechaNac">Fecha Nacimiento</Label>
-                                <Input id="fechaNac" v-model="form.fechaNac" type="date" />
-                                <p v-if="form.errors.fechaNac" class="text-sm text-destructive">{{ form.errors.fechaNac }}</p>
+                                <Input
+                                    id="fechaNac"
+                                    v-model="form.fechaNac"
+                                    type="date"
+                                />
+                                <p
+                                    v-if="form.errors.fechaNac"
+                                    class="text-sm text-destructive"
+                                >
+                                    {{ form.errors.fechaNac }}
+                                </p>
                             </div>
                         </div>
                     </div>
 
                     <!-- SECCIÓN 2: ACCESO AL SISTEMA (Compacto y Destacado) -->
-                    <div class="rounded-xl border border-blue-200/50 bg-blue-50/50 p-5 shadow-xs dark:border-blue-900/50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-300">
-                        <p class="text-sm font-semibold flex items-center gap-2">
-                            <span class="inline-block w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
+                    <div
+                        class="rounded-xl border border-blue-200/50 bg-blue-50/50 p-5 text-blue-900 shadow-xs dark:border-blue-900/50 dark:bg-blue-950/20 dark:text-blue-300"
+                    >
+                        <p
+                            class="flex items-center gap-2 text-sm font-semibold"
+                        >
+                            <span
+                                class="inline-block h-2.5 w-2.5 animate-pulse rounded-full bg-blue-500"
+                            ></span>
                             Acceso al Sistema
                         </p>
-                        <p class="text-xs mt-2 leading-relaxed text-muted-foreground">
-                            Se creará automáticamente una cuenta de usuario asignada a este trabajador.
-                            Su <strong>nombre de usuario</strong> y <strong>contraseña inicial</strong> serán el número de documento:
-                            <code class="ml-1 px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 font-mono font-bold text-blue-800 dark:text-blue-200">{{ loginPreview }}</code>.
+                        <p
+                            class="mt-2 text-xs leading-relaxed text-muted-foreground"
+                        >
+                            Se creará automáticamente una cuenta de usuario
+                            asignada a este trabajador. Su
+                            <strong>nombre de usuario</strong> y
+                            <strong>contraseña inicial</strong> serán el número
+                            de documento:
+                            <code
+                                class="ml-1 rounded bg-blue-100 px-2 py-0.5 font-mono font-bold text-blue-800 dark:bg-blue-900/60 dark:text-blue-200"
+                                >{{ loginPreview }}</code
+                            >.
                         </p>
                     </div>
                 </div>
 
                 <!-- Columna Derecha: Alta Laboral -->
                 <div class="rounded-xl border bg-card p-6 shadow-xs">
-                    <div class="flex items-center justify-between mb-4 pb-2 border-b">
+                    <div
+                        class="mb-4 flex items-center justify-between border-b pb-2"
+                    >
                         <h2 class="text-lg font-semibold text-foreground">
                             Alta Laboral
                         </h2>
@@ -583,15 +671,21 @@ function onMasivoSuccess(count: number) {
                                 id="incluir_alta"
                                 type="checkbox"
                                 v-model="showAlta"
-                                class="h-4 w-4 rounded border-input text-primary focus:ring-primary cursor-pointer accent-primary"
+                                class="h-4 w-4 cursor-pointer rounded border-input text-primary accent-primary focus:ring-primary"
                             />
-                            <label for="incluir_alta" class="text-sm font-medium text-foreground cursor-pointer select-none">
+                            <label
+                                for="incluir_alta"
+                                class="cursor-pointer text-sm font-medium text-foreground select-none"
+                            >
                                 Registrar Alta Laboral
                             </label>
                         </div>
                     </div>
 
-                    <div v-if="showAlta" class="space-y-4 animate-in fade-in-50 duration-200">
+                    <div
+                        v-if="showAlta"
+                        class="animate-in space-y-4 duration-200 fade-in-50"
+                    >
                         <!-- IE -->
                         <div class="grid gap-2">
                             <Label>Institución Educativa *</Label>
@@ -603,35 +697,58 @@ function onMasivoSuccess(count: number) {
                                     class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:outline-none"
                                 />
                             </div>
-                            <div v-if="form.institucionEducativa_id" class="text-xs text-muted-foreground">
-                                IE seleccionada ID: {{ form.institucionEducativa_id }}
+                            <div
+                                v-if="form.institucionEducativa_id"
+                                class="text-xs text-muted-foreground"
+                            >
+                                IE seleccionada ID:
+                                {{ form.institucionEducativa_id }}
                             </div>
                             <div
                                 v-if="ieOptions.length && ieQuery"
-                                class="max-h-48 overflow-y-auto rounded-md border bg-background shadow-lg animate-in fade-in-50 duration-200"
+                                class="max-h-48 animate-in overflow-y-auto rounded-md border bg-background shadow-lg duration-200 fade-in-50"
                             >
                                 <button
                                     v-for="ie in ieOptions"
                                     :key="ie.id"
                                     type="button"
                                     class="w-full px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
-                                    :class="{ 'bg-primary/10 font-medium text-primary': form.institucionEducativa_id === ie.id }"
-                                    @click="form.institucionEducativa_id = ie.id; ieQuery = ie.nombre; ieOptions = [];"
+                                    :class="{
+                                        'bg-primary/10 font-medium text-primary':
+                                            form.institucionEducativa_id ===
+                                            ie.id,
+                                    }"
+                                    @click="
+                                        form.institucionEducativa_id = ie.id;
+                                        ieQuery = ie.nombre;
+                                        ieOptions = [];
+                                    "
                                 >
                                     {{ ie.nombre }}
                                 </button>
                             </div>
-                            <p v-if="form.errors.institucionEducativa_id" class="text-sm text-destructive">
+                            <p
+                                v-if="form.errors.institucionEducativa_id"
+                                class="text-sm text-destructive"
+                            >
                                 {{ form.errors.institucionEducativa_id }}
                             </p>
                         </div>
 
                         <!-- Código AIRSP + Condición Laboral -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div class="grid gap-2">
                                 <Label>Código AIRSP</Label>
-                                <Input v-model="form.codigoAirsp" placeholder="Ej: 28001234" />
-                                <p v-if="form.errors.codigoAirsp" class="text-sm text-destructive">{{ form.errors.codigoAirsp }}</p>
+                                <Input
+                                    v-model="form.codigoAirsp"
+                                    placeholder="Ej: 28001234"
+                                />
+                                <p
+                                    v-if="form.errors.codigoAirsp"
+                                    class="text-sm text-destructive"
+                                >
+                                    {{ form.errors.codigoAirsp }}
+                                </p>
                             </div>
                             <ParamSelect
                                 type="condiciones-laborales"
@@ -642,7 +759,7 @@ function onMasivoSuccess(count: number) {
                         </div>
 
                         <!-- Tipo de Contrato + Situación Laboral -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <ParamSelect
                                 type="tipos-contrato"
                                 label="Tipo de Contrato *"
@@ -658,7 +775,7 @@ function onMasivoSuccess(count: number) {
                         </div>
 
                         <!-- Rol del Trabajador + Área -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <ParamSelect
                                 type="roles-trabajador"
                                 label="Rol del Trabajador"
@@ -682,21 +799,45 @@ function onMasivoSuccess(count: number) {
                         />
 
                         <!-- Fechas (Inicio, Fin, Alta) -->
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t pt-4">
+                        <div
+                            class="grid grid-cols-1 gap-4 border-t pt-4 sm:grid-cols-3"
+                        >
                             <div class="grid gap-2">
                                 <Label>Fecha Inicio *</Label>
-                                <Input v-model="form.fechaInicio" type="date" :class="{ 'border-destructive': form.errors.fechaInicio }" />
-                                <p v-if="form.errors.fechaInicio" class="text-sm text-destructive">{{ form.errors.fechaInicio }}</p>
+                                <Input
+                                    v-model="form.fechaInicio"
+                                    type="date"
+                                    :class="{
+                                        'border-destructive':
+                                            form.errors.fechaInicio,
+                                    }"
+                                />
+                                <p
+                                    v-if="form.errors.fechaInicio"
+                                    class="text-sm text-destructive"
+                                >
+                                    {{ form.errors.fechaInicio }}
+                                </p>
                             </div>
                             <div class="grid gap-2">
                                 <Label>Fecha Fin</Label>
                                 <Input v-model="form.fechaFin" type="date" />
-                                <p v-if="form.errors.fechaFin" class="text-sm text-destructive">{{ form.errors.fechaFin }}</p>
+                                <p
+                                    v-if="form.errors.fechaFin"
+                                    class="text-sm text-destructive"
+                                >
+                                    {{ form.errors.fechaFin }}
+                                </p>
                             </div>
                             <div class="grid gap-2">
                                 <Label>Fecha Alta</Label>
                                 <Input v-model="form.fechaAlta" type="date" />
-                                <p v-if="form.errors.fechaAlta" class="text-sm text-destructive">{{ form.errors.fechaAlta }}</p>
+                                <p
+                                    v-if="form.errors.fechaAlta"
+                                    class="text-sm text-destructive"
+                                >
+                                    {{ form.errors.fechaAlta }}
+                                </p>
                             </div>
                         </div>
 
@@ -709,16 +850,28 @@ function onMasivoSuccess(count: number) {
                                 placeholder="Observaciones adicionales..."
                                 class="flex min-h-[60px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:outline-none"
                             />
-                            <p v-if="form.errors.observacion" class="text-sm text-destructive">{{ form.errors.observacion }}</p>
+                            <p
+                                v-if="form.errors.observacion"
+                                class="text-sm text-destructive"
+                            >
+                                {{ form.errors.observacion }}
+                            </p>
                         </div>
 
                         <!-- Perfil -->
-                        <div class="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-4">
-                            <h3 class="mb-2 text-sm font-semibold text-foreground">
+                        <div
+                            class="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-4"
+                        >
+                            <h3
+                                class="mb-2 text-sm font-semibold text-foreground"
+                            >
                                 Perfil de Usuario en esta IE
                             </h3>
-                            <p class="mb-3 text-xs text-muted-foreground leading-relaxed">
-                                Asigne el rol y permisos que tendrá el usuario en esta institución educativa.
+                            <p
+                                class="mb-3 text-xs leading-relaxed text-muted-foreground"
+                            >
+                                Asigne el rol y permisos que tendrá el usuario
+                                en esta institución educativa.
                             </p>
                             <div class="grid gap-2">
                                 <Label>Perfil</Label>
@@ -731,10 +884,18 @@ function onMasivoSuccess(count: number) {
                             </div>
                         </div>
                     </div>
-                    <div v-else class="flex flex-col items-center justify-center py-16 text-center border border-dashed rounded-lg bg-muted/20">
-                        <p class="text-sm font-medium text-muted-foreground">Alta laboral omitida</p>
-                        <p class="text-xs text-muted-foreground/80 mt-1 max-w-[240px]">
-                            El trabajador se creará sin vinculación inicial a una Institución Educativa.
+                    <div
+                        v-else
+                        class="flex flex-col items-center justify-center rounded-lg border border-dashed bg-muted/20 py-16 text-center"
+                    >
+                        <p class="text-sm font-medium text-muted-foreground">
+                            Alta laboral omitida
+                        </p>
+                        <p
+                            class="mt-1 max-w-[240px] text-xs text-muted-foreground/80"
+                        >
+                            El trabajador se creará sin vinculación inicial a
+                            una Institución Educativa.
                         </p>
                     </div>
                 </div>
@@ -750,12 +911,13 @@ function onMasivoSuccess(count: number) {
                         Cancelar
                     </Button>
 
-                    <Button
-                        type="submit"
-                        :disabled="form.processing"
-                    >
+                    <Button type="submit" :disabled="form.processing">
                         <UserPlus class="mr-2 h-4 w-4" />
-                        {{ form.processing ? 'Registrando...' : 'Registrar Trabajador' }}
+                        {{
+                            form.processing
+                                ? 'Registrando...'
+                                : 'Registrar Trabajador'
+                        }}
                     </Button>
                 </div>
             </template>

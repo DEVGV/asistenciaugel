@@ -185,7 +185,8 @@ function filteredCat(lista: CatItem[]): CatItem[] {
 async function buscarReniecRow(fila: FilaPersona) {
     if (!fila.docIdentidad || fila.docIdentidad.length !== 8) return;
     const isDni =
-        cats.tiposDoc.find((t) => t.id === fila.tipoDocIdentidad_id)?.abreviatura === 'DNI';
+        cats.tiposDoc.find((t) => t.id === fila.tipoDocIdentidad_id)
+            ?.abreviatura === 'DNI';
     if (!isDni) return;
 
     fila._reniecLoading = true;
@@ -194,7 +195,10 @@ async function buscarReniecRow(fila: FilaPersona) {
     try {
         const response = await fetch('/api/sunat/dni', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            },
             body: JSON.stringify({ dni: fila.docIdentidad }),
         });
         const result = await response.json();
@@ -218,7 +222,8 @@ function onDniInput(fila: FilaPersona, val: string) {
     fila.docIdentidad = val;
     fila._errors['docIdentidad'] = '';
     const isDni =
-        cats.tiposDoc.find((t) => t.id === fila.tipoDocIdentidad_id)?.abreviatura === 'DNI';
+        cats.tiposDoc.find((t) => t.id === fila.tipoDocIdentidad_id)
+            ?.abreviatura === 'DNI';
     if (val.length === 8 && isDni) {
         buscarReniecRow(fila);
     }
@@ -292,8 +297,11 @@ async function enviar() {
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN':
-                    (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)
-                        ?.content ?? '',
+                    (
+                        document.querySelector(
+                            'meta[name="csrf-token"]',
+                        ) as HTMLMetaElement
+                    )?.content ?? '',
                 Accept: 'application/json',
             },
             body: JSON.stringify({ filas: payload }),
@@ -338,18 +346,27 @@ function onGridClick(e: MouseEvent) {
                 @click="onGridClick"
             >
                 <!-- ── Header ── -->
-                <div class="flex shrink-0 items-center justify-between border-b px-6 py-3">
+                <div
+                    class="flex shrink-0 items-center justify-between border-b px-6 py-3"
+                >
                     <div class="flex items-center gap-3">
-                        <h2 class="text-base font-semibold">Carga Masiva de Personas</h2>
-                        <span class="hidden text-xs text-muted-foreground sm:inline">
-                            Ingrese los datos. Marque "Trabajador" para crear cuenta de acceso
-                            automáticamente.
+                        <h2 class="text-base font-semibold">
+                            Carga Masiva de Personas
+                        </h2>
+                        <span
+                            class="hidden text-xs text-muted-foreground sm:inline"
+                        >
+                            Ingrese los datos. Marque "Trabajador" para crear
+                            cuenta de acceso automáticamente.
                         </span>
                         <span
                             v-if="filasConDatos.length"
                             class="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
                         >
-                            {{ filasConDatos.length }} fila{{ filasConDatos.length !== 1 ? 's' : '' }} con datos
+                            {{ filasConDatos.length }} fila{{
+                                filasConDatos.length !== 1 ? 's' : ''
+                            }}
+                            con datos
                         </span>
                     </div>
                     <button
@@ -365,7 +382,8 @@ function onGridClick(e: MouseEvent) {
                     v-if="catsLoading"
                     class="flex flex-1 items-center justify-center gap-2 text-sm text-muted-foreground"
                 >
-                    <Loader2 class="h-5 w-5 animate-spin" /> Cargando catálogos...
+                    <Loader2 class="h-5 w-5 animate-spin" /> Cargando
+                    catálogos...
                 </div>
 
                 <!-- ── Grid ── -->
@@ -379,15 +397,23 @@ function onGridClick(e: MouseEvent) {
                             class="flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400"
                         >
                             <CheckCircle2 class="h-4 w-4 shrink-0" />
-                            {{ resultado.insertados }} persona{{ resultado.insertados !== 1 ? 's' : '' }} creada{{ resultado.insertados !== 1 ? 's' : '' }} correctamente.
+                            {{ resultado.insertados }} persona{{
+                                resultado.insertados !== 1 ? 's' : ''
+                            }}
+                            creada{{ resultado.insertados !== 1 ? 's' : '' }}
+                            correctamente.
                         </div>
                         <div
-                            v-if="Object.keys(resultado.errores_validacion).length"
+                            v-if="
+                                Object.keys(resultado.errores_validacion).length
+                            "
                             class="text-xs text-amber-700 dark:text-amber-400"
                         >
                             <span class="font-bold">Filas rechazadas:</span>
                             <span
-                                v-for="(msg, row) in resultado.errores_validacion"
+                                v-for="(
+                                    msg, row
+                                ) in resultado.errores_validacion"
                                 :key="row"
                                 class="ml-2 rounded border border-amber-200/50 bg-amber-50 px-1.5 py-0.5 dark:bg-amber-950/20"
                             >
@@ -398,8 +424,14 @@ function onGridClick(e: MouseEvent) {
                             v-if="resultado.errores_db.length"
                             class="text-xs text-destructive"
                         >
-                            <span class="font-bold">Errores base de datos:</span>
-                            <div v-for="(msg, i) in resultado.errores_db" :key="i" class="ml-2 mt-0.5">
+                            <span class="font-bold"
+                                >Errores base de datos:</span
+                            >
+                            <div
+                                v-for="(msg, i) in resultado.errores_db"
+                                :key="i"
+                                class="mt-0.5 ml-2"
+                            >
                                 {{ msg }}
                             </div>
                         </div>
@@ -416,8 +448,12 @@ function onGridClick(e: MouseEvent) {
 
                     <!-- Tabla scrollable -->
                     <div id="persona-grid-scroll" class="flex-1 overflow-auto">
-                        <table class="w-max min-w-full border-separate border-spacing-0 text-xs">
-                            <thead class="sticky top-0 z-20 bg-muted/90 backdrop-blur-sm">
+                        <table
+                            class="w-max min-w-full border-separate border-spacing-0 text-xs"
+                        >
+                            <thead
+                                class="sticky top-0 z-20 bg-muted/90 backdrop-blur-sm"
+                            >
                                 <tr>
                                     <th
                                         class="w-8 border-r border-b bg-muted/50 px-2 py-2 text-center text-muted-foreground"
@@ -428,43 +464,50 @@ function onGridClick(e: MouseEvent) {
                                         class="border-r border-b px-2 py-2 text-left font-semibold"
                                         style="min-width: 130px"
                                     >
-                                        Tipo Doc. <span class="text-destructive">*</span>
+                                        Tipo Doc.
+                                        <span class="text-destructive">*</span>
                                     </th>
                                     <th
                                         class="border-r border-b px-2 py-2 text-left font-semibold"
                                         style="min-width: 140px"
                                     >
-                                        N° Documento <span class="text-destructive">*</span>
+                                        N° Documento
+                                        <span class="text-destructive">*</span>
                                     </th>
                                     <th
                                         class="border-r border-b px-2 py-2 text-left font-semibold"
                                         style="min-width: 150px"
                                     >
-                                        Ap. Paterno <span class="text-destructive">*</span>
+                                        Ap. Paterno
+                                        <span class="text-destructive">*</span>
                                     </th>
                                     <th
                                         class="border-r border-b px-2 py-2 text-left font-semibold"
                                         style="min-width: 150px"
                                     >
-                                        Ap. Materno <span class="text-destructive">*</span>
+                                        Ap. Materno
+                                        <span class="text-destructive">*</span>
                                     </th>
                                     <th
                                         class="border-r border-b px-2 py-2 text-left font-semibold"
                                         style="min-width: 170px"
                                     >
-                                        Nombres <span class="text-destructive">*</span>
+                                        Nombres
+                                        <span class="text-destructive">*</span>
                                     </th>
                                     <th
                                         class="border-r border-b px-2 py-2 text-left font-semibold"
                                         style="min-width: 110px"
                                     >
-                                        Sexo <span class="text-destructive">*</span>
+                                        Sexo
+                                        <span class="text-destructive">*</span>
                                     </th>
                                     <th
                                         class="border-r border-b px-2 py-2 text-left font-semibold"
                                         style="min-width: 130px"
                                     >
-                                        País <span class="text-destructive">*</span>
+                                        País
+                                        <span class="text-destructive">*</span>
                                     </th>
                                     <th
                                         class="border-r border-b px-2 py-2 text-left font-semibold"
@@ -477,12 +520,16 @@ function onGridClick(e: MouseEvent) {
                                         style="min-width: 110px"
                                         title="Crear también cuenta de trabajador y usuario"
                                     >
-                                        <div class="flex items-center justify-center gap-1">
+                                        <div
+                                            class="flex items-center justify-center gap-1"
+                                        >
                                             <UserCheck class="h-3.5 w-3.5" />
                                             Trabajador
                                         </div>
                                     </th>
-                                    <th class="w-8 border-b bg-muted/50 px-2 py-2"></th>
+                                    <th
+                                        class="w-8 border-b bg-muted/50 px-2 py-2"
+                                    ></th>
                                 </tr>
                             </thead>
 
@@ -492,7 +539,9 @@ function onGridClick(e: MouseEvent) {
                                     :key="fila._id"
                                     class="group transition-colors hover:bg-muted/30"
                                     :class="{
-                                        'bg-destructive/5': Object.keys(fila._errors).length,
+                                        'bg-destructive/5': Object.keys(
+                                            fila._errors,
+                                        ).length,
                                         'bg-primary/5': fila.es_trabajador,
                                     }"
                                 >
@@ -504,10 +553,18 @@ function onGridClick(e: MouseEvent) {
                                     </td>
 
                                     <!-- Tipo Doc -->
-                                    <td class="relative border-r border-b p-0" data-dropdown>
+                                    <td
+                                        class="relative border-r border-b p-0"
+                                        data-dropdown
+                                    >
                                         <button
                                             type="button"
-                                            @click.stop="toggleDropdown(fila._id, 'tipoDocIdentidad_id')"
+                                            @click.stop="
+                                                toggleDropdown(
+                                                    fila._id,
+                                                    'tipoDocIdentidad_id',
+                                                )
+                                            "
                                             class="flex w-full items-center justify-between gap-1 px-2.5 py-1.5 text-left text-xs outline-none"
                                             :class="
                                                 fila._errors.tipoDocIdentidad_id
@@ -523,17 +580,34 @@ function onGridClick(e: MouseEvent) {
                                                         : ''
                                                 "
                                             >
-                                                {{ catNombre(cats.tiposDoc, fila.tipoDocIdentidad_id) || 'Seleccionar...' }}
+                                                {{
+                                                    catNombre(
+                                                        cats.tiposDoc,
+                                                        fila.tipoDocIdentidad_id,
+                                                    ) || 'Seleccionar...'
+                                                }}
                                             </span>
-                                            <ChevronDown class="h-3 w-3 shrink-0 text-muted-foreground/60" />
+                                            <ChevronDown
+                                                class="h-3 w-3 shrink-0 text-muted-foreground/60"
+                                            />
                                         </button>
                                         <div
-                                            v-if="activeDropdown === dropKey(fila._id, 'tipoDocIdentidad_id')"
+                                            v-if="
+                                                activeDropdown ===
+                                                dropKey(
+                                                    fila._id,
+                                                    'tipoDocIdentidad_id',
+                                                )
+                                            "
                                             class="absolute top-full left-0 z-40 mt-0.5 w-56 rounded-md border bg-background shadow-lg"
                                             data-dropdown
                                         >
-                                            <div class="flex items-center gap-1.5 border-b px-2.5 py-1.5">
-                                                <Search class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                            <div
+                                                class="flex items-center gap-1.5 border-b px-2.5 py-1.5"
+                                            >
+                                                <Search
+                                                    class="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                                                />
                                                 <input
                                                     :id="`ds_${dropKey(fila._id, 'tipoDocIdentidad_id')}`"
                                                     v-model="dropdownSearch"
@@ -543,24 +617,43 @@ function onGridClick(e: MouseEvent) {
                                                     @click.stop
                                                 />
                                             </div>
-                                            <div class="max-h-48 overflow-y-auto py-1">
+                                            <div
+                                                class="max-h-48 overflow-y-auto py-1"
+                                            >
                                                 <div
-                                                    v-for="item in filteredCat(cats.tiposDoc)"
+                                                    v-for="item in filteredCat(
+                                                        cats.tiposDoc,
+                                                    )"
                                                     :key="item.id"
-                                                    @mousedown.prevent="selectCat(fila, 'tipoDocIdentidad_id', item)"
+                                                    @mousedown.prevent="
+                                                        selectCat(
+                                                            fila,
+                                                            'tipoDocIdentidad_id',
+                                                            item,
+                                                        )
+                                                    "
                                                     class="flex cursor-pointer items-center gap-2 px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground"
                                                     :class="
-                                                        fila.tipoDocIdentidad_id === item.id
+                                                        fila.tipoDocIdentidad_id ===
+                                                        item.id
                                                             ? 'bg-primary/10 font-medium text-primary'
                                                             : ''
                                                     "
                                                 >
                                                     <Check
-                                                        v-if="fila.tipoDocIdentidad_id === item.id"
+                                                        v-if="
+                                                            fila.tipoDocIdentidad_id ===
+                                                            item.id
+                                                        "
                                                         class="h-3 w-3 shrink-0"
                                                     />
-                                                    <span v-else class="w-3 shrink-0" />
-                                                    <span class="truncate">{{ item.nombre }}</span>
+                                                    <span
+                                                        v-else
+                                                        class="w-3 shrink-0"
+                                                    />
+                                                    <span class="truncate">{{
+                                                        item.nombre
+                                                    }}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -575,7 +668,9 @@ function onGridClick(e: MouseEvent) {
                                                 @input="
                                                     onDniInput(
                                                         fila,
-                                                        ($event.target as HTMLInputElement).value,
+                                                        (
+                                                            $event.target as HTMLInputElement
+                                                        ).value,
                                                     )
                                                 "
                                                 placeholder="Documento"
@@ -583,21 +678,24 @@ function onGridClick(e: MouseEvent) {
                                                 class="w-full bg-transparent px-2.5 py-1.5 text-xs outline-none placeholder:text-muted-foreground/60"
                                                 :class="
                                                     fila._errors.docIdentidad
-                                                        ? 'bg-destructive/5 ring-1 ring-destructive ring-inset text-destructive'
+                                                        ? 'bg-destructive/5 text-destructive ring-1 ring-destructive ring-inset'
                                                         : ''
                                                 "
                                             />
                                             <button
                                                 v-if="
                                                     cats.tiposDoc.find(
-                                                        (t) => t.id === fila.tipoDocIdentidad_id,
+                                                        (t) =>
+                                                            t.id ===
+                                                            fila.tipoDocIdentidad_id,
                                                     )?.abreviatura === 'DNI'
                                                 "
                                                 type="button"
                                                 @click="buscarReniecRow(fila)"
                                                 :disabled="
                                                     fila._reniecLoading ||
-                                                    fila.docIdentidad.length !== 8
+                                                    fila.docIdentidad.length !==
+                                                        8
                                                 "
                                                 class="absolute right-1 rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-30"
                                                 title="Buscar DNI"
@@ -606,7 +704,10 @@ function onGridClick(e: MouseEvent) {
                                                     v-if="fila._reniecLoading"
                                                     class="h-3 w-3 animate-spin"
                                                 />
-                                                <Search v-else class="h-3 w-3" />
+                                                <Search
+                                                    v-else
+                                                    class="h-3 w-3"
+                                                />
                                             </button>
                                         </div>
                                     </td>
@@ -657,10 +758,18 @@ function onGridClick(e: MouseEvent) {
                                     </td>
 
                                     <!-- Sexo -->
-                                    <td class="relative border-r border-b p-0" data-dropdown>
+                                    <td
+                                        class="relative border-r border-b p-0"
+                                        data-dropdown
+                                    >
                                         <button
                                             type="button"
-                                            @click.stop="toggleDropdown(fila._id, 'sexo_id')"
+                                            @click.stop="
+                                                toggleDropdown(
+                                                    fila._id,
+                                                    'sexo_id',
+                                                )
+                                            "
                                             class="flex w-full items-center justify-between gap-1 px-2.5 py-1.5 text-left text-xs outline-none"
                                             :class="
                                                 fila._errors.sexo_id
@@ -671,20 +780,36 @@ function onGridClick(e: MouseEvent) {
                                             <span
                                                 class="truncate"
                                                 :class="
-                                                    !fila.sexo_id ? 'text-muted-foreground/50' : ''
+                                                    !fila.sexo_id
+                                                        ? 'text-muted-foreground/50'
+                                                        : ''
                                                 "
                                             >
-                                                {{ catNombre(cats.sexos, fila.sexo_id) || 'Seleccionar...' }}
+                                                {{
+                                                    catNombre(
+                                                        cats.sexos,
+                                                        fila.sexo_id,
+                                                    ) || 'Seleccionar...'
+                                                }}
                                             </span>
-                                            <ChevronDown class="h-3 w-3 shrink-0 text-muted-foreground/60" />
+                                            <ChevronDown
+                                                class="h-3 w-3 shrink-0 text-muted-foreground/60"
+                                            />
                                         </button>
                                         <div
-                                            v-if="activeDropdown === dropKey(fila._id, 'sexo_id')"
+                                            v-if="
+                                                activeDropdown ===
+                                                dropKey(fila._id, 'sexo_id')
+                                            "
                                             class="absolute top-full left-0 z-40 mt-0.5 w-48 rounded-md border bg-background shadow-lg"
                                             data-dropdown
                                         >
-                                            <div class="flex items-center gap-1.5 border-b px-2.5 py-1.5">
-                                                <Search class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                            <div
+                                                class="flex items-center gap-1.5 border-b px-2.5 py-1.5"
+                                            >
+                                                <Search
+                                                    class="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                                                />
                                                 <input
                                                     :id="`ds_${dropKey(fila._id, 'sexo_id')}`"
                                                     v-model="dropdownSearch"
@@ -694,11 +819,21 @@ function onGridClick(e: MouseEvent) {
                                                     @click.stop
                                                 />
                                             </div>
-                                            <div class="max-h-48 overflow-y-auto py-1">
+                                            <div
+                                                class="max-h-48 overflow-y-auto py-1"
+                                            >
                                                 <div
-                                                    v-for="item in filteredCat(cats.sexos)"
+                                                    v-for="item in filteredCat(
+                                                        cats.sexos,
+                                                    )"
                                                     :key="item.id"
-                                                    @mousedown.prevent="selectCat(fila, 'sexo_id', item)"
+                                                    @mousedown.prevent="
+                                                        selectCat(
+                                                            fila,
+                                                            'sexo_id',
+                                                            item,
+                                                        )
+                                                    "
                                                     class="flex cursor-pointer items-center gap-2 px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground"
                                                     :class="
                                                         fila.sexo_id === item.id
@@ -707,21 +842,37 @@ function onGridClick(e: MouseEvent) {
                                                     "
                                                 >
                                                     <Check
-                                                        v-if="fila.sexo_id === item.id"
+                                                        v-if="
+                                                            fila.sexo_id ===
+                                                            item.id
+                                                        "
                                                         class="h-3 w-3 shrink-0"
                                                     />
-                                                    <span v-else class="w-3 shrink-0" />
-                                                    <span class="truncate">{{ item.nombre }}</span>
+                                                    <span
+                                                        v-else
+                                                        class="w-3 shrink-0"
+                                                    />
+                                                    <span class="truncate">{{
+                                                        item.nombre
+                                                    }}</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </td>
 
                                     <!-- País -->
-                                    <td class="relative border-r border-b p-0" data-dropdown>
+                                    <td
+                                        class="relative border-r border-b p-0"
+                                        data-dropdown
+                                    >
                                         <button
                                             type="button"
-                                            @click.stop="toggleDropdown(fila._id, 'pais_id')"
+                                            @click.stop="
+                                                toggleDropdown(
+                                                    fila._id,
+                                                    'pais_id',
+                                                )
+                                            "
                                             class="flex w-full items-center justify-between gap-1 px-2.5 py-1.5 text-left text-xs outline-none"
                                             :class="
                                                 fila._errors.pais_id
@@ -732,20 +883,36 @@ function onGridClick(e: MouseEvent) {
                                             <span
                                                 class="truncate"
                                                 :class="
-                                                    !fila.pais_id ? 'text-muted-foreground/50' : ''
+                                                    !fila.pais_id
+                                                        ? 'text-muted-foreground/50'
+                                                        : ''
                                                 "
                                             >
-                                                {{ catNombre(cats.paises, fila.pais_id) || 'Seleccionar...' }}
+                                                {{
+                                                    catNombre(
+                                                        cats.paises,
+                                                        fila.pais_id,
+                                                    ) || 'Seleccionar...'
+                                                }}
                                             </span>
-                                            <ChevronDown class="h-3 w-3 shrink-0 text-muted-foreground/60" />
+                                            <ChevronDown
+                                                class="h-3 w-3 shrink-0 text-muted-foreground/60"
+                                            />
                                         </button>
                                         <div
-                                            v-if="activeDropdown === dropKey(fila._id, 'pais_id')"
+                                            v-if="
+                                                activeDropdown ===
+                                                dropKey(fila._id, 'pais_id')
+                                            "
                                             class="absolute top-full left-0 z-40 mt-0.5 w-52 rounded-md border bg-background shadow-lg"
                                             data-dropdown
                                         >
-                                            <div class="flex items-center gap-1.5 border-b px-2.5 py-1.5">
-                                                <Search class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                            <div
+                                                class="flex items-center gap-1.5 border-b px-2.5 py-1.5"
+                                            >
+                                                <Search
+                                                    class="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                                                />
                                                 <input
                                                     :id="`ds_${dropKey(fila._id, 'pais_id')}`"
                                                     v-model="dropdownSearch"
@@ -755,11 +922,21 @@ function onGridClick(e: MouseEvent) {
                                                     @click.stop
                                                 />
                                             </div>
-                                            <div class="max-h-48 overflow-y-auto py-1">
+                                            <div
+                                                class="max-h-48 overflow-y-auto py-1"
+                                            >
                                                 <div
-                                                    v-for="item in filteredCat(cats.paises)"
+                                                    v-for="item in filteredCat(
+                                                        cats.paises,
+                                                    )"
                                                     :key="item.id"
-                                                    @mousedown.prevent="selectCat(fila, 'pais_id', item)"
+                                                    @mousedown.prevent="
+                                                        selectCat(
+                                                            fila,
+                                                            'pais_id',
+                                                            item,
+                                                        )
+                                                    "
                                                     class="flex cursor-pointer items-center gap-2 px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground"
                                                     :class="
                                                         fila.pais_id === item.id
@@ -768,11 +945,19 @@ function onGridClick(e: MouseEvent) {
                                                     "
                                                 >
                                                     <Check
-                                                        v-if="fila.pais_id === item.id"
+                                                        v-if="
+                                                            fila.pais_id ===
+                                                            item.id
+                                                        "
                                                         class="h-3 w-3 shrink-0"
                                                     />
-                                                    <span v-else class="w-3 shrink-0" />
-                                                    <span class="truncate">{{ item.nombre }}</span>
+                                                    <span
+                                                        v-else
+                                                        class="w-3 shrink-0"
+                                                    />
+                                                    <span class="truncate">{{
+                                                        item.nombre
+                                                    }}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -788,8 +973,12 @@ function onGridClick(e: MouseEvent) {
                                     </td>
 
                                     <!-- Trabajador toggle -->
-                                    <td class="border-r border-b p-0 text-center">
-                                        <div class="flex items-center justify-center px-2 py-1.5">
+                                    <td
+                                        class="border-r border-b p-0 text-center"
+                                    >
+                                        <div
+                                            class="flex items-center justify-center px-2 py-1.5"
+                                        >
                                             <input
                                                 type="checkbox"
                                                 v-model="fila.es_trabajador"
@@ -808,7 +997,7 @@ function onGridClick(e: MouseEvent) {
                                         <button
                                             type="button"
                                             @click="eliminarFila(fila._id)"
-                                            class="p-1.5 text-muted-foreground/40 opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
+                                            class="p-1.5 text-muted-foreground/40 opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
                                         >
                                             <Trash2 class="h-3.5 w-3.5" />
                                         </button>
@@ -853,11 +1042,18 @@ function onGridClick(e: MouseEvent) {
 
                         <div class="flex items-center gap-2">
                             <span
-                                v-if="filasConDatos.filter((f) => f.es_trabajador).length"
+                                v-if="
+                                    filasConDatos.filter((f) => f.es_trabajador)
+                                        .length
+                                "
                                 class="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
                             >
                                 <UserCheck class="h-3 w-3" />
-                                {{ filasConDatos.filter((f) => f.es_trabajador).length }} como trabajador
+                                {{
+                                    filasConDatos.filter((f) => f.es_trabajador)
+                                        .length
+                                }}
+                                como trabajador
                             </span>
                             <Button
                                 variant="outline"
@@ -870,15 +1066,26 @@ function onGridClick(e: MouseEvent) {
                             <Button
                                 size="sm"
                                 @click="enviar"
-                                :disabled="enviando || filasConDatos.length === 0"
+                                :disabled="
+                                    enviando || filasConDatos.length === 0
+                                "
                                 class="h-8 gap-1.5"
                             >
-                                <Loader2 v-if="enviando" class="h-4 w-4 animate-spin" />
+                                <Loader2
+                                    v-if="enviando"
+                                    class="h-4 w-4 animate-spin"
+                                />
                                 <span v-if="enviando">Enviando...</span>
                                 <span v-else>
                                     Registrar
-                                    {{ filasConDatos.length ? filasConDatos.length : '' }}
-                                    persona{{ filasConDatos.length !== 1 ? 's' : '' }}
+                                    {{
+                                        filasConDatos.length
+                                            ? filasConDatos.length
+                                            : ''
+                                    }}
+                                    persona{{
+                                        filasConDatos.length !== 1 ? 's' : ''
+                                    }}
                                 </span>
                             </Button>
                         </div>

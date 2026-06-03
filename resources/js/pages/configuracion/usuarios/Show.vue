@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { Head, useForm, router } from '@inertiajs/vue3';
-import { KeyRound, Plus, Trash2, ShieldCheck, ShieldOff } from 'lucide-vue-next';
+import {
+    KeyRound,
+    Plus,
+    Trash2,
+    ShieldCheck,
+    ShieldOff,
+} from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import UsuarioController from '@/actions/App/Http/Controllers/Configuracion/UsuarioController';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
@@ -17,7 +23,11 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import type { Perfil, Usuario, UsuarioPerfilIe } from '@/types/models/configuracion';
+import type {
+    Perfil,
+    Usuario,
+    UsuarioPerfilIe,
+} from '@/types/models/configuracion';
 
 interface InstitucionSimple {
     id: number;
@@ -77,10 +87,18 @@ const isToggling = ref(false);
 
 function executeToggle() {
     isToggling.value = true;
-    router.post(UsuarioController.toggleActivo(props.usuario.id).url, {}, {
-        onSuccess: () => { showToggleModal.value = false; },
-        onFinish: () => { isToggling.value = false; },
-    });
+    router.post(
+        UsuarioController.toggleActivo(props.usuario.id).url,
+        {},
+        {
+            onSuccess: () => {
+                showToggleModal.value = false;
+            },
+            onFinish: () => {
+                isToggling.value = false;
+            },
+        },
+    );
 }
 
 // ── Asignar perfil ────────────────────────────────────────────────────────────
@@ -119,13 +137,21 @@ function confirmRevocar(upi: UsuarioPerfilIe) {
 function executeRevocar() {
     if (!perfilIeAEliminar.value) return;
     isRevoking.value = true;
-    router.delete(UsuarioController.revocarPerfil({ usuario: props.usuario.id, perfilIe: perfilIeAEliminar.value.id }).url, {
-        onSuccess: () => {
-            showRevocarModal.value = false;
-            perfilIeAEliminar.value = null;
+    router.delete(
+        UsuarioController.revocarPerfil({
+            usuario: props.usuario.id,
+            perfilIe: perfilIeAEliminar.value.id,
+        }).url,
+        {
+            onSuccess: () => {
+                showRevocarModal.value = false;
+                perfilIeAEliminar.value = null;
+            },
+            onFinish: () => {
+                isRevoking.value = false;
+            },
         },
-        onFinish: () => { isRevoking.value = false; },
-    });
+    );
 }
 </script>
 
@@ -133,21 +159,32 @@ function executeRevocar() {
     <Head :title="`Usuario: ${usuario.login}`" />
 
     <div class="flex flex-col gap-6 p-4">
-
         <!-- Encabezado -->
         <div class="flex items-start justify-between">
             <div>
-                <h1 class="text-2xl font-bold tracking-tight">{{ nombreCompleto() }}</h1>
-                <p class="text-muted-foreground font-mono text-sm mt-1">{{ usuario.login }}</p>
+                <h1 class="text-2xl font-bold tracking-tight">
+                    {{ nombreCompleto() }}
+                </h1>
+                <p class="mt-1 font-mono text-sm text-muted-foreground">
+                    {{ usuario.login }}
+                </p>
             </div>
             <div class="flex items-center gap-2">
                 <StatusBadge :active="usuario.activo" />
-                <Button variant="outline" size="sm" @click="showToggleModal = true">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    @click="showToggleModal = true"
+                >
                     <ShieldOff v-if="usuario.activo" class="mr-1 h-4 w-4" />
                     <ShieldCheck v-else class="mr-1 h-4 w-4" />
                     {{ usuario.activo ? 'Desactivar' : 'Activar' }}
                 </Button>
-                <Button variant="outline" size="sm" @click="showPasswordModal = true">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    @click="showPasswordModal = true"
+                >
                     <KeyRound class="mr-1 h-4 w-4" />
                     Cambiar Contraseña
                 </Button>
@@ -157,7 +194,9 @@ function executeRevocar() {
         <!-- Perfiles por IE -->
         <div class="rounded-md border bg-card">
             <div class="flex items-center justify-between border-b px-4 py-3">
-                <h2 class="font-semibold">Perfiles e Instituciones Asignadas</h2>
+                <h2 class="font-semibold">
+                    Perfiles e Instituciones Asignadas
+                </h2>
                 <Button size="sm" @click="showAsignarModal = true">
                     <Plus class="mr-1 h-4 w-4" />
                     Asignar Perfil
@@ -173,21 +212,31 @@ function executeRevocar() {
                 </TableHeader>
                 <TableBody>
                     <TableRow v-for="upi in perfilesIe" :key="upi.id">
-                        <TableCell class="font-medium">{{ upi.perfil?.nombre }}</TableCell>
+                        <TableCell class="font-medium">{{
+                            upi.perfil?.nombre
+                        }}</TableCell>
                         <TableCell>
                             <span v-if="upi.institucionEducativa">
                                 {{ upi.institucionEducativa.nombreLegal }}
-                                <span class="ml-1 text-xs text-muted-foreground font-mono">
-                                    ({{ upi.institucionEducativa.codigoModular }})
+                                <span
+                                    class="ml-1 font-mono text-xs text-muted-foreground"
+                                >
+                                    ({{
+                                        upi.institucionEducativa.codigoModular
+                                    }})
                                 </span>
                             </span>
-                            <span v-else class="text-sm italic text-muted-foreground">Global (UGEL)</span>
+                            <span
+                                v-else
+                                class="text-sm text-muted-foreground italic"
+                                >Global (UGEL)</span
+                            >
                         </TableCell>
                         <TableCell class="text-right">
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                class="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                class="text-destructive hover:bg-destructive/10 hover:text-destructive"
                                 @click="confirmRevocar(upi)"
                             >
                                 <Trash2 class="h-4 w-4" />
@@ -195,7 +244,10 @@ function executeRevocar() {
                         </TableCell>
                     </TableRow>
                     <TableRow v-if="perfilesIe.length === 0">
-                        <TableCell colspan="3" class="h-20 text-center text-muted-foreground">
+                        <TableCell
+                            colspan="3"
+                            class="h-20 text-center text-muted-foreground"
+                        >
                             Sin perfiles asignados.
                         </TableCell>
                     </TableRow>
@@ -220,12 +272,17 @@ function executeRevocar() {
                         placeholder="Mínimo 8 caracteres"
                         autocomplete="new-password"
                     />
-                    <p v-if="passwordForm.errors.password" class="text-sm text-destructive">
+                    <p
+                        v-if="passwordForm.errors.password"
+                        class="text-sm text-destructive"
+                    >
                         {{ passwordForm.errors.password }}
                     </p>
                 </div>
                 <div class="grid gap-2">
-                    <Label for="password_confirmation">Confirmar contraseña *</Label>
+                    <Label for="password_confirmation"
+                        >Confirmar contraseña *</Label
+                    >
                     <Input
                         id="password_confirmation"
                         type="password"
@@ -250,14 +307,19 @@ function executeRevocar() {
                     <select
                         id="perfil_id"
                         v-model="asignarForm.perfil_id"
-                        class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:ring-1 focus:ring-ring focus:outline-none"
                     >
-                        <option :value="null" disabled>Seleccionar perfil...</option>
+                        <option :value="null" disabled>
+                            Seleccionar perfil...
+                        </option>
                         <option v-for="p in perfiles" :key="p.id" :value="p.id">
                             {{ p.nombre }}
                         </option>
                     </select>
-                    <p v-if="asignarForm.errors.perfil_id" class="text-sm text-destructive">
+                    <p
+                        v-if="asignarForm.errors.perfil_id"
+                        class="text-sm text-destructive"
+                    >
                         {{ asignarForm.errors.perfil_id }}
                     </p>
                 </div>
@@ -267,14 +329,26 @@ function executeRevocar() {
                     <select
                         id="ie_id"
                         v-model="asignarForm.institucionEducativa_id"
-                        class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:ring-1 focus:ring-ring focus:outline-none"
                     >
-                        <option :value="null">Global (UGEL — sin IE específica)</option>
-                        <option v-for="ie in instituciones" :key="ie.id" :value="ie.id">
-                            {{ ie.nombreLegal }}{{ ie.codigoModular ? ` (${ie.codigoModular})` : '' }}
+                        <option :value="null">
+                            Global (UGEL — sin IE específica)
+                        </option>
+                        <option
+                            v-for="ie in instituciones"
+                            :key="ie.id"
+                            :value="ie.id"
+                        >
+                            {{ ie.nombreLegal
+                            }}{{
+                                ie.codigoModular ? ` (${ie.codigoModular})` : ''
+                            }}
                         </option>
                     </select>
-                    <p v-if="asignarForm.errors.institucionEducativa_id" class="text-sm text-destructive">
+                    <p
+                        v-if="asignarForm.errors.institucionEducativa_id"
+                        class="text-sm text-destructive"
+                    >
                         {{ asignarForm.errors.institucionEducativa_id }}
                     </p>
                 </div>

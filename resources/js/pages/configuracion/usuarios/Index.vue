@@ -45,7 +45,11 @@ let debounceTimer: ReturnType<typeof setTimeout>;
 watch(search, (val) => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
-        router.get(UsuarioController.index().url, { search: val }, { preserveState: true, replace: true });
+        router.get(
+            UsuarioController.index().url,
+            { search: val },
+            { preserveState: true, replace: true },
+        );
     }, 350);
 });
 
@@ -81,7 +85,9 @@ function onUpdated() {
 
         <div class="flex items-center gap-2">
             <div class="relative w-72">
-                <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Search
+                    class="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground"
+                />
                 <Input
                     v-model="search"
                     placeholder="Buscar por login o nombre..."
@@ -103,11 +109,21 @@ function onUpdated() {
                 </TableHeader>
                 <TableBody>
                     <TableRow v-for="u in props.usuarios.data" :key="u.id">
-                        <TableCell class="font-mono text-sm">{{ u.login }}</TableCell>
-                        <TableCell class="font-medium">{{ nombreCompleto(u) }}</TableCell>
+                        <TableCell class="font-mono text-sm">{{
+                            u.login
+                        }}</TableCell>
+                        <TableCell class="font-medium">{{
+                            nombreCompleto(u)
+                        }}</TableCell>
                         <TableCell class="text-sm text-muted-foreground">
-                            <span v-if="u.perfiles_ie && u.perfiles_ie.length > 0">
-                                {{ u.perfiles_ie.map(p => p.perfil?.nombre).join(', ') }}
+                            <span
+                                v-if="u.perfiles_ie && u.perfiles_ie.length > 0"
+                            >
+                                {{
+                                    u.perfiles_ie
+                                        .map((p) => p.perfil?.nombre)
+                                        .join(', ')
+                                }}
                             </span>
                             <span v-else class="italic">Sin perfiles</span>
                         </TableCell>
@@ -126,7 +142,10 @@ function onUpdated() {
                         </TableCell>
                     </TableRow>
                     <TableRow v-if="props.usuarios.data.length === 0">
-                        <TableCell colspan="5" class="h-24 text-center text-muted-foreground">
+                        <TableCell
+                            colspan="5"
+                            class="h-24 text-center text-muted-foreground"
+                        >
                             No hay usuarios registrados.
                         </TableCell>
                     </TableRow>
@@ -138,23 +157,37 @@ function onUpdated() {
                 class="flex items-center justify-between border-t px-4 py-3"
             >
                 <span class="text-sm text-muted-foreground">
-                    Página {{ props.usuarios.current_page }} de {{ props.usuarios.last_page }}
-                    ({{ props.usuarios.total }} registros)
+                    Página {{ props.usuarios.current_page }} de
+                    {{ props.usuarios.last_page }} ({{ props.usuarios.total }}
+                    registros)
                 </span>
                 <div class="flex gap-2">
                     <Button
                         variant="outline"
                         size="sm"
                         :disabled="props.usuarios.current_page <= 1"
-                        @click="router.get(UsuarioController.index().url, { page: props.usuarios.current_page - 1, search })"
+                        @click="
+                            router.get(UsuarioController.index().url, {
+                                page: props.usuarios.current_page - 1,
+                                search,
+                            })
+                        "
                     >
                         Anterior
                     </Button>
                     <Button
                         variant="outline"
                         size="sm"
-                        :disabled="props.usuarios.current_page >= props.usuarios.last_page"
-                        @click="router.get(UsuarioController.index().url, { page: props.usuarios.current_page + 1, search })"
+                        :disabled="
+                            props.usuarios.current_page >=
+                            props.usuarios.last_page
+                        "
+                        @click="
+                            router.get(UsuarioController.index().url, {
+                                page: props.usuarios.current_page + 1,
+                                search,
+                            })
+                        "
                     >
                         Siguiente
                     </Button>

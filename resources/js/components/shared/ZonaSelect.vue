@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core';
 import { Check, ChevronDown, Search } from 'lucide-vue-next';
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, nextTick } from 'vue';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
@@ -31,9 +31,17 @@ const isOpen = ref(false);
 const searchQuery = ref('');
 const target = ref(null);
 const selectedItemName = ref('');
+const searchInput = ref<HTMLInputElement | null>(null);
 
 onClickOutside(target, () => {
     isOpen.value = false;
+});
+
+watch(isOpen, async (val) => {
+    if (val) {
+        await nextTick();
+        searchInput.value?.focus();
+    }
 });
 
 let debounceTimer: any = null;
@@ -190,6 +198,7 @@ function selectItem(item: ZonaSimple) {
                         class="h-4 w-4 shrink-0 text-muted-foreground opacity-50"
                     />
                     <input
+                        ref="searchInput"
                         type="text"
                         v-model="searchQuery"
                         placeholder="Buscar zona..."

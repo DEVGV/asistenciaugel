@@ -35,6 +35,11 @@ class DomicilioService
         return $domicilio->update($data);
     }
 
+    public function darDeBaja(Domicilios $domicilio): bool
+    {
+        return $domicilio->update(['fechaFin' => now()->toDateString()]);
+    }
+
     public function eliminar(Domicilios $domicilio): bool
     {
         return $domicilio->delete();

@@ -54,7 +54,9 @@ watch(
             form.fechaFin = props.alta.fechaFin ?? '';
             form.fechaAlta = props.alta.fechaAlta ?? '';
             form.observacion = props.alta.observacion ?? '';
-            form.perfil_id = props.alta.perfil_ie ? (props.alta.perfil_ie.perfil_id ?? null) : null;
+            form.perfil_id = props.alta.perfil_ie
+                ? (props.alta.perfil_ie.perfil_id ?? null)
+                : null;
         } else if (visible && !props.isEditing) {
             form.reset();
             form.trabajador_id = props.trabajadorId;
@@ -279,12 +281,15 @@ function submit() {
             </div>
 
             <!-- Perfil de Usuario -->
-            <div class="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-4">
+            <div
+                class="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-4"
+            >
                 <h3 class="mb-2 text-sm font-semibold text-foreground">
                     Perfil de Usuario en esta IE
                 </h3>
-                <p class="mb-3 text-xs text-muted-foreground leading-relaxed">
-                    Asigne el rol y permisos que tendrá el usuario en esta institución educativa.
+                <p class="mb-3 text-xs leading-relaxed text-muted-foreground">
+                    Asigne el rol y permisos que tendrá el usuario en esta
+                    institución educativa.
                 </p>
                 <div class="grid gap-2">
                     <Label>Perfil</Label>

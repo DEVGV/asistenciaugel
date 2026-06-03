@@ -459,9 +459,7 @@ const colsCat = [
                             {{ resultado.insertados }} alta{{
                                 resultado.insertados !== 1 ? 's' : ''
                             }}
-                            creada{{
-                                resultado.insertados !== 1 ? 's' : ''
-                            }}
+                            creada{{ resultado.insertados !== 1 ? 's' : '' }}
                             correctamente.
                         </div>
                         <div

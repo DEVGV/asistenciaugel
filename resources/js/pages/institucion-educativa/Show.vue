@@ -1126,7 +1126,12 @@ const tabs = [
                         <Button
                             size="sm"
                             variant="outline"
-                            @click="openRelojesMasiva(lie.id, lie.local?.nombre || 'Sin nombre')"
+                            @click="
+                                openRelojesMasiva(
+                                    lie.id,
+                                    lie.local?.nombre || 'Sin nombre',
+                                )
+                            "
                             class="gap-1.5 border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 dark:border-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-950/20"
                         >
                             <Upload class="h-4 w-4" />
@@ -1348,9 +1353,15 @@ const tabs = [
                                     <div class="text-xs text-muted-foreground">
                                         {{ alta.rolTrabajador?.nombre || '-' }}
                                     </div>
-                                    <div v-if="alta.perfil_ie?.perfil" class="mt-1">
-                                        <span class="inline-flex items-center rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 ring-1 ring-blue-700/10 dark:bg-blue-950/30 dark:text-blue-400 dark:ring-blue-400/20">
-                                            Perfil: {{ alta.perfil_ie.perfil.nombre }}
+                                    <div
+                                        v-if="alta.perfil_ie?.perfil"
+                                        class="mt-1"
+                                    >
+                                        <span
+                                            class="inline-flex items-center rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 ring-1 ring-blue-700/10 dark:bg-blue-950/30 dark:text-blue-400 dark:ring-blue-400/20"
+                                        >
+                                            Perfil:
+                                            {{ alta.perfil_ie.perfil.nombre }}
                                         </span>
                                     </div>
                                 </TableCell>
@@ -1391,12 +1402,25 @@ const tabs = [
                                         size="sm"
                                         class="h-7 w-7 p-0"
                                         :title="`Gestionar usuario de ${alta.trabajador?.persona?.paterno}`"
-                                        @click="openUsuarioModal(
-                                            alta.trabajador_id,
-                                            [alta.trabajador?.persona?.paterno, alta.trabajador?.persona?.materno, alta.trabajador?.persona?.nombre].filter(Boolean).join(' ')
-                                        )"
+                                        @click="
+                                            openUsuarioModal(
+                                                alta.trabajador_id,
+                                                [
+                                                    alta.trabajador?.persona
+                                                        ?.paterno,
+                                                    alta.trabajador?.persona
+                                                        ?.materno,
+                                                    alta.trabajador?.persona
+                                                        ?.nombre,
+                                                ]
+                                                    .filter(Boolean)
+                                                    .join(' '),
+                                            )
+                                        "
                                     >
-                                        <ShieldCheck class="h-4 w-4 text-muted-foreground hover:text-primary" />
+                                        <ShieldCheck
+                                            class="h-4 w-4 text-muted-foreground hover:text-primary"
+                                        />
                                     </Button>
                                 </TableCell>
                             </TableRow>

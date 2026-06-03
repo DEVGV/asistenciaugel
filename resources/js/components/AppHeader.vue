@@ -251,12 +251,22 @@ const rightNavItems: NavItem[] = [
                                     <AvatarImage
                                         v-if="auth.user.avatar"
                                         :src="auth.user.avatar"
-                                        :alt="auth.user.trabajador?.persona ? `${auth.user.trabajador.persona.paterno} ${auth.user.trabajador.persona.nombre}` : auth.user.login"
+                                        :alt="
+                                            auth.user.trabajador?.persona
+                                                ? `${auth.user.trabajador.persona.paterno} ${auth.user.trabajador.persona.nombre}`
+                                                : auth.user.login
+                                        "
                                     />
                                     <AvatarFallback
                                         class="rounded-lg bg-neutral-200 font-semibold text-black dark:bg-neutral-700 dark:text-white"
                                     >
-                                        {{ getInitials(auth.user.trabajador?.persona ? `${auth.user.trabajador.persona.paterno} ${auth.user.trabajador.persona.nombre}` : auth.user.login) }}
+                                        {{
+                                            getInitials(
+                                                auth.user.trabajador?.persona
+                                                    ? `${auth.user.trabajador.persona.paterno} ${auth.user.trabajador.persona.nombre}`
+                                                    : auth.user.login,
+                                            )
+                                        }}
                                     </AvatarFallback>
                                 </Avatar>
                             </Button>

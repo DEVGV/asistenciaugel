@@ -212,7 +212,9 @@ function executeMarkAsWorker() {
 
     isMarkingWorker.value = true;
     router.post(
-        PersonaController.convertirTrabajador({ persona: personaToMarkWorker.value.id }).url,
+        PersonaController.convertirTrabajador({
+            persona: personaToMarkWorker.value.id,
+        }).url,
         {},
         {
             onSuccess: () => {
@@ -351,7 +353,10 @@ const tabs = [
                         <TableCell>{{ persona.sexo?.nombre || '-' }}</TableCell>
                         <TableCell>
                             <Badge
-                                v-if="persona.trabajador && persona.trabajador.activo"
+                                v-if="
+                                    persona.trabajador &&
+                                    persona.trabajador.activo
+                                "
                                 variant="outline"
                                 class="rounded-md border-green-200 bg-green-50 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-green-700 uppercase dark:border-green-800 dark:bg-green-950/30 dark:text-green-400"
                             >
@@ -399,7 +404,10 @@ const tabs = [
                                         <span>Editar</span>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
-                                        v-if="!persona.trabajador || !persona.trabajador.activo"
+                                        v-if="
+                                            !persona.trabajador ||
+                                            !persona.trabajador.activo
+                                        "
                                         @click="confirmMarkAsWorker(persona)"
                                     >
                                         <UserCheck class="mr-2 h-4 w-4" />

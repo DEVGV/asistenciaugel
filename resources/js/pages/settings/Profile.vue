@@ -36,13 +36,18 @@ const persona = computed(() => user.value?.trabajador?.persona);
         <div class="space-y-4">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                    <p class="text-xs text-muted-foreground">Login (Documento)</p>
-                    <p class="mt-0.5 font-mono text-sm font-semibold">{{ user.login }}</p>
+                    <p class="text-xs text-muted-foreground">
+                        Login (Documento)
+                    </p>
+                    <p class="mt-0.5 font-mono text-sm font-semibold">
+                        {{ user.login }}
+                    </p>
                 </div>
                 <div v-if="persona">
                     <p class="text-xs text-muted-foreground">Nombre Completo</p>
                     <p class="mt-0.5 text-sm font-medium">
-                        {{ persona.paterno }} {{ persona.materno }}, {{ persona.nombre }}
+                        {{ persona.paterno }} {{ persona.materno }},
+                        {{ persona.nombre }}
                     </p>
                 </div>
             </div>
@@ -50,11 +55,15 @@ const persona = computed(() => user.value?.trabajador?.persona);
             <div v-if="persona" class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                     <p class="text-xs text-muted-foreground">Tipo Documento</p>
-                    <p class="mt-0.5 text-sm">{{ persona.tipoDocIdentidad?.nombre || '-' }}</p>
+                    <p class="mt-0.5 text-sm">
+                        {{ persona.tipoDocIdentidad?.nombre || '-' }}
+                    </p>
                 </div>
                 <div>
                     <p class="text-xs text-muted-foreground">N° Documento</p>
-                    <p class="mt-0.5 text-sm font-medium">{{ persona.docIdentidad }}</p>
+                    <p class="mt-0.5 text-sm font-medium">
+                        {{ persona.docIdentidad }}
+                    </p>
                 </div>
             </div>
 

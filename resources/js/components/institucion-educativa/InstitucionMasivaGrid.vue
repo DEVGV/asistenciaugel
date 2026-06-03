@@ -90,12 +90,13 @@ async function fetchCat(type: string): Promise<CatItem[]> {
 
 onMounted(async () => {
     try {
-        const [tiposInstEduc, regimenesEduc, modalidades, nivelesCiclo] = await Promise.all([
-            fetchCat('tipo-inst-educ'),
-            fetchCat('regimen-educ'),
-            fetchCat('modalidades-form'),
-            fetchCat('niveles-ciclo'),
-        ]);
+        const [tiposInstEduc, regimenesEduc, modalidades, nivelesCiclo] =
+            await Promise.all([
+                fetchCat('tipo-inst-educ'),
+                fetchCat('regimen-educ'),
+                fetchCat('modalidades-form'),
+                fetchCat('niveles-ciclo'),
+            ]);
         cats.tiposInstEduc = tiposInstEduc;
         cats.regimenesEduc = regimenesEduc;
         cats.modalidades = modalidades;
@@ -114,7 +115,10 @@ onMounted(async () => {
  * Entidad Admin → ídem.
  * Se deja sin filtro de tipo para devolver todas; el label ya distingue.
  */
-async function fetchEntidades(q: string, tipoId?: number): Promise<EntidadItem[]> {
+async function fetchEntidades(
+    q: string,
+    tipoId?: number,
+): Promise<EntidadItem[]> {
     const url = new URL('/api/entidades/search', window.location.origin);
     if (q) {
         url.searchParams.append('q', q);
@@ -168,7 +172,11 @@ function onEntidadInput(fila: FilaIE, campo: 'ugel' | 'admin', val: string) {
     }, 300);
 }
 
-function selectEntidad(fila: FilaIE, campo: 'ugel' | 'admin', item: EntidadItem) {
+function selectEntidad(
+    fila: FilaIE,
+    campo: 'ugel' | 'admin',
+    item: EntidadItem,
+) {
     if (campo === 'ugel') {
         fila.entidadUgel_id = item.id;
         fila._ugelNombre = item.nombre;
@@ -373,8 +381,11 @@ async function enviar() {
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN':
-                    (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)
-                        ?.content ?? '',
+                    (
+                        document.querySelector(
+                            'meta[name="csrf-token"]',
+                        ) as HTMLMetaElement
+                    )?.content ?? '',
                 Accept: 'application/json',
             },
             body: JSON.stringify({ filas: payload }),
@@ -414,7 +425,9 @@ function resetGrid() {
                 @click="onGridClick"
             >
                 <!-- ── Header ── -->
-                <div class="flex shrink-0 items-center justify-between border-b px-6 py-3">
+                <div
+                    class="flex shrink-0 items-center justify-between border-b px-6 py-3"
+                >
                     <div class="flex items-center gap-3">
                         <div class="flex items-center gap-2">
                             <School class="h-5 w-5 text-primary" />
@@ -422,16 +435,21 @@ function resetGrid() {
                                 Carga Masiva de Instituciones Educativas
                             </h2>
                         </div>
-                        <span class="hidden text-xs text-muted-foreground sm:inline">
-                            Ingrese un registro por fila. Los campos marcados con
-                            <span class="text-destructive">*</span> son obligatorios.
+                        <span
+                            class="hidden text-xs text-muted-foreground sm:inline"
+                        >
+                            Ingrese un registro por fila. Los campos marcados
+                            con
+                            <span class="text-destructive">*</span> son
+                            obligatorios.
                         </span>
                         <span
                             v-if="filasConDatos.length"
                             class="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
                         >
                             {{ filasConDatos.length }}
-                            fila{{ filasConDatos.length !== 1 ? 's' : '' }} con datos
+                            fila{{ filasConDatos.length !== 1 ? 's' : '' }} con
+                            datos
                         </span>
                     </div>
                     <button
@@ -463,18 +481,26 @@ function resetGrid() {
                         >
                             <CheckCircle2 class="h-4 w-4 shrink-0" />
                             {{ resultado.insertados }}
-                            institución{{ resultado.insertados !== 1 ? 'es' : '' }} educativa{{
+                            institución{{
+                                resultado.insertados !== 1 ? 'es' : ''
+                            }}
+                            educativa{{
                                 resultado.insertados !== 1 ? 's' : ''
                             }}
-                            creada{{ resultado.insertados !== 1 ? 's' : '' }} correctamente.
+                            creada{{ resultado.insertados !== 1 ? 's' : '' }}
+                            correctamente.
                         </div>
                         <div
-                            v-if="Object.keys(resultado.errores_validacion).length"
+                            v-if="
+                                Object.keys(resultado.errores_validacion).length
+                            "
                             class="text-xs text-amber-700 dark:text-amber-400"
                         >
                             <span class="font-bold">Filas rechazadas:</span>
                             <span
-                                v-for="(msg, row) in resultado.errores_validacion"
+                                v-for="(
+                                    msg, row
+                                ) in resultado.errores_validacion"
                                 :key="row"
                                 class="ml-2 rounded border border-amber-200/50 bg-amber-50 px-1.5 py-0.5 dark:bg-amber-950/20"
                             >
@@ -485,11 +511,13 @@ function resetGrid() {
                             v-if="resultado.errores_db.length"
                             class="text-xs text-destructive"
                         >
-                            <span class="font-bold">Errores base de datos:</span>
+                            <span class="font-bold"
+                                >Errores base de datos:</span
+                            >
                             <div
                                 v-for="(msg, i) in resultado.errores_db"
                                 :key="i"
-                                class="ml-2 mt-0.5"
+                                class="mt-0.5 ml-2"
                             >
                                 {{ msg }}
                             </div>
@@ -510,7 +538,9 @@ function resetGrid() {
                         <table
                             class="w-max min-w-full border-separate border-spacing-0 text-xs"
                         >
-                            <thead class="sticky top-0 z-20 bg-muted/90 backdrop-blur-sm">
+                            <thead
+                                class="sticky top-0 z-20 bg-muted/90 backdrop-blur-sm"
+                            >
                                 <tr>
                                     <th
                                         class="w-8 border-r border-b bg-muted/50 px-2 py-2 text-center text-muted-foreground"
@@ -587,7 +617,9 @@ function resetGrid() {
                                     >
                                         Fecha Fin
                                     </th>
-                                    <th class="w-8 border-b bg-muted/50 px-2 py-2"></th>
+                                    <th
+                                        class="w-8 border-b bg-muted/50 px-2 py-2"
+                                    ></th>
                                 </tr>
                             </thead>
 
@@ -597,7 +629,9 @@ function resetGrid() {
                                     :key="fila._id"
                                     class="group transition-colors hover:bg-muted/30"
                                     :class="{
-                                        'bg-destructive/5': Object.keys(fila._errors).length,
+                                        'bg-destructive/5': Object.keys(
+                                            fila._errors,
+                                        ).length,
                                     }"
                                 >
                                     <!-- N° fila -->
@@ -614,10 +648,10 @@ function resetGrid() {
                                             v-model="fila.codigoInstitucion"
                                             placeholder="Ej: 0123456"
                                             maxlength="30"
-                                            class="w-full bg-transparent px-2.5 py-1.5 text-xs font-semibold uppercase outline-none placeholder:normal-case placeholder:text-muted-foreground/60"
+                                            class="w-full bg-transparent px-2.5 py-1.5 text-xs font-semibold uppercase outline-none placeholder:text-muted-foreground/60 placeholder:normal-case"
                                             :class="
                                                 fila._errors.codigoInstitucion
-                                                    ? 'bg-destructive/5 ring-1 ring-destructive ring-inset text-destructive'
+                                                    ? 'bg-destructive/5 text-destructive ring-1 ring-destructive ring-inset'
                                                     : ''
                                             "
                                         />
@@ -651,11 +685,17 @@ function resetGrid() {
                                     </td>
 
                                     <!-- Tipo Institución -->
-                                    <td class="relative border-r border-b p-0" data-dropdown>
+                                    <td
+                                        class="relative border-r border-b p-0"
+                                        data-dropdown
+                                    >
                                         <button
                                             type="button"
                                             @click.stop="
-                                                toggleDropdown(fila._id, 'tipoInstEduc_id')
+                                                toggleDropdown(
+                                                    fila._id,
+                                                    'tipoInstEduc_id',
+                                                )
                                             "
                                             class="flex w-full items-center justify-between gap-1 px-2.5 py-1.5 text-left text-xs outline-none hover:bg-muted/40"
                                         >
@@ -681,7 +721,10 @@ function resetGrid() {
                                         <div
                                             v-if="
                                                 activeDropdown ===
-                                                dropKey(fila._id, 'tipoInstEduc_id')
+                                                dropKey(
+                                                    fila._id,
+                                                    'tipoInstEduc_id',
+                                                )
                                             "
                                             class="absolute top-full left-0 z-40 mt-0.5 w-56 rounded-md border bg-background shadow-lg"
                                             data-dropdown
@@ -701,37 +744,60 @@ function resetGrid() {
                                                     @click.stop
                                                 />
                                             </div>
-                                            <div class="max-h-48 overflow-y-auto py-1">
+                                            <div
+                                                class="max-h-48 overflow-y-auto py-1"
+                                            >
                                                 <div
-                                                    v-for="item in filteredCat(cats.tiposInstEduc)"
+                                                    v-for="item in filteredCat(
+                                                        cats.tiposInstEduc,
+                                                    )"
                                                     :key="item.id"
                                                     @mousedown.prevent="
-                                                        selectCat(fila, 'tipoInstEduc_id', item)
+                                                        selectCat(
+                                                            fila,
+                                                            'tipoInstEduc_id',
+                                                            item,
+                                                        )
                                                     "
                                                     class="flex cursor-pointer items-center gap-2 px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground"
                                                     :class="
-                                                        fila.tipoInstEduc_id === item.id
+                                                        fila.tipoInstEduc_id ===
+                                                        item.id
                                                             ? 'bg-primary/10 font-medium text-primary'
                                                             : ''
                                                     "
                                                 >
                                                     <Check
-                                                        v-if="fila.tipoInstEduc_id === item.id"
+                                                        v-if="
+                                                            fila.tipoInstEduc_id ===
+                                                            item.id
+                                                        "
                                                         class="h-3 w-3 shrink-0"
                                                     />
-                                                    <span v-else class="w-3 shrink-0" />
-                                                    <span class="truncate">{{ item.nombre }}</span>
+                                                    <span
+                                                        v-else
+                                                        class="w-3 shrink-0"
+                                                    />
+                                                    <span class="truncate">{{
+                                                        item.nombre
+                                                    }}</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </td>
 
                                     <!-- Régimen Educ. -->
-                                    <td class="relative border-r border-b p-0" data-dropdown>
+                                    <td
+                                        class="relative border-r border-b p-0"
+                                        data-dropdown
+                                    >
                                         <button
                                             type="button"
                                             @click.stop="
-                                                toggleDropdown(fila._id, 'regimenEduc_id')
+                                                toggleDropdown(
+                                                    fila._id,
+                                                    'regimenEduc_id',
+                                                )
                                             "
                                             class="flex w-full items-center justify-between gap-1 px-2.5 py-1.5 text-left text-xs outline-none hover:bg-muted/40"
                                         >
@@ -757,7 +823,10 @@ function resetGrid() {
                                         <div
                                             v-if="
                                                 activeDropdown ===
-                                                dropKey(fila._id, 'regimenEduc_id')
+                                                dropKey(
+                                                    fila._id,
+                                                    'regimenEduc_id',
+                                                )
                                             "
                                             class="absolute top-full left-0 z-40 mt-0.5 w-56 rounded-md border bg-background shadow-lg"
                                             data-dropdown
@@ -777,41 +846,65 @@ function resetGrid() {
                                                     @click.stop
                                                 />
                                             </div>
-                                            <div class="max-h-48 overflow-y-auto py-1">
+                                            <div
+                                                class="max-h-48 overflow-y-auto py-1"
+                                            >
                                                 <div
-                                                    v-for="item in filteredCat(cats.regimenesEduc)"
+                                                    v-for="item in filteredCat(
+                                                        cats.regimenesEduc,
+                                                    )"
                                                     :key="item.id"
                                                     @mousedown.prevent="
-                                                        selectCat(fila, 'regimenEduc_id', item)
+                                                        selectCat(
+                                                            fila,
+                                                            'regimenEduc_id',
+                                                            item,
+                                                        )
                                                     "
                                                     class="flex cursor-pointer items-center gap-2 px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground"
                                                     :class="
-                                                        fila.regimenEduc_id === item.id
+                                                        fila.regimenEduc_id ===
+                                                        item.id
                                                             ? 'bg-primary/10 font-medium text-primary'
                                                             : ''
                                                     "
                                                 >
                                                     <Check
-                                                        v-if="fila.regimenEduc_id === item.id"
+                                                        v-if="
+                                                            fila.regimenEduc_id ===
+                                                            item.id
+                                                        "
                                                         class="h-3 w-3 shrink-0"
                                                     />
-                                                    <span v-else class="w-3 shrink-0" />
-                                                    <span class="truncate">{{ item.nombre }}</span>
+                                                    <span
+                                                        v-else
+                                                        class="w-3 shrink-0"
+                                                    />
+                                                    <span class="truncate">{{
+                                                        item.nombre
+                                                    }}</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </td>
 
                                     <!-- Modalidad -->
-                                    <td class="relative border-r border-b p-0" data-dropdown>
+                                    <td
+                                        class="relative border-r border-b p-0"
+                                        data-dropdown
+                                    >
                                         <button
                                             type="button"
                                             @click.stop="
-                                                toggleDropdown(fila._id, 'modalidadFormativa_id')
+                                                toggleDropdown(
+                                                    fila._id,
+                                                    'modalidadFormativa_id',
+                                                )
                                             "
                                             class="flex w-full items-center justify-between gap-1 px-2.5 py-1.5 text-left text-xs outline-none"
                                             :class="
-                                                fila._errors.modalidadFormativa_id
+                                                fila._errors
+                                                    .modalidadFormativa_id
                                                     ? 'bg-destructive/5 ring-1 ring-destructive ring-inset'
                                                     : 'hover:bg-muted/40'
                                             "
@@ -838,7 +931,10 @@ function resetGrid() {
                                         <div
                                             v-if="
                                                 activeDropdown ===
-                                                dropKey(fila._id, 'modalidadFormativa_id')
+                                                dropKey(
+                                                    fila._id,
+                                                    'modalidadFormativa_id',
+                                                )
                                             "
                                             class="absolute top-full left-0 z-40 mt-0.5 w-64 rounded-md border bg-background shadow-lg"
                                             data-dropdown
@@ -858,9 +954,13 @@ function resetGrid() {
                                                     @click.stop
                                                 />
                                             </div>
-                                            <div class="max-h-48 overflow-y-auto py-1">
+                                            <div
+                                                class="max-h-48 overflow-y-auto py-1"
+                                            >
                                                 <div
-                                                    v-for="item in filteredCat(cats.modalidades)"
+                                                    v-for="item in filteredCat(
+                                                        cats.modalidades,
+                                                    )"
                                                     :key="item.id"
                                                     @mousedown.prevent="
                                                         selectCat(
@@ -871,30 +971,43 @@ function resetGrid() {
                                                     "
                                                     class="flex cursor-pointer items-center gap-2 px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground"
                                                     :class="
-                                                        fila.modalidadFormativa_id === item.id
+                                                        fila.modalidadFormativa_id ===
+                                                        item.id
                                                             ? 'bg-primary/10 font-medium text-primary'
                                                             : ''
                                                     "
                                                 >
                                                     <Check
                                                         v-if="
-                                                            fila.modalidadFormativa_id === item.id
+                                                            fila.modalidadFormativa_id ===
+                                                            item.id
                                                         "
                                                         class="h-3 w-3 shrink-0"
                                                     />
-                                                    <span v-else class="w-3 shrink-0" />
-                                                    <span class="truncate">{{ item.nombre }}</span>
+                                                    <span
+                                                        v-else
+                                                        class="w-3 shrink-0"
+                                                    />
+                                                    <span class="truncate">{{
+                                                        item.nombre
+                                                    }}</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </td>
 
                                     <!-- Nivel / Ciclo -->
-                                    <td class="relative border-r border-b p-0" data-dropdown>
+                                    <td
+                                        class="relative border-r border-b p-0"
+                                        data-dropdown
+                                    >
                                         <button
                                             type="button"
                                             @click.stop="
-                                                toggleDropdown(fila._id, 'nivelCiclo_id')
+                                                toggleDropdown(
+                                                    fila._id,
+                                                    'nivelCiclo_id',
+                                                )
                                             "
                                             class="flex w-full items-center justify-between gap-1 px-2.5 py-1.5 text-left text-xs outline-none"
                                             :class="
@@ -925,7 +1038,10 @@ function resetGrid() {
                                         <div
                                             v-if="
                                                 activeDropdown ===
-                                                dropKey(fila._id, 'nivelCiclo_id')
+                                                dropKey(
+                                                    fila._id,
+                                                    'nivelCiclo_id',
+                                                )
                                             "
                                             class="absolute top-full left-0 z-40 mt-0.5 w-60 rounded-md border bg-background shadow-lg"
                                             data-dropdown
@@ -945,26 +1061,43 @@ function resetGrid() {
                                                     @click.stop
                                                 />
                                             </div>
-                                            <div class="max-h-48 overflow-y-auto py-1">
+                                            <div
+                                                class="max-h-48 overflow-y-auto py-1"
+                                            >
                                                 <div
-                                                    v-for="item in filteredCat(cats.nivelesCiclo)"
+                                                    v-for="item in filteredCat(
+                                                        cats.nivelesCiclo,
+                                                    )"
                                                     :key="item.id"
                                                     @mousedown.prevent="
-                                                        selectCat(fila, 'nivelCiclo_id', item)
+                                                        selectCat(
+                                                            fila,
+                                                            'nivelCiclo_id',
+                                                            item,
+                                                        )
                                                     "
                                                     class="flex cursor-pointer items-center gap-2 px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground"
                                                     :class="
-                                                        fila.nivelCiclo_id === item.id
+                                                        fila.nivelCiclo_id ===
+                                                        item.id
                                                             ? 'bg-primary/10 font-medium text-primary'
                                                             : ''
                                                     "
                                                 >
                                                     <Check
-                                                        v-if="fila.nivelCiclo_id === item.id"
+                                                        v-if="
+                                                            fila.nivelCiclo_id ===
+                                                            item.id
+                                                        "
                                                         class="h-3 w-3 shrink-0"
                                                     />
-                                                    <span v-else class="w-3 shrink-0" />
-                                                    <span class="truncate">{{ item.nombre }}</span>
+                                                    <span
+                                                        v-else
+                                                        class="w-3 shrink-0"
+                                                    />
+                                                    <span class="truncate">{{
+                                                        item.nombre
+                                                    }}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -983,12 +1116,19 @@ function resetGrid() {
                                                     onEntidadInput(
                                                         fila,
                                                         'ugel',
-                                                        ($event.target as HTMLInputElement).value,
+                                                        (
+                                                            $event.target as HTMLInputElement
+                                                        ).value,
                                                     )
                                                 "
                                                 @focus="
-                                                    fila._ugelResults.length === 0 &&
-                                                        onEntidadInput(fila, 'ugel', fila._ugelQuery)
+                                                    fila._ugelResults.length ===
+                                                        0 &&
+                                                    onEntidadInput(
+                                                        fila,
+                                                        'ugel',
+                                                        fila._ugelQuery,
+                                                    )
                                                 "
                                                 placeholder="Buscar UGEL..."
                                                 class="w-full bg-transparent py-1.5 pr-2.5 pl-6 text-xs outline-none placeholder:text-muted-foreground/60"
@@ -1008,21 +1148,30 @@ function resetGrid() {
                                             v-if="fila._ugelResults.length"
                                             class="absolute top-full left-0 z-40 mt-0.5 w-72 rounded-md border bg-background shadow-lg"
                                         >
-                                            <div class="max-h-48 overflow-y-auto py-1">
+                                            <div
+                                                class="max-h-48 overflow-y-auto py-1"
+                                            >
                                                 <div
                                                     v-for="item in fila._ugelResults"
                                                     :key="item.id"
                                                     @mousedown.prevent="
-                                                        selectEntidad(fila, 'ugel', item)
+                                                        selectEntidad(
+                                                            fila,
+                                                            'ugel',
+                                                            item,
+                                                        )
                                                     "
                                                     class="cursor-pointer px-3 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground"
                                                     :class="
-                                                        fila.entidadUgel_id === item.id
+                                                        fila.entidadUgel_id ===
+                                                        item.id
                                                             ? 'bg-primary/10 font-medium text-primary'
                                                             : ''
                                                     "
                                                 >
-                                                    <div class="font-medium leading-tight truncate">
+                                                    <div
+                                                        class="truncate leading-tight font-medium"
+                                                    >
                                                         {{ item.nombre }}
                                                     </div>
                                                     <div
@@ -1048,16 +1197,19 @@ function resetGrid() {
                                                     onEntidadInput(
                                                         fila,
                                                         'admin',
-                                                        ($event.target as HTMLInputElement).value,
+                                                        (
+                                                            $event.target as HTMLInputElement
+                                                        ).value,
                                                     )
                                                 "
                                                 @focus="
-                                                    fila._adminResults.length === 0 &&
-                                                        onEntidadInput(
-                                                            fila,
-                                                            'admin',
-                                                            fila._adminQuery,
-                                                        )
+                                                    fila._adminResults
+                                                        .length === 0 &&
+                                                    onEntidadInput(
+                                                        fila,
+                                                        'admin',
+                                                        fila._adminQuery,
+                                                    )
                                                 "
                                                 placeholder="Buscar entidad admin..."
                                                 class="w-full bg-transparent py-1.5 pr-2.5 pl-6 text-xs outline-none placeholder:text-muted-foreground/60"
@@ -1077,21 +1229,30 @@ function resetGrid() {
                                             v-if="fila._adminResults.length"
                                             class="absolute top-full left-0 z-40 mt-0.5 w-72 rounded-md border bg-background shadow-lg"
                                         >
-                                            <div class="max-h-48 overflow-y-auto py-1">
+                                            <div
+                                                class="max-h-48 overflow-y-auto py-1"
+                                            >
                                                 <div
                                                     v-for="item in fila._adminResults"
                                                     :key="item.id"
                                                     @mousedown.prevent="
-                                                        selectEntidad(fila, 'admin', item)
+                                                        selectEntidad(
+                                                            fila,
+                                                            'admin',
+                                                            item,
+                                                        )
                                                     "
                                                     class="cursor-pointer px-3 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground"
                                                     :class="
-                                                        fila.entidadAdmin_id === item.id
+                                                        fila.entidadAdmin_id ===
+                                                        item.id
                                                             ? 'bg-primary/10 font-medium text-primary'
                                                             : ''
                                                     "
                                                 >
-                                                    <div class="font-medium leading-tight truncate">
+                                                    <div
+                                                        class="truncate leading-tight font-medium"
+                                                    >
                                                         {{ item.nombre }}
                                                     </div>
                                                     <div
@@ -1127,7 +1288,7 @@ function resetGrid() {
                                         <button
                                             type="button"
                                             @click="eliminarFila(fila._id)"
-                                            class="p-1.5 text-muted-foreground/40 opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
+                                            class="p-1.5 text-muted-foreground/40 opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
                                         >
                                             <Trash2 class="h-3.5 w-3.5" />
                                         </button>
@@ -1182,15 +1343,26 @@ function resetGrid() {
                             <Button
                                 size="sm"
                                 @click="enviar"
-                                :disabled="enviando || filasConDatos.length === 0"
+                                :disabled="
+                                    enviando || filasConDatos.length === 0
+                                "
                                 class="h-8 gap-1.5"
                             >
-                                <Loader2 v-if="enviando" class="h-4 w-4 animate-spin" />
+                                <Loader2
+                                    v-if="enviando"
+                                    class="h-4 w-4 animate-spin"
+                                />
                                 <span v-if="enviando">Enviando...</span>
                                 <span v-else>
                                     Registrar
-                                    {{ filasConDatos.length ? filasConDatos.length : '' }}
-                                    IE{{ filasConDatos.length !== 1 ? 's' : '' }}
+                                    {{
+                                        filasConDatos.length
+                                            ? filasConDatos.length
+                                            : ''
+                                    }}
+                                    IE{{
+                                        filasConDatos.length !== 1 ? 's' : ''
+                                    }}
                                 </span>
                             </Button>
                         </div>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core';
 import { Check, ChevronDown, Search } from 'lucide-vue-next';
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import type { ParamSimple } from '@/types/models/params';
@@ -29,12 +29,20 @@ const loading = ref(false);
 const isOpen = ref(false);
 const searchQuery = ref('');
 const target = ref(null);
+const searchInput = ref<HTMLInputElement | null>(null);
 
 // AbortController para cancelar fetches en vuelo cuando llega uno nuevo
 let abortController: AbortController | null = null;
 
 onClickOutside(target, () => {
     isOpen.value = false;
+});
+
+watch(isOpen, async (val) => {
+    if (val) {
+        await nextTick();
+        searchInput.value?.focus();
+    }
 });
 
 async function fetchData() {
@@ -215,6 +223,7 @@ function selectItem(item: ParamSimple) {
                         class="h-4 w-4 shrink-0 text-muted-foreground opacity-50"
                     />
                     <input
+                        ref="searchInput"
                         type="text"
                         v-model="searchQuery"
                         placeholder="Buscar..."

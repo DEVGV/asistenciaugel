@@ -35,6 +35,11 @@ class TelefonoService
         return $telefono->update($data);
     }
 
+    public function darDeBaja(Telefonos $telefono): bool
+    {
+        return $telefono->update(['fechaFin' => now()->toDateString()]);
+    }
+
     public function eliminar(Telefonos $telefono): bool
     {
         return $telefono->delete();

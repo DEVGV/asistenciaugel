@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useForm, router } from '@inertiajs/vue3';
-import { Plus, Pencil, Trash2, MapPin } from 'lucide-vue-next';
+import { Plus, Pencil, Trash2, MapPin, ArrowDownCircle } from 'lucide-vue-next';
 import { ref } from 'vue';
 import DomicilioController from '@/actions/App/Http/Controllers/Persona/DomicilioController';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
@@ -32,6 +32,9 @@ const editingId = ref<number | null>(null);
 const showDeleteModal = ref(false);
 const itemToDelete = ref<Domicilio | null>(null);
 const isDeleting = ref(false);
+const showBajaModal = ref(false);
+const itemToBaja = ref<Domicilio | null>(null);
+const isBaja = ref(false);
 
 const selectedDepartamento = ref<number | null>(null);
 const selectedProvincia = ref<number | null>(null);
@@ -41,35 +44,39 @@ const form = useForm({
     domicilio: '',
     zona_id: null as number | null,
     ubigeo: '',
-    fechaInicio: '',
-    fechaFin: '',
 });
 
-function openCreate() {
-    isEditing.value = false;
-    editingId.value = null;
-    form.reset();
+function resetForm() {
+    form.domicilio = '';
+    form.zona_id = null;
+    form.ubigeo = '';
     form.clearErrors();
-    form.fechaInicio = new Date().toISOString().split('T')[0];
     selectedDepartamento.value = null;
     selectedProvincia.value = null;
     selectedDistrito.value = null;
+}
+
+function closeModal() {
+    showModal.value = false;
+    resetForm();
+    isEditing.value = false;
+    editingId.value = null;
+}
+
+function openCreate() {
+    resetForm();
+    isEditing.value = false;
+    editingId.value = null;
     showModal.value = true;
 }
 
 async function openEdit(item: Domicilio) {
+    resetForm();
     isEditing.value = true;
     editingId.value = item.id;
-    form.clearErrors();
     form.domicilio = item.domicilio;
     form.zona_id = item.zona_id;
     form.ubigeo = item.ubigeo || '';
-    form.fechaInicio = item.fechaInicio || '';
-    form.fechaFin = item.fechaFin || '';
-
-    selectedDepartamento.value = null;
-    selectedProvincia.value = null;
-    selectedDistrito.value = null;
 
     if (item.ubigeo) {
         try {
@@ -93,17 +100,11 @@ function submitForm() {
     if (isEditing.value && editingId.value) {
         form.put(
             DomicilioController.update({ domicilio: editingId.value }).url,
-            {
-                onSuccess: () => {
-                    showModal.value = false;
-                },
-            },
+            { onSuccess: () => closeModal() },
         );
     } else {
         form.post(DomicilioController.store({ persona: props.personaId }).url, {
-            onSuccess: () => {
-                showModal.value = false;
-            },
+            onSuccess: () => closeModal(),
         });
     }
 }
@@ -128,6 +129,32 @@ function executeDelete() {
             },
             onFinish: () => {
                 isDeleting.value = false;
+            },
+        },
+    );
+}
+
+function confirmBaja(item: Domicilio) {
+    itemToBaja.value = item;
+    showBajaModal.value = true;
+}
+
+function executeBaja() {
+    if (!itemToBaja.value) {
+        return;
+    }
+
+    isBaja.value = true;
+    router.patch(
+        `/domicilios/${itemToBaja.value.id}/dar-de-baja`,
+        {},
+        {
+            onSuccess: () => {
+                showBajaModal.value = false;
+                itemToBaja.value = null;
+            },
+            onFinish: () => {
+                isBaja.value = false;
             },
         },
     );
@@ -181,6 +208,16 @@ function executeDelete() {
                                 <Pencil class="h-3.5 w-3.5" />
                             </Button>
                             <Button
+                                v-if="!item.fechaFin"
+                                variant="ghost"
+                                size="icon"
+                                class="h-7 w-7 text-amber-600"
+                                title="Dar de baja"
+                                @click="confirmBaja(item)"
+                            >
+                                <ArrowDownCircle class="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
                                 variant="ghost"
                                 size="icon"
                                 class="h-7 w-7 text-destructive"
@@ -208,6 +245,7 @@ function executeDelete() {
             max-width="4xl"
             :processing="form.processing"
             @submit="submitForm"
+            @close="closeModal"
         >
             <div class="grid gap-6">
                 <!-- Fila 1: Dirección y Departamento -->
@@ -282,7 +320,7 @@ function executeDelete() {
                         <ZonaSelect
                             v-model="form.zona_id"
                             :distrito-id="selectedDistrito"
-                            label="Zona"
+                            label="Zona (opcional)"
                             placeholder="Seleccionar zona..."
                             :disabled="!selectedDistrito"
                             :error="form.errors.zona_id"
@@ -290,7 +328,7 @@ function executeDelete() {
                     </div>
                 </div>
 
-                <!-- Fila 3: Ubigeo y Fechas -->
+                <!-- Fila 3: Ubigeo -->
                 <div
                     class="grid grid-cols-1 items-end gap-4 border-t pt-4 md:grid-cols-5"
                 >
@@ -305,14 +343,6 @@ function executeDelete() {
                             maxlength="6"
                             class="h-9 bg-muted/30 font-mono font-bold"
                         />
-                    </div>
-                    <div class="grid gap-2 md:col-span-2">
-                        <Label>Fecha Inicio</Label>
-                        <Input v-model="form.fechaInicio" type="date" />
-                    </div>
-                    <div class="grid gap-2 md:col-span-2">
-                        <Label>Fecha de Baja</Label>
-                        <Input v-model="form.fechaFin" type="date" />
                     </div>
                 </div>
                 <p v-if="form.errors.ubigeo" class="text-xs text-destructive">
@@ -329,6 +359,15 @@ function executeDelete() {
             destructive
             :processing="isDeleting"
             @confirm="executeDelete"
+        />
+
+        <ConfirmModal
+            v-model:show="showBajaModal"
+            title="Dar de Baja Domicilio"
+            description="¿Dar de baja este domicilio? Se registrará la fecha de hoy como fecha de baja."
+            confirm-text="Dar de Baja"
+            :processing="isBaja"
+            @confirm="executeBaja"
         />
     </div>
 </template>

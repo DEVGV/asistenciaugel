@@ -7,7 +7,7 @@
 >
 import { onClickOutside } from '@vueuse/core';
 import { Check, ChevronDown, Search, X } from 'lucide-vue-next';
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import { cn } from '@/lib/utils';
 
 /**
@@ -48,10 +48,18 @@ const emit = defineEmits<{
 const isOpen = ref(false);
 const searchQuery = ref('');
 const target = ref<HTMLElement | null>(null);
+const searchInput = ref<HTMLInputElement | null>(null);
 
 onClickOutside(target, () => {
     isOpen.value = false;
     searchQuery.value = '';
+});
+
+watch(isOpen, async (val) => {
+    if (val) {
+        await nextTick();
+        searchInput.value?.focus();
+    }
 });
 
 const selectedItem = computed(() =>
@@ -173,6 +181,7 @@ watch(searchQuery, (val) => {
                     class="h-4 w-4 shrink-0 text-muted-foreground opacity-50"
                 />
                 <input
+                    ref="searchInput"
                     type="text"
                     v-model="searchQuery"
                     placeholder="Buscar..."

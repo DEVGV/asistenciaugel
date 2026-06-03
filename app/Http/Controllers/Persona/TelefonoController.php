@@ -17,7 +17,10 @@ class TelefonoController extends Controller
 
     public function store(StoreTelefonoRequest $request, Personas $persona): RedirectResponse
     {
-        $this->telefonoService->crear($persona, $request->validated());
+        $data = $request->validated();
+        $data['fechaInicio'] = now()->toDateString();
+
+        $this->telefonoService->crear($persona, $data);
 
         return redirect()->route('personas.show', $persona)
             ->with('success', 'Teléfono agregado exitosamente.');
@@ -29,6 +32,14 @@ class TelefonoController extends Controller
 
         return redirect()->route('personas.show', $telefono->persona_id)
             ->with('success', 'Teléfono actualizado exitosamente.');
+    }
+
+    public function darDeBaja(Telefonos $telefono): RedirectResponse
+    {
+        $this->telefonoService->darDeBaja($telefono);
+
+        return redirect()->route('personas.show', $telefono->persona_id)
+            ->with('success', 'Teléfono dado de baja exitosamente.');
     }
 
     public function destroy(Telefonos $telefono): RedirectResponse

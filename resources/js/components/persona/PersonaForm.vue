@@ -208,11 +208,15 @@ watch(
                 :checked="!!form.es_trabajador"
                 @change="
                     (e: Event) =>
-                        (form.es_trabajador = (e.target as HTMLInputElement).checked)
+                        (form.es_trabajador = (
+                            e.target as HTMLInputElement
+                        ).checked)
                 "
                 class="size-4 cursor-pointer rounded border-input accent-primary"
             />
-            <Label for="es_trabajador" class="cursor-pointer">Registrar como Trabajador</Label>
+            <Label for="es_trabajador" class="cursor-pointer"
+                >Registrar como Trabajador</Label
+            >
         </div>
         <p v-if="form.errors.es_trabajador" class="text-sm text-destructive">
             {{ form.errors.es_trabajador }}

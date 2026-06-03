@@ -35,6 +35,11 @@ class EmailService
         return $email->update($data);
     }
 
+    public function darDeBaja(Emails $email): bool
+    {
+        return $email->update(['fechaFin' => now()->toDateString()]);
+    }
+
     public function eliminar(Emails $email): bool
     {
         return $email->delete();

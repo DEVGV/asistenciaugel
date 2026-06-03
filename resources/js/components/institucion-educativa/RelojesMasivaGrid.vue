@@ -104,7 +104,12 @@ function validar(): boolean {
             fila._errors['nombre'] = 'Nombre o IP requerido';
             ok = false;
         }
-        if (fila.puerto.trim() && (isNaN(Number(fila.puerto)) || Number(fila.puerto) < 1 || Number(fila.puerto) > 65535)) {
+        if (
+            fila.puerto.trim() &&
+            (isNaN(Number(fila.puerto)) ||
+                Number(fila.puerto) < 1 ||
+                Number(fila.puerto) > 65535)
+        ) {
             fila._errors['puerto'] = 'Puerto inválido (1-65535)';
             ok = false;
         }
@@ -118,7 +123,10 @@ function validar(): boolean {
 
 // ─── Envío ────────────────────────────────────────────────────────────────────
 const enviando = ref(false);
-const resultado = ref<{ creados: number; errores: Record<number, string> } | null>(null);
+const resultado = ref<{
+    creados: number;
+    errores: Record<number, string>;
+} | null>(null);
 const errorGeneral = ref('');
 
 async function enviar() {
@@ -149,8 +157,11 @@ async function enviar() {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN':
-                        (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)
-                            ?.content ?? '',
+                        (
+                            document.querySelector(
+                                'meta[name="csrf-token"]',
+                            ) as HTMLMetaElement
+                        )?.content ?? '',
                     Accept: 'application/json',
                 },
                 body: JSON.stringify({ filas: payload }),
@@ -188,21 +199,32 @@ function resetGrid() {
                 style="max-height: 100dvh"
             >
                 <!-- Header -->
-                <div class="flex shrink-0 items-center justify-between border-b px-6 py-3">
+                <div
+                    class="flex shrink-0 items-center justify-between border-b px-6 py-3"
+                >
                     <div class="flex items-center gap-3">
-                        <h2 class="text-base font-semibold">Carga Masiva de Relojes</h2>
-                        <span v-if="props.localNombre" class="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                        <h2 class="text-base font-semibold">
+                            Carga Masiva de Relojes
+                        </h2>
+                        <span
+                            v-if="props.localNombre"
+                            class="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+                        >
                             Local: <strong>{{ props.localNombre }}</strong>
                         </span>
                         <span class="text-xs text-muted-foreground">
-                            Completa la grilla y presiona <strong>Guardar</strong>.
-                            Necesitas al menos nombre o IP por fila.
+                            Completa la grilla y presiona
+                            <strong>Guardar</strong>. Necesitas al menos nombre
+                            o IP por fila.
                         </span>
                         <span
                             v-if="filasConDatos.length"
                             class="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
                         >
-                            {{ filasConDatos.length }} reloj{{ filasConDatos.length !== 1 ? 'es' : '' }} con datos
+                            {{ filasConDatos.length }} reloj{{
+                                filasConDatos.length !== 1 ? 'es' : ''
+                            }}
+                            con datos
                         </span>
                     </div>
                     <button
@@ -216,35 +238,95 @@ function resetGrid() {
                 <!-- Grid -->
                 <div class="flex flex-1 flex-col overflow-hidden">
                     <!-- Resultado -->
-                    <div v-if="resultado" class="shrink-0 space-y-1 border-b px-5 py-3">
-                        <div class="flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                    <div
+                        v-if="resultado"
+                        class="shrink-0 space-y-1 border-b px-5 py-3"
+                    >
+                        <div
+                            class="flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-400"
+                        >
                             <CheckCircle2 class="h-4 w-4 shrink-0" />
-                            {{ resultado.creados }} reloj{{ resultado.creados !== 1 ? 'es' : '' }} creado{{ resultado.creados !== 1 ? 's' : '' }} correctamente.
+                            {{ resultado.creados }} reloj{{
+                                resultado.creados !== 1 ? 'es' : ''
+                            }}
+                            creado{{ resultado.creados !== 1 ? 's' : '' }}
+                            correctamente.
                         </div>
-                        <div v-if="Object.keys(resultado.errores).length" class="text-xs text-amber-700 dark:text-amber-400">
-                            <span class="font-semibold">Filas con errores:</span>
-                            <span v-for="(msg, row) in resultado.errores" :key="row" class="ml-2">fila {{ row }}: {{ msg }};</span>
+                        <div
+                            v-if="Object.keys(resultado.errores).length"
+                            class="text-xs text-amber-700 dark:text-amber-400"
+                        >
+                            <span class="font-semibold"
+                                >Filas con errores:</span
+                            >
+                            <span
+                                v-for="(msg, row) in resultado.errores"
+                                :key="row"
+                                class="ml-2"
+                                >fila {{ row }}: {{ msg }};</span
+                            >
                         </div>
                     </div>
 
                     <!-- Error general -->
-                    <div v-if="errorGeneral" class="flex shrink-0 items-center gap-2 border-b bg-destructive/5 px-5 py-2 text-xs text-destructive">
+                    <div
+                        v-if="errorGeneral"
+                        class="flex shrink-0 items-center gap-2 border-b bg-destructive/5 px-5 py-2 text-xs text-destructive"
+                    >
                         <AlertCircle class="h-4 w-4 shrink-0" />
                         {{ errorGeneral }}
                     </div>
 
                     <!-- Tabla -->
                     <div id="relojes-grid-scroll" class="flex-1 overflow-auto">
-                        <table class="w-max min-w-full border-separate border-spacing-0 text-xs">
-                            <thead class="sticky top-0 z-20 bg-muted/90 backdrop-blur-sm">
+                        <table
+                            class="w-max min-w-full border-separate border-spacing-0 text-xs"
+                        >
+                            <thead
+                                class="sticky top-0 z-20 bg-muted/90 backdrop-blur-sm"
+                            >
                                 <tr>
-                                    <th class="w-8 border-r border-b px-2 py-2 text-center text-muted-foreground">#</th>
-                                    <th class="border-r border-b px-2 py-2 text-left font-semibold" style="min-width: 180px">Nombre</th>
-                                    <th class="border-r border-b px-2 py-2 text-left font-semibold" style="min-width: 140px">Dirección IP</th>
-                                    <th class="border-r border-b px-2 py-2 text-left font-semibold" style="min-width: 160px">Dirección MAC</th>
-                                    <th class="border-r border-b px-2 py-2 text-left font-semibold" style="min-width: 90px">Puerto</th>
-                                    <th class="border-r border-b px-2 py-2 text-left font-semibold" style="min-width: 130px">Serie</th>
-                                    <th class="border-r border-b px-2 py-2 text-left font-semibold" style="min-width: 110px">ID Biométrico</th>
+                                    <th
+                                        class="w-8 border-r border-b px-2 py-2 text-center text-muted-foreground"
+                                    >
+                                        #
+                                    </th>
+                                    <th
+                                        class="border-r border-b px-2 py-2 text-left font-semibold"
+                                        style="min-width: 180px"
+                                    >
+                                        Nombre
+                                    </th>
+                                    <th
+                                        class="border-r border-b px-2 py-2 text-left font-semibold"
+                                        style="min-width: 140px"
+                                    >
+                                        Dirección IP
+                                    </th>
+                                    <th
+                                        class="border-r border-b px-2 py-2 text-left font-semibold"
+                                        style="min-width: 160px"
+                                    >
+                                        Dirección MAC
+                                    </th>
+                                    <th
+                                        class="border-r border-b px-2 py-2 text-left font-semibold"
+                                        style="min-width: 90px"
+                                    >
+                                        Puerto
+                                    </th>
+                                    <th
+                                        class="border-r border-b px-2 py-2 text-left font-semibold"
+                                        style="min-width: 130px"
+                                    >
+                                        Serie
+                                    </th>
+                                    <th
+                                        class="border-r border-b px-2 py-2 text-left font-semibold"
+                                        style="min-width: 110px"
+                                    >
+                                        ID Biométrico
+                                    </th>
                                     <th class="w-8 border-b px-2 py-2"></th>
                                 </tr>
                             </thead>
@@ -253,9 +335,17 @@ function resetGrid() {
                                     v-for="(fila, idx) in filas"
                                     :key="fila._id"
                                     class="group transition-colors hover:bg-muted/30"
-                                    :class="{ 'bg-destructive/5': Object.keys(fila._errors).length }"
+                                    :class="{
+                                        'bg-destructive/5': Object.keys(
+                                            fila._errors,
+                                        ).length,
+                                    }"
                                 >
-                                    <td class="border-r border-b px-2 py-1 text-center text-muted-foreground select-none">{{ idx + 1 }}</td>
+                                    <td
+                                        class="border-r border-b px-2 py-1 text-center text-muted-foreground select-none"
+                                    >
+                                        {{ idx + 1 }}
+                                    </td>
 
                                     <!-- Nombre -->
                                     <td class="border-r border-b p-0">
@@ -265,7 +355,11 @@ function resetGrid() {
                                             @input="fila._errors['nombre'] = ''"
                                             placeholder="Ej: Reloj Entrada"
                                             class="w-full bg-transparent px-2.5 py-1.5 text-xs outline-none placeholder:text-muted-foreground/50"
-                                            :class="fila._errors['nombre'] ? 'bg-destructive/5 ring-1 ring-destructive ring-inset' : 'hover:bg-muted/30'"
+                                            :class="
+                                                fila._errors['nombre']
+                                                    ? 'bg-destructive/5 ring-1 ring-destructive ring-inset'
+                                                    : 'hover:bg-muted/30'
+                                            "
                                         />
                                     </td>
 
@@ -301,7 +395,11 @@ function resetGrid() {
                                             max="65535"
                                             placeholder="4370"
                                             class="w-full bg-transparent px-2.5 py-1.5 text-xs outline-none placeholder:text-muted-foreground/40"
-                                            :class="fila._errors['puerto'] ? 'bg-destructive/5 ring-1 ring-destructive ring-inset' : 'hover:bg-muted/30'"
+                                            :class="
+                                                fila._errors['puerto']
+                                                    ? 'bg-destructive/5 ring-1 ring-destructive ring-inset'
+                                                    : 'hover:bg-muted/30'
+                                            "
                                         />
                                     </td>
 
@@ -321,10 +419,17 @@ function resetGrid() {
                                         <input
                                             type="number"
                                             v-model="fila.idBiometrico"
-                                            @input="fila._errors['idBiometrico'] = ''"
+                                            @input="
+                                                fila._errors['idBiometrico'] =
+                                                    ''
+                                            "
                                             placeholder="Opcional"
                                             class="w-full bg-transparent px-2.5 py-1.5 text-xs outline-none placeholder:text-muted-foreground/40"
-                                            :class="fila._errors['idBiometrico'] ? 'bg-destructive/5 ring-1 ring-destructive ring-inset' : 'hover:bg-muted/30'"
+                                            :class="
+                                                fila._errors['idBiometrico']
+                                                    ? 'bg-destructive/5 ring-1 ring-destructive ring-inset'
+                                                    : 'hover:bg-muted/30'
+                                            "
                                         />
                                     </td>
 
@@ -344,36 +449,81 @@ function resetGrid() {
                     </div>
 
                     <!-- Acciones de fila -->
-                    <div class="flex shrink-0 items-center gap-2 border-t bg-muted/20 px-4 py-2.5">
-                        <button type="button" @click="agregarFila" class="flex items-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary">
+                    <div
+                        class="flex shrink-0 items-center gap-2 border-t bg-muted/20 px-4 py-2.5"
+                    >
+                        <button
+                            type="button"
+                            @click="agregarFila"
+                            class="flex items-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+                        >
                             <Plus class="h-3.5 w-3.5" /> Agregar fila
                         </button>
-                        <button type="button" @click="agregarFilas(10)" class="flex items-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary">
+                        <button
+                            type="button"
+                            @click="agregarFilas(10)"
+                            class="flex items-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+                        >
                             <Plus class="h-3.5 w-3.5" /> +10 filas
                         </button>
-                        <button type="button" @click="limpiarFilasVacias" class="flex items-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-amber-500/50 hover:text-amber-600">
+                        <button
+                            type="button"
+                            @click="limpiarFilasVacias"
+                            class="flex items-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-amber-500/50 hover:text-amber-600"
+                        >
                             Limpiar vacías
                         </button>
                     </div>
 
                     <!-- Footer -->
-                    <div class="flex shrink-0 items-center justify-between border-t bg-background px-5 py-3.5">
+                    <div
+                        class="flex shrink-0 items-center justify-between border-t bg-background px-5 py-3.5"
+                    >
                         <div class="flex items-center gap-3">
-                            <Button variant="outline" size="sm" @click="emit('close')" :disabled="enviando">Cerrar</Button>
-                            <Button v-if="resultado" variant="outline" size="sm" @click="resetGrid">Nueva carga</Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                @click="emit('close')"
+                                :disabled="enviando"
+                                >Cerrar</Button
+                            >
+                            <Button
+                                v-if="resultado"
+                                variant="outline"
+                                size="sm"
+                                @click="resetGrid"
+                                >Nueva carga</Button
+                            >
                         </div>
                         <div class="flex items-center gap-3">
-                            <span v-if="filasConDatos.length" class="text-xs text-muted-foreground">
-                                {{ filasConDatos.length }} reloj{{ filasConDatos.length !== 1 ? 'es' : '' }} a crear
+                            <span
+                                v-if="filasConDatos.length"
+                                class="text-xs text-muted-foreground"
+                            >
+                                {{ filasConDatos.length }} reloj{{
+                                    filasConDatos.length !== 1 ? 'es' : ''
+                                }}
+                                a crear
                             </span>
                             <Button
                                 size="sm"
                                 @click="enviar"
-                                :disabled="enviando || !filasConDatos.length || !!resultado"
+                                :disabled="
+                                    enviando ||
+                                    !filasConDatos.length ||
+                                    !!resultado
+                                "
                                 class="min-w-[150px]"
                             >
-                                <Loader2 v-if="enviando" class="mr-2 h-4 w-4 animate-spin" />
-                                {{ enviando ? 'Guardando...' : `Guardar ${filasConDatos.length || ''} Reloj${filasConDatos.length !== 1 ? 'es' : ''}` }}
+                                <Loader2
+                                    v-if="enviando"
+                                    class="mr-2 h-4 w-4 animate-spin"
+                                />
+                                {{
+                                    enviando
+                                        ? 'Guardando...'
+                                        : `Guardar ${filasConDatos.length || ''} Reloj${filasConDatos.length !== 1 ? 'es' : ''}`
+                                }}
                             </Button>
                         </div>
                     </div>
