@@ -3,6 +3,8 @@
 use App\Http\Controllers\Configuracion\AreaController;
 use App\Http\Controllers\Configuracion\CargoController;
 use App\Http\Controllers\Configuracion\CondicionLaboralController;
+use App\Http\Controllers\Configuracion\PerfilController;
+use App\Http\Controllers\Configuracion\UsuarioController;
 use App\Http\Controllers\Configuracion\ZonaController;
 use App\Http\Controllers\Entidad\EntidadController;
 use App\Http\Controllers\Horario\CargaHorariaController;
@@ -57,6 +59,31 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('zonas', ZonaController::class)
         ->only(['index', 'store', 'update', 'destroy'])
         ->parameters(['zonas' => 'zona']);
+
+    // ── Usuarios ─────────────────────────────────────────────────────────────
+    Route::resource('usuarios', UsuarioController::class)
+        ->only(['index', 'show'])
+        ->parameters(['usuarios' => 'usuario']);
+
+    Route::post('usuarios/{usuario}/cambiar-password', [UsuarioController::class, 'cambiarPassword'])
+        ->name('usuarios.cambiar-password');
+
+    Route::post('usuarios/{usuario}/toggle-activo', [UsuarioController::class, 'toggleActivo'])
+        ->name('usuarios.toggle-activo');
+
+    Route::post('usuarios/{usuario}/perfiles', [UsuarioController::class, 'asignarPerfil'])
+        ->name('usuarios.perfiles.asignar');
+
+    Route::delete('usuarios/{usuario}/perfiles/{perfilIe}', [UsuarioController::class, 'revocarPerfil'])
+        ->name('usuarios.perfiles.revocar');
+
+    // ── Perfiles ──────────────────────────────────────────────────────────────
+    Route::resource('perfiles', PerfilController::class)
+        ->only(['index', 'store', 'update', 'destroy'])
+        ->parameters(['perfiles' => 'perfil']);
+
+    Route::post('perfiles/{perfil}/permisos', [PerfilController::class, 'syncPermisos'])
+        ->name('perfiles.permisos.sync');
 
     Route::resource('personas', PersonaController::class)
         ->only(['index', 'show', 'store', 'update', 'destroy']);

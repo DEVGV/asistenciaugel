@@ -18,6 +18,7 @@ import {
     Users,
     Upload,
     Search,
+    ShieldCheck,
 } from 'lucide-vue-next';
 import { ref, watch, computed } from 'vue';
 import AltaMasivaGrid from '@/components/institucion-educativa/AltaMasivaGrid.vue';
@@ -35,6 +36,7 @@ import InstitucionEducativaController from '@/actions/App/Http/Controllers/Insti
 import SeccionIEController from '@/actions/App/Http/Controllers/InstitucionEducativa/SeccionIEController';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import FormModal from '@/components/shared/FormModal.vue';
+import GestionUsuarioModal from '@/components/shared/GestionUsuarioModal.vue';
 import ParamSelect from '@/components/shared/ParamSelect.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
 import ZonaSelect from '@/components/shared/ZonaSelect.vue';
@@ -530,6 +532,17 @@ const showMasivaModal = ref(false);
 function onMasivaSuccess(_count: number) {
     showMasivaModal.value = false;
     setTimeout(() => cargarDocentes(), 400);
+}
+
+// ─── Modal Gestión Usuario ────────────────────────────────────────────────────
+const showUsuarioModal = ref(false);
+const usuarioModalTrabajadorId = ref<number | null>(null);
+const usuarioModalNombre = ref('');
+
+function openUsuarioModal(trabajadorId: number, nombre: string) {
+    usuarioModalTrabajadorId.value = trabajadorId;
+    usuarioModalNombre.value = nombre;
+    showUsuarioModal.value = true;
 }
 
 // ─── Carga Masiva Grados y Secciones ─────────────────────────────────────────
@@ -1267,6 +1280,7 @@ const tabs = [
                             <TableHead class="w-[100px]">Inicio</TableHead>
                             <TableHead class="w-[100px]">Fin / Baja</TableHead>
                             <TableHead class="w-[75px]">Estado</TableHead>
+                            <TableHead class="w-[50px]"></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1371,6 +1385,20 @@ const tabs = [
                                         label-inactive="Baja"
                                     />
                                 </TableCell>
+                                <TableCell>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        class="h-7 w-7 p-0"
+                                        :title="`Gestionar usuario de ${alta.trabajador?.persona?.paterno}`"
+                                        @click="openUsuarioModal(
+                                            alta.trabajador_id,
+                                            [alta.trabajador?.persona?.paterno, alta.trabajador?.persona?.materno, alta.trabajador?.persona?.nombre].filter(Boolean).join(' ')
+                                        )"
+                                    >
+                                        <ShieldCheck class="h-4 w-4 text-muted-foreground hover:text-primary" />
+                                    </Button>
+                                </TableCell>
                             </TableRow>
                         </template>
                         <TableRow
@@ -1379,7 +1407,7 @@ const tabs = [
                             "
                         >
                             <TableCell
-                                colspan="6"
+                                colspan="7"
                                 class="h-24 text-center text-muted-foreground"
                             >
                                 No se encontraron docentes/personal con los
@@ -1388,7 +1416,7 @@ const tabs = [
                         </TableRow>
                         <TableRow v-else>
                             <TableCell
-                                colspan="6"
+                                colspan="7"
                                 class="h-16 text-center text-sm text-muted-foreground"
                             >
                                 Cargando datos...
@@ -1790,6 +1818,14 @@ const tabs = [
             :processing="isDeletingReloj"
             @confirm="executeDeleteReloj"
             @cancel="deleteRelojId = null"
+        />
+
+        <GestionUsuarioModal
+            v-if="usuarioModalTrabajadorId !== null"
+            v-model:show="showUsuarioModal"
+            :trabajador-id="usuarioModalTrabajadorId"
+            :trabajador-nombre="usuarioModalNombre"
+            @updated="cargarDocentes()"
         />
     </div>
 </template>

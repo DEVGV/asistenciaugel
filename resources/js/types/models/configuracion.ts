@@ -32,6 +32,47 @@ export interface CondicionLaboral {
     tipoTrabajador?: { id: number; nombre: string | null };
 }
 
+export interface Permiso {
+    id: number;
+    codigo: string;
+    modulo: string;
+    descripcion: string | null;
+    activo: boolean;
+}
+
+export interface Perfil {
+    id: number;
+    nombre: string;
+    descripcion: string | null;
+    activo: boolean;
+    permisos_count?: number;
+    permisos?: Permiso[];
+}
+
+export interface UsuarioPerfilIe {
+    id: number;
+    perfil_id: number;
+    perfil: Perfil;
+    institucionEducativa_id: number | null;
+    institucionEducativa: { id: number; nombreLegal: string; codigoModular: string | null } | null;
+    activo: boolean;
+}
+
+export interface Usuario {
+    id: number;
+    login: string;
+    activo: boolean;
+    trabajador?: {
+        id: number;
+        persona?: {
+            nombre: string | null;
+            paterno: string | null;
+            materno: string | null;
+        };
+    };
+    perfiles_ie?: UsuarioPerfilIe[];
+}
+
 export interface Zona {
     id: number;
     tipoZona_id: number;

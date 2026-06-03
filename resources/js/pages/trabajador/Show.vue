@@ -8,12 +8,14 @@ import {
     Phone,
     Mail,
     MapPin,
+    ShieldCheck,
 } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import TrabajadorController from '@/actions/App/Http/Controllers/Trabajador/TrabajadorController';
 import DomiciliosList from '@/components/persona/DomiciliosList.vue';
 import EmailsList from '@/components/persona/EmailsList.vue';
 import TelefonosList from '@/components/persona/TelefonosList.vue';
+import GestionUsuarioModal from '@/components/shared/GestionUsuarioModal.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
 import AltasList from '@/components/trabajador/AltasList.vue';
 import HorariosTrabajadorTab from '@/components/trabajador/HorariosTrabajadorTab.vue';
@@ -41,6 +43,15 @@ const tabs = [
     { key: 'laboral', label: 'Información Laboral', icon: FileText },
     { key: 'horarios', label: 'Horarios', icon: Calendar },
 ] as const;
+
+// ── Modal usuario ─────────────────────────────────────────────────────────────
+const showUsuarioModal = ref(false);
+
+const nombreTrabajador = computed(() => {
+    const p = props.trabajador.persona;
+    if (!p) return `Trabajador #${props.trabajador.id}`;
+    return [p.paterno, p.materno, p.nombre].filter(Boolean).join(' ');
+});
 </script>
 
 <template>
@@ -82,6 +93,10 @@ const tabs = [
                 </div>
             </div>
             <div class="flex items-center gap-2">
+                <Button variant="outline" size="sm" @click="showUsuarioModal = true">
+                    <ShieldCheck class="mr-2 h-4 w-4" />
+                    Usuario
+                </Button>
                 <Button variant="outline" as-child size="sm">
                     <Link :href="TrabajadorController.index().url">
                         <ArrowLeft class="mr-2 h-4 w-4" /> Volver
@@ -223,4 +238,10 @@ const tabs = [
             </div>
         </div>
     </div>
+
+    <GestionUsuarioModal
+        v-model:show="showUsuarioModal"
+        :trabajador-id="props.trabajador.id"
+        :trabajador-nombre="nombreTrabajador"
+    />
 </template>

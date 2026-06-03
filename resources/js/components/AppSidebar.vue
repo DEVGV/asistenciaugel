@@ -14,6 +14,8 @@ import {
 import AreaController from '@/actions/App/Http/Controllers/Configuracion/AreaController';
 import CargoController from '@/actions/App/Http/Controllers/Configuracion/CargoController';
 import CondicionLaboralController from '@/actions/App/Http/Controllers/Configuracion/CondicionLaboralController';
+import PerfilController from '@/actions/App/Http/Controllers/Configuracion/PerfilController';
+import UsuarioController from '@/actions/App/Http/Controllers/Configuracion/UsuarioController';
 import ZonaController from '@/actions/App/Http/Controllers/Configuracion/ZonaController';
 import EntidadController from '@/actions/App/Http/Controllers/Entidad/EntidadController';
 import InstitucionEducativaController from '@/actions/App/Http/Controllers/InstitucionEducativa/InstitucionEducativaController';
@@ -72,6 +74,8 @@ const mainNavItems: NavItem[] = [
                 href: CondicionLaboralController.index().url,
             },
             { title: 'Zonas', href: ZonaController.index().url },
+            { title: 'Usuarios', href: UsuarioController.index().url },
+            { title: 'Perfiles', href: PerfilController.index().url },
         ],
     },
     {

@@ -1,32 +1,34 @@
 <?php
 
 use App\Models\InstitucionesEduc;
+use App\Models\Param\ParamModalidadesForm;
+use App\Models\Param\ParamNivelesCiclo;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 use function Pest\Laravel\actingAs;
-use function Pest\Laravel\post;
+use function Pest\Laravel\postJson;
 
 uses(DatabaseTransactions::class);
 
 beforeEach(function () {
     $this->user = User::factory()->create();
     actingAs($this->user);
-    $this->modalidadId = \App\Models\Param\ParamModalidadesForm::first()?->id ?? 1;
-    $this->nivelId = \App\Models\Param\ParamNivelesCiclo::first()?->id ?? 1;
+    $this->modalidadId = ParamModalidadesForm::first()?->id ?? 1;
+    $this->nivelId = ParamNivelesCiclo::first()?->id ?? 1;
 });
 
 it('can store instituciones educativas in bulk', function () {
     $payload = [
         'filas' => [
             [
-                'codigoInstitucion' => 'MASV' . fake()->unique()->numerify('####'),
+                'codigoInstitucion' => 'MASV'.fake()->unique()->numerify('####'),
                 'nombreLegal' => 'IE Masiva Test 1',
                 'modalidadFormativa_id' => $this->modalidadId,
                 'nivelCiclo_id' => $this->nivelId,
             ],
             [
-                'codigoInstitucion' => 'MASV' . fake()->unique()->numerify('####'),
+                'codigoInstitucion' => 'MASV'.fake()->unique()->numerify('####'),
                 'nombreLegal' => 'IE Masiva Test 2',
                 'modalidadFormativa_id' => $this->modalidadId,
                 'nivelCiclo_id' => $this->nivelId,
@@ -34,7 +36,7 @@ it('can store instituciones educativas in bulk', function () {
         ],
     ];
 
-    $response = post(route('instituciones.masivo.store'), $payload)
+    $response = postJson(route('instituciones.masivo.store'), $payload)
         ->assertOk()
         ->assertJsonStructure(['message', 'insertados', 'errores_validacion', 'errores_db']);
 
@@ -42,9 +44,9 @@ it('can store instituciones educativas in bulk', function () {
 });
 
 it('rejects duplicate codigoInstitucion within same batch', function () {
-    $codigo = 'DUP' . fake()->unique()->numerify('####');
+    $codigo = 'DUP'.fake()->unique()->numerify('####');
 
-    $response = post(route('instituciones.masivo.store'), [
+    $response = postJson(route('instituciones.masivo.store'), [
         'filas' => [
             [
                 'codigoInstitucion' => $codigo,
@@ -67,7 +69,7 @@ it('rejects duplicate codigoInstitucion within same batch', function () {
 });
 
 it('rejects codigoInstitucion already in the database', function () {
-    $codigo = 'EXIST' . fake()->unique()->numerify('###');
+    $codigo = 'EXIST'.fake()->unique()->numerify('###');
 
     InstitucionesEduc::create([
         'codigoInstitucion' => $codigo,
@@ -77,7 +79,7 @@ it('rejects codigoInstitucion already in the database', function () {
         'created_by' => $this->user->id,
     ]);
 
-    $response = post(route('instituciones.masivo.store'), [
+    $response = postJson(route('instituciones.masivo.store'), [
         'filas' => [
             [
                 'codigoInstitucion' => $codigo,
@@ -93,10 +95,10 @@ it('rejects codigoInstitucion already in the database', function () {
 });
 
 it('validates required fields per row', function () {
-    $response = post(route('instituciones.masivo.store'), [
+    $response = postJson(route('instituciones.masivo.store'), [
         'filas' => [
             [
-                'codigoInstitucion' => 'VALID' . fake()->unique()->numerify('###'),
+                'codigoInstitucion' => 'VALID'.fake()->unique()->numerify('###'),
                 'nombreLegal' => 'IE Válida',
                 'modalidadFormativa_id' => $this->modalidadId,
                 'nivelCiclo_id' => $this->nivelId,
@@ -113,7 +115,7 @@ it('validates required fields per row', function () {
 });
 
 it('returns 422 when no valid rows exist', function () {
-    post(route('instituciones.masivo.store'), [
+    postJson(route('instituciones.masivo.store'), [
         'filas' => [
             [
                 // Missing all required fields
@@ -124,15 +126,15 @@ it('returns 422 when no valid rows exist', function () {
 });
 
 it('requires at least one fila', function () {
-    post(route('instituciones.masivo.store'), [])
+    postJson(route('instituciones.masivo.store'), [])
         ->assertStatus(422)
         ->assertJsonValidationErrors(['filas']);
 });
 
 it('stores optional fields when provided', function () {
-    $codigo = 'OPT' . fake()->unique()->numerify('####');
+    $codigo = 'OPT'.fake()->unique()->numerify('####');
 
-    $response = post(route('instituciones.masivo.store'), [
+    $response = postJson(route('instituciones.masivo.store'), [
         'filas' => [
             [
                 'codigoInstitucion' => $codigo,

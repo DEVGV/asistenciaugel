@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\MobileController;
 use App\Http\Controllers\Api\ParamController;
 use App\Http\Controllers\Api\SunatController;
+use App\Http\Controllers\Configuracion\UsuarioApiController;
 use App\Http\Controllers\Configuracion\ZonaController;
 use App\Http\Controllers\Entidad\EntidadController;
 use App\Http\Controllers\InstitucionEducativa\InstitucionEducativaController;
@@ -43,6 +44,20 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
 
     // Busqueda de Trabajadores
     Route::get('trabajadores/search', [TrabajadorController::class, 'search'])->name('api.trabajadores.search');
+
+    // Usuario de un trabajador (para modal de gestión)
+    Route::get('trabajadores/{trabajador}/usuario', [UsuarioApiController::class, 'porTrabajador'])
+        ->name('api.trabajadores.usuario');
+
+    // Usuario por su propio ID (para modal desde lista de usuarios)
+    Route::get('usuarios/{usuario}/datos', [UsuarioApiController::class, 'porUsuario'])
+        ->name('api.usuarios.datos');
+
+    // Permisos directos del usuario por IE
+    Route::get('usuarios/{usuario}/permisos-ie', [UsuarioApiController::class, 'permisosIe'])
+        ->name('api.usuarios.permisos-ie');
+    Route::post('usuarios/{usuario}/permisos-ie', [UsuarioApiController::class, 'syncPermisosIe'])
+        ->name('api.usuarios.permisos-ie.sync');
 
     // Busqueda de Zonas
     Route::get('zonas/search', [ZonaController::class, 'search'])->name('api.zonas.search');
