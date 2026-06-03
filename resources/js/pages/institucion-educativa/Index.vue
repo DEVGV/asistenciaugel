@@ -447,14 +447,14 @@ function onMasivoSuccess() {
                     </p>
                 </div>
                 <EntidadSelect
-                    :tipoEntidadId="1"
+                    tipoEntidadCodigo="UGEL"
                     v-model="form.entidadUgel_id"
                     label="UGEL"
                     placeholder="Seleccionar UGEL..."
                     :error="form.errors.entidadUgel_id"
                 />
                 <EntidadSelect
-                    :tipoEntidadId="3"
+                    tipoEntidadCodigo="IE"
                     v-model="form.entidadAdmin_id"
                     label="Entidad Admin"
                     placeholder="Seleccionar Entidad Administradora..."

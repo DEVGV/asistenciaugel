@@ -13,6 +13,7 @@ interface EntidadSimple {
 
 const props = defineProps<{
     tipoEntidadId?: number;
+    tipoEntidadCodigo?: string;
     modelValue?: number | string | null;
     label?: string;
     placeholder?: string;
@@ -48,6 +49,11 @@ async function fetchData(query = '') {
             url.searchParams.append(
                 'tipo_entidad_id',
                 String(props.tipoEntidadId),
+            );
+        } else if (props.tipoEntidadCodigo) {
+            url.searchParams.append(
+                'tipo_entidad_codigo',
+                props.tipoEntidadCodigo,
             );
         }
 

@@ -76,14 +76,18 @@ function eliminarFila(id: number) {
 
 function limpiarFilasVacias() {
     const llenas = filas.value.filter(
-        (f) => f.nombre.trim() !== '' || f.dreccionIP.trim() !== '',
+        (f) =>
+            String(f.nombre ?? '').trim() !== '' ||
+            String(f.dreccionIP ?? '').trim() !== '',
     );
     filas.value = llenas.length ? llenas : [nuevaFila()];
 }
 
 const filasConDatos = computed(() =>
     filas.value.filter(
-        (f) => f.nombre.trim() !== '' || f.dreccionIP.trim() !== '',
+        (f) =>
+            String(f.nombre ?? '').trim() !== '' ||
+            String(f.dreccionIP ?? '').trim() !== '',
     ),
 );
 
@@ -93,27 +97,32 @@ function validar(): boolean {
     filas.value.forEach((fila) => {
         fila._errors = {};
         const tieneAlgo =
-            fila.nombre.trim() ||
-            fila.dreccionIP.trim() ||
-            fila.direccionMac.trim() ||
-            fila.puerto.trim() ||
-            fila.serie.trim() ||
-            fila.idBiometrico.trim();
+            String(fila.nombre ?? '').trim() ||
+            String(fila.dreccionIP ?? '').trim() ||
+            String(fila.direccionMac ?? '').trim() ||
+            String(fila.puerto ?? '').trim() ||
+            String(fila.serie ?? '').trim() ||
+            String(fila.idBiometrico ?? '').trim();
         if (!tieneAlgo) return;
-        if (!fila.nombre.trim() && !fila.dreccionIP.trim()) {
+        if (
+            !String(fila.nombre ?? '').trim() &&
+            !String(fila.dreccionIP ?? '').trim()
+        ) {
             fila._errors['nombre'] = 'Nombre o IP requerido';
             ok = false;
         }
+        const puertoStr = String(fila.puerto ?? '').trim();
         if (
-            fila.puerto.trim() &&
-            (isNaN(Number(fila.puerto)) ||
-                Number(fila.puerto) < 1 ||
-                Number(fila.puerto) > 65535)
+            puertoStr &&
+            (isNaN(Number(puertoStr)) ||
+                Number(puertoStr) < 1 ||
+                Number(puertoStr) > 65535)
         ) {
             fila._errors['puerto'] = 'Puerto inválido (1-65535)';
             ok = false;
         }
-        if (fila.idBiometrico.trim() && isNaN(Number(fila.idBiometrico))) {
+        const bioStr = String(fila.idBiometrico ?? '').trim();
+        if (bioStr && isNaN(Number(bioStr))) {
             fila._errors['idBiometrico'] = 'Debe ser número';
             ok = false;
         }
@@ -141,12 +150,14 @@ async function enviar() {
     resultado.value = null;
 
     const payload = filasFiltradas.map((f) => ({
-        nombre: f.nombre.trim() || null,
-        dreccionIP: f.dreccionIP.trim() || null,
-        direccionMac: f.direccionMac.trim() || null,
-        puerto: f.puerto.trim() ? Number(f.puerto) : null,
-        serie: f.serie.trim() || null,
-        idBiometrico: f.idBiometrico.trim() ? Number(f.idBiometrico) : null,
+        nombre: String(f.nombre ?? '').trim() || null,
+        dreccionIP: String(f.dreccionIP ?? '').trim() || null,
+        direccionMac: String(f.direccionMac ?? '').trim() || null,
+        puerto: String(f.puerto ?? '').trim() ? Number(f.puerto) : null,
+        serie: String(f.serie ?? '').trim() || null,
+        idBiometrico: String(f.idBiometrico ?? '').trim()
+            ? Number(f.idBiometrico)
+            : null,
     }));
 
     try {

@@ -335,9 +335,28 @@ async function buscarReniecRow(fila: FilaTrabajador) {
     }
 }
 
+function checkDuplicadoEnCarga(fila: FilaTrabajador): boolean {
+    if (!fila.docIdentidad) return false;
+    const key = `${fila.tipoDocIdentidad_id}_${fila.docIdentidad.trim().toUpperCase()}`;
+    const otras = filas.value.filter(
+        (f) =>
+            f._id !== fila._id &&
+            (f.docIdentidad || f.paterno || f.nombre) &&
+            `${f.tipoDocIdentidad_id}_${f.docIdentidad.trim().toUpperCase()}` === key,
+    );
+    return otras.length > 0;
+}
+
 function onDniInput(fila: FilaTrabajador, val: string) {
     fila.docIdentidad = val;
     fila._errors['docIdentidad'] = '';
+
+    // Verificar duplicado en tiempo real
+    if (val && checkDuplicadoEnCarga({ ...fila, docIdentidad: val })) {
+        fila._errors['docIdentidad'] = 'Documento repetido en esta carga';
+        return;
+    }
+
     const isDni =
         cats.tiposDoc.find((t) => t.id === fila.tipoDocIdentidad_id)
             ?.abreviatura === 'DNI';
@@ -349,6 +368,19 @@ function onDniInput(fila: FilaTrabajador, val: string) {
 // ─── Validación ───────────────────────────────────────────────────────────────
 function validar(): boolean {
     let ok = true;
+
+    // Detectar documentos duplicados dentro de la misma carga
+    const filasActivas = filas.value.filter(
+        (f) => f.docIdentidad || f.paterno || f.nombre,
+    );
+    const docsSeen = new Map<string, number[]>(); // doc → [índices _id]
+    for (const fila of filasActivas) {
+        if (!fila.docIdentidad) continue;
+        const key = `${fila.tipoDocIdentidad_id}_${fila.docIdentidad.trim().toUpperCase()}`;
+        if (!docsSeen.has(key)) docsSeen.set(key, []);
+        docsSeen.get(key)!.push(fila._id);
+    }
+
     for (const fila of filas.value) {
         if (!fila.docIdentidad && !fila.paterno && !fila.nombre) continue;
         fila._errors = {};
@@ -366,6 +398,17 @@ function validar(): boolean {
         for (const campo of personaReq) {
             if (!fila[campo]) {
                 fila._errors[campo as string] = 'Requerido';
+                ok = false;
+            }
+        }
+
+        // Validar duplicado de documento en esta carga
+        if (fila.docIdentidad) {
+            const key = `${fila.tipoDocIdentidad_id}_${fila.docIdentidad.trim().toUpperCase()}`;
+            const duplicados = docsSeen.get(key) ?? [];
+            if (duplicados.length > 1) {
+                fila._errors['docIdentidad'] =
+                    'Documento repetido en esta carga';
                 ok = false;
             }
         }

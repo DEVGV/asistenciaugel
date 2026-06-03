@@ -109,22 +109,18 @@ onMounted(async () => {
 });
 
 // ─── Typeahead de entidades (UGEL y Entidad Admin) ───────────────────────────
-/**
- * Busca entidades filtrando por tipo.
- * UGEL → tipo_entidad_id sin restricción (o tipo específico según DB).
- * Entidad Admin → ídem.
- * Se deja sin filtro de tipo para devolver todas; el label ya distingue.
- */
+// Usar abreviatura de tipo_entidad (estable, no cambia con el id)
+const TIPO_UGEL = 'UGEL';
+const TIPO_ADMIN = 'IE';
+
 async function fetchEntidades(
     q: string,
-    tipoId?: number,
+    tipoCodigo: string,
 ): Promise<EntidadItem[]> {
     const url = new URL('/api/entidades/search', window.location.origin);
+    url.searchParams.append('tipo_entidad_codigo', tipoCodigo);
     if (q) {
         url.searchParams.append('q', q);
-    }
-    if (tipoId) {
-        url.searchParams.append('tipo_entidad_id', String(tipoId));
     }
     const res = await fetch(url.toString());
     const json = await res.json();
@@ -162,11 +158,11 @@ function onEntidadInput(fila: FilaIE, campo: 'ugel' | 'admin', val: string) {
     debounceTimers[timerKey] = setTimeout(async () => {
         if (campo === 'ugel') {
             fila._ugelLoading = true;
-            fila._ugelResults = await fetchEntidades(val);
+            fila._ugelResults = await fetchEntidades(val, TIPO_UGEL);
             fila._ugelLoading = false;
         } else {
             fila._adminLoading = true;
-            fila._adminResults = await fetchEntidades(val);
+            fila._adminResults = await fetchEntidades(val, TIPO_ADMIN);
             fila._adminLoading = false;
         }
     }, 300);
@@ -1127,7 +1123,7 @@ function resetGrid() {
                                                     onEntidadInput(
                                                         fila,
                                                         'ugel',
-                                                        fila._ugelQuery,
+                                                        fila._ugelQuery || '',
                                                     )
                                                 "
                                                 placeholder="Buscar UGEL..."
@@ -1208,7 +1204,7 @@ function resetGrid() {
                                                     onEntidadInput(
                                                         fila,
                                                         'admin',
-                                                        fila._adminQuery,
+                                                        fila._adminQuery || '',
                                                     )
                                                 "
                                                 placeholder="Buscar entidad admin..."

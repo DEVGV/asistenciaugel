@@ -35,6 +35,7 @@ class EntidadService
     public function buscarParaSelect(Request $request): \Illuminate\Database\Eloquent\Collection
     {
         $tipoId     = $request->integer('tipo_entidad_id') ?: null;
+        $tipoCodigo = $request->string('tipo_entidad_codigo')->trim() ?: null;
         $selectedId = $request->integer('selected_id') ?: null;
         $search     = $request->string('q')->trim();
 
@@ -42,6 +43,11 @@ class EntidadService
 
         if ($tipoId) {
             $query->where('tipoEntidad_id', $tipoId);
+        } elseif ($tipoCodigo) {
+            $query->whereHas('tipoEntidad', function ($q) use ($tipoCodigo) {
+                $q->where('codigo', $tipoCodigo)
+                  ->orWhere('abreviatura', $tipoCodigo);
+            });
         }
 
         $query->where(function ($q) use ($selectedId) {

@@ -7,6 +7,7 @@ use App\Http\Controllers\Configuracion\PerfilController;
 use App\Http\Controllers\Configuracion\UsuarioController;
 use App\Http\Controllers\Configuracion\ZonaController;
 use App\Http\Controllers\Entidad\EntidadController;
+use App\Http\Controllers\Entidad\EntidadMasivaController;
 use App\Http\Controllers\Horario\CargaHorariaController;
 use App\Http\Controllers\Horario\HorarioCursoController;
 use App\Http\Controllers\Horario\HorarioMasivoController;
@@ -18,12 +19,12 @@ use App\Http\Controllers\Infraestructura\LocalMarcacionController;
 use App\Http\Controllers\Infraestructura\RelojController;
 use App\Http\Controllers\Infraestructura\RelojesMasivaController;
 use App\Http\Controllers\InstitucionEducativa\AltaMasivaIEController;
-use App\Http\Controllers\InstitucionEducativa\InstitucionEducativaMasivaController;
 use App\Http\Controllers\InstitucionEducativa\CursoIEController;
 use App\Http\Controllers\InstitucionEducativa\CursosMasivaIEController;
 use App\Http\Controllers\InstitucionEducativa\GradoIEController;
 use App\Http\Controllers\InstitucionEducativa\GradosMasivaIEController;
 use App\Http\Controllers\InstitucionEducativa\InstitucionEducativaController;
+use App\Http\Controllers\InstitucionEducativa\InstitucionEducativaMasivaController;
 use App\Http\Controllers\InstitucionEducativa\SeccionIEController;
 use App\Http\Controllers\Persona\DomicilioController;
 use App\Http\Controllers\Persona\EmailController;
@@ -43,6 +44,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('entidades', EntidadController::class)
         ->only(['index', 'store', 'update', 'destroy'])
         ->parameters(['entidades' => 'entidade']);
+    Route::post('entidades-masivas', [EntidadMasivaController::class, 'store'])
+        ->name('entidades.masivo.store');
 
     Route::resource('areas', AreaController::class)
         ->only(['index', 'store', 'update', 'destroy'])
