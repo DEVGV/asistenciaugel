@@ -4,8 +4,10 @@ namespace App\Services\Trabajador;
 
 use App\DTOs\Trabajador\CreateTrabajadorDTO;
 use App\DTOs\Trabajador\UpdateTrabajadorDTO;
+use App\Models\Auth\Perfil;
 use App\Models\Trabajador;
 use App\Services\Auth\ContextoService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -105,6 +107,16 @@ class TrabajadorService
         }
 
         return $query->orderByDesc('id')->take(20)->get();
+    }
+
+    /**
+     * Lista perfiles activos para selects del formulario.
+     *
+     * @return Collection<int, Perfil>
+     */
+    public function listarPerfilesActivos(): Collection
+    {
+        return Perfil::where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'descripcion']);
     }
 
     public function crear(CreateTrabajadorDTO $dto): Trabajador

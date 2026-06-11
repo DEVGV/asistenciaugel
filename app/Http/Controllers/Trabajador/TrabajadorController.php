@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Trabajador;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Trabajador\StoreTrabajadorRequest;
-use App\Models\Auth\Perfil;
 use App\Models\Trabajador;
 use App\Services\Trabajador\TrabajadorService;
 use Illuminate\Http\JsonResponse;
@@ -24,7 +23,7 @@ class TrabajadorController extends Controller
         return Inertia::render('trabajador/Index', [
             'trabajadores' => $this->trabajadorService->listarPaginado($request),
             'filters' => $request->only(['search']),
-            'perfiles' => Perfil::where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'descripcion']),
+            'perfiles' => $this->trabajadorService->listarPerfilesActivos(),
         ]);
     }
 

@@ -36,6 +36,7 @@ class AltaTrabajadorController extends Controller
 
     public function update(StoreAltaTrabajadorRequest $request, AltasTrabajadores $alta): RedirectResponse
     {
+        // Se pasa validated() porque el service descarta campos no actualizables (created_by, trabajador_id)
         $this->altaService->actualizar($alta, $request->validated());
 
         return back()->with('success', 'Alta actualizada exitosamente.');

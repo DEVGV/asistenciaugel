@@ -17,7 +17,7 @@ class SeccionIEController extends Controller
 
     public function store(StoreSubRecursoIERequest $request, GradosIE $grado): RedirectResponse
     {
-        $this->seccionService->crear($grado, $request->validated());
+        $this->seccionService->crear($grado, $request->toDTO());
 
         return redirect()->route('instituciones.show', $grado->institucionEduc_id)
             ->with('success', 'Sección registrada exitosamente.');
@@ -26,7 +26,7 @@ class SeccionIEController extends Controller
     public function update(StoreSubRecursoIERequest $request, SeccionesIE $seccione): RedirectResponse
     {
         $ieId = $this->seccionService->obtenerIeId($seccione);
-        $this->seccionService->actualizar($seccione, $request->validated());
+        $this->seccionService->actualizar($seccione, $request->toDTO());
 
         return redirect()->route('instituciones.show', $ieId)
             ->with('success', 'Sección actualizada exitosamente.');

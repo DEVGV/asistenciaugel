@@ -56,4 +56,10 @@ class StoreTelefonoRequest extends FormRequest
             'numero.unique' => 'Este número ya está registrado para esta persona.',
         ];
     }
+
+    /** @return array<string, mixed> */
+    public function toDTO(): array
+    {
+        return $this->validated();
+    }
 }

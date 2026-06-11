@@ -7,6 +7,7 @@ use App\Models\Auth\UsuarioPerfilIe;
 use App\Models\Auth\UsuarioPermisoIe;
 use App\Models\Entidades;
 use App\Models\InstitucionesEduc;
+use App\Models\Trabajador;
 use App\Models\User;
 use App\Services\Auth\ContextoService;
 use Illuminate\Http\Request;
@@ -46,6 +47,30 @@ class UsuarioService
             })
             ->orderBy('login')
             ->paginate(15);
+    }
+
+    /**
+     * Encuentra el usuario asociado a un trabajador, o null si no existe.
+     */
+    public function porTrabajador(Trabajador $trabajador): ?User
+    {
+        return User::where('trabajador_id', $trabajador->id)->first();
+    }
+
+    /**
+     * Verifica si el trabajador del usuario tiene alta activa en la IE indicada.
+     */
+    public function tieneAltaActivaEnIe(User $user, int $ieId): bool
+    {
+        if (! $user->trabajador_id) {
+            return false;
+        }
+
+        return AltasTrabajadores::where('trabajador_id', $user->trabajador_id)
+            ->where('institucionEducativa_id', $ieId)
+            ->whereNull('fechaBaja')
+            ->whereNull('fechaFin')
+            ->exists();
     }
 
     public function cambiarPassword(User $user, string $newPassword): void

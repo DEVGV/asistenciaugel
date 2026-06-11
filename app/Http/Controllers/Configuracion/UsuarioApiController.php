@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\Configuracion;
 
 use App\Http\Controllers\Controller;
-use App\Models\Auth\Permiso;
-use App\Models\InstitucionesEduc;
-use App\Models\User;
 use App\Models\Trabajador;
+use App\Models\User;
 use App\Services\Configuracion\PerfilService;
 use App\Services\Configuracion\UsuarioService;
 use Illuminate\Http\JsonResponse;
@@ -22,8 +20,7 @@ class UsuarioApiController extends Controller
     /** GET /api/trabajadores/{trabajador}/usuario */
     public function porTrabajador(Trabajador $trabajador): JsonResponse
     {
-        $user = User::where('trabajador_id', $trabajador->id)->first();
-        return response()->json($this->buildPayload($user));
+        return response()->json($this->buildPayload($this->usuarioService->porTrabajador($trabajador)));
     }
 
     /** GET /api/usuarios/{usuario}/datos */
@@ -58,17 +55,8 @@ class UsuarioApiController extends Controller
         $ieId = $request->input('ie_id') !== null ? (int) $request->input('ie_id') : null;
         $permisoIds = $request->input('permiso_ids', []);
 
-        // Validar que la IE es una donde el trabajador tiene alta (si no es global)
-        if ($ieId !== null && $usuario->trabajador_id) {
-            $tieneAlta = \App\Models\AltasTrabajadores::where('trabajador_id', $usuario->trabajador_id)
-                ->where('institucionEducativa_id', $ieId)
-                ->whereNull('fechaBaja')
-                ->whereNull('fechaFin')
-                ->exists();
-
-            if (!$tieneAlta) {
-                return response()->json(['error' => 'El trabajador no tiene alta activa en esa institución.'], 422);
-            }
+        if ($ieId !== null && ! $this->usuarioService->tieneAltaActivaEnIe($usuario, $ieId)) {
+            return response()->json(['error' => 'El trabajador no tiene alta activa en esa institución.'], 422);
         }
 
         $this->usuarioService->syncPermisosIe($usuario, $ieId, $permisoIds);

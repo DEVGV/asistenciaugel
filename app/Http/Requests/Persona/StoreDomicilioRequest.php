@@ -23,4 +23,10 @@ class StoreDomicilioRequest extends FormRequest
             'fechaInicio' => ['sometimes', 'nullable', 'date'],
         ];
     }
+
+    /** @return array<string, mixed> */
+    public function toDTO(): array
+    {
+        return $this->validated();
+    }
 }

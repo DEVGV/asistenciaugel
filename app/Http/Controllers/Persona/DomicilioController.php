@@ -17,10 +17,7 @@ class DomicilioController extends Controller
 
     public function store(StoreDomicilioRequest $request, Personas $persona): RedirectResponse
     {
-        $data = $request->validated();
-        $data['fechaInicio'] = now()->toDateString();
-
-        $this->domicilioService->crear($persona, $data);
+        $this->domicilioService->crear($persona, $request->toDTO());
 
         return redirect()->route('personas.show', $persona)
             ->with('success', 'Domicilio agregado exitosamente.');
@@ -28,7 +25,7 @@ class DomicilioController extends Controller
 
     public function update(StoreDomicilioRequest $request, Domicilios $domicilio): RedirectResponse
     {
-        $this->domicilioService->actualizar($domicilio, $request->validated());
+        $this->domicilioService->actualizar($domicilio, $request->toDTO());
 
         return redirect()->route('personas.show', $domicilio->persona_id)
             ->with('success', 'Domicilio actualizado exitosamente.');
