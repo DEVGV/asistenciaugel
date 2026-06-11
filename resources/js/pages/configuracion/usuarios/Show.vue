@@ -6,8 +6,10 @@ import {
     Trash2,
     ShieldCheck,
     ShieldOff,
+    Building2,
+    School,
 } from 'lucide-vue-next';
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import UsuarioController from '@/actions/App/Http/Controllers/Configuracion/UsuarioController';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import FormModal from '@/components/shared/FormModal.vue';
@@ -33,6 +35,12 @@ interface InstitucionSimple {
     id: number;
     nombreLegal: string;
     codigoModular: string | null;
+    entidadUgel_id: number | null;
+}
+
+interface UgelSimple {
+    id: number;
+    razonSocial: string;
 }
 
 const props = defineProps<{
@@ -40,6 +48,7 @@ const props = defineProps<{
     perfilesIe: UsuarioPerfilIe[];
     perfiles: Perfil[];
     instituciones: InstitucionSimple[];
+    ugeles: UgelSimple[];
 }>();
 
 defineOptions({
@@ -54,9 +63,36 @@ defineOptions({
 
 function nombreCompleto(): string {
     const p = props.usuario.trabajador?.persona;
-    if (!p) return props.usuario.login;
+
+    if (!p) {
+        return props.usuario.login;
+    }
+
     return [p.paterno, p.materno, p.nombre].filter(Boolean).join(' ');
 }
+
+// ── Clasificar asignaciones ──────────────────────────────────────────────────
+const asignacionesIe = computed(() =>
+    props.perfilesIe.filter(
+        (upi) => upi.institucionEducativa_id !== null && upi.institucionEducativa_id !== undefined,
+    ),
+);
+
+const asignacionesUgel = computed(() =>
+    props.perfilesIe.filter(
+        (upi) =>
+            (upi.institucionEducativa_id === null || upi.institucionEducativa_id === undefined) &&
+            upi.entidadUgel_id !== null && upi.entidadUgel_id !== undefined,
+    ),
+);
+
+const asignacionesGlobal = computed(() =>
+    props.perfilesIe.filter(
+        (upi) =>
+            (upi.institucionEducativa_id === null || upi.institucionEducativa_id === undefined) &&
+            (upi.entidadUgel_id === null || upi.entidadUgel_id === undefined),
+    ),
+);
 
 // ── Cambiar contraseña ────────────────────────────────────────────────────────
 const showPasswordModal = ref(false);
@@ -101,27 +137,60 @@ function executeToggle() {
     );
 }
 
-// ── Asignar perfil ────────────────────────────────────────────────────────────
-const showAsignarModal = ref(false);
-const asignarForm = useForm({
+// ── Asignar perfil a IE (flujo principal) ────────────────────────────────────
+const showAsignarIeModal = ref(false);
+const asignarIeForm = useForm({
     perfil_id: null as number | null,
     institucionEducativa_id: null as number | null,
 });
 
-watch(showAsignarModal, (val) => {
+watch(showAsignarIeModal, (val) => {
     if (!val) {
-        asignarForm.reset();
-        asignarForm.clearErrors();
+        asignarIeForm.reset();
+        asignarIeForm.clearErrors();
     }
 });
 
-function submitAsignar() {
-    asignarForm.post(UsuarioController.asignarPerfil(props.usuario.id).url, {
+function submitAsignarIe() {
+    if (!asignarIeForm.institucionEducativa_id) {
+        return;
+    }
+    asignarIeForm.post(UsuarioController.asignarPerfil(props.usuario.id).url, {
         onSuccess: () => {
-            showAsignarModal.value = false;
-            asignarForm.reset();
+            showAsignarIeModal.value = false;
+            asignarIeForm.reset();
         },
     });
+}
+
+// ── Dar acceso UGEL (flujo separado) ─────────────────────────────────────────
+const showAsignarUgelModal = ref(false);
+const asignarUgelForm = useForm({
+    perfil_id: null as number | null,
+    institucionEducativa_id: null as null,
+    entidadUgel_id: null as number | null,
+});
+
+watch(showAsignarUgelModal, (val) => {
+    if (!val) {
+        asignarUgelForm.reset();
+        asignarUgelForm.clearErrors();
+    }
+});
+
+function submitAsignarUgel() {
+    if (!asignarUgelForm.entidadUgel_id) {
+        return;
+    }
+    asignarUgelForm.post(
+        UsuarioController.asignarPerfil(props.usuario.id).url,
+        {
+            onSuccess: () => {
+                showAsignarUgelModal.value = false;
+                asignarUgelForm.reset();
+            },
+        },
+    );
 }
 
 // ── Revocar perfil ────────────────────────────────────────────────────────────
@@ -135,7 +204,10 @@ function confirmRevocar(upi: UsuarioPerfilIe) {
 }
 
 function executeRevocar() {
-    if (!perfilIeAEliminar.value) return;
+    if (!perfilIeAEliminar.value) {
+        return;
+    }
+
     isRevoking.value = true;
     router.delete(
         UsuarioController.revocarPerfil({
@@ -191,17 +263,24 @@ function executeRevocar() {
             </div>
         </div>
 
-        <!-- Perfiles por IE -->
+        <!-- ═══ Acceso a Instituciones Educativas ═══ -->
         <div class="rounded-md border bg-card">
             <div class="flex items-center justify-between border-b px-4 py-3">
-                <h2 class="font-semibold">
-                    Perfiles e Instituciones Asignadas
-                </h2>
-                <Button size="sm" @click="showAsignarModal = true">
+                <div class="flex items-center gap-2">
+                    <School class="h-4 w-4 text-muted-foreground" />
+                    <h2 class="font-semibold">
+                        Acceso a Instituciones Educativas
+                    </h2>
+                </div>
+                <Button size="sm" @click="showAsignarIeModal = true">
                     <Plus class="mr-1 h-4 w-4" />
-                    Asignar Perfil
+                    Asignar a IE
                 </Button>
             </div>
+            <p class="border-b px-4 py-2 text-xs text-muted-foreground">
+                El usuario solo puede acceder a las IEs listadas aquí. Este es
+                el acceso por defecto para todos los usuarios.
+            </p>
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -211,26 +290,22 @@ function executeRevocar() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    <TableRow v-for="upi in perfilesIe" :key="upi.id">
+                    <TableRow v-for="upi in asignacionesIe" :key="upi.id">
                         <TableCell class="font-medium">{{
                             upi.perfil?.nombre
                         }}</TableCell>
                         <TableCell>
-                            <span v-if="upi.institucionEducativa">
-                                {{ upi.institucionEducativa.nombreLegal }}
-                                <span
-                                    class="ml-1 font-mono text-xs text-muted-foreground"
-                                >
-                                    ({{
-                                        upi.institucionEducativa.codigoModular
-                                    }})
-                                </span>
-                            </span>
+                            {{ upi.institucionEducativa?.nombreLegal }}
                             <span
-                                v-else
-                                class="text-sm text-muted-foreground italic"
-                                >Global (UGEL)</span
+                                v-if="
+                                    upi.institucionEducativa?.codigoModular
+                                "
+                                class="ml-1 font-mono text-xs text-muted-foreground"
                             >
+                                ({{
+                                    upi.institucionEducativa.codigoModular
+                                }})
+                            </span>
                         </TableCell>
                         <TableCell class="text-right">
                             <Button
@@ -243,12 +318,102 @@ function executeRevocar() {
                             </Button>
                         </TableCell>
                     </TableRow>
-                    <TableRow v-if="perfilesIe.length === 0">
+                    <TableRow v-if="asignacionesIe.length === 0">
                         <TableCell
                             colspan="3"
-                            class="h-20 text-center text-muted-foreground"
+                            class="h-16 text-center text-muted-foreground"
                         >
-                            Sin perfiles asignados.
+                            Sin acceso a ninguna IE. El usuario no podrá
+                            ingresar al sistema.
+                        </TableCell>
+                    </TableRow>
+                </TableBody>
+            </Table>
+        </div>
+
+        <!-- ═══ Acceso como Administrador de UGEL ═══ -->
+        <div class="rounded-md border bg-card">
+            <div class="flex items-center justify-between border-b px-4 py-3">
+                <div class="flex items-center gap-2">
+                    <Building2 class="h-4 w-4 text-muted-foreground" />
+                    <h2 class="font-semibold">
+                        Acceso como Administrador de UGEL
+                    </h2>
+                </div>
+                <Button
+                    size="sm"
+                    variant="outline"
+                    @click="showAsignarUgelModal = true"
+                >
+                    <Plus class="mr-1 h-4 w-4" />
+                    Dar Acceso UGEL
+                </Button>
+            </div>
+            <p class="border-b px-4 py-2 text-xs text-muted-foreground">
+                Un administrador de UGEL tiene acceso a
+                <strong>todas</strong> las IEs de esa UGEL. Solo asigne este
+                nivel si es necesario.
+            </p>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Perfil</TableHead>
+                        <TableHead>UGEL</TableHead>
+                        <TableHead class="text-right">Acciones</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    <TableRow v-for="upi in asignacionesUgel" :key="upi.id">
+                        <TableCell class="font-medium">{{
+                            upi.perfil?.nombre
+                        }}</TableCell>
+                        <TableCell class="italic">
+                            {{ upi.entidadUgel?.razonSocial }}
+                        </TableCell>
+                        <TableCell class="text-right">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                class="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                @click="confirmRevocar(upi)"
+                            >
+                                <Trash2 class="h-4 w-4" />
+                            </Button>
+                        </TableCell>
+                    </TableRow>
+                    <!-- Admin global (si existe) -->
+                    <TableRow
+                        v-for="upi in asignacionesGlobal"
+                        :key="upi.id"
+                    >
+                        <TableCell class="font-medium">{{
+                            upi.perfil?.nombre
+                        }}</TableCell>
+                        <TableCell class="italic text-muted-foreground">
+                            Admin global (todas las UGELs)
+                        </TableCell>
+                        <TableCell class="text-right">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                class="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                @click="confirmRevocar(upi)"
+                            >
+                                <Trash2 class="h-4 w-4" />
+                            </Button>
+                        </TableCell>
+                    </TableRow>
+                    <TableRow
+                        v-if="
+                            asignacionesUgel.length === 0 &&
+                            asignacionesGlobal.length === 0
+                        "
+                    >
+                        <TableCell
+                            colspan="3"
+                            class="h-16 text-center text-muted-foreground"
+                        >
+                            Sin acceso de administrador de UGEL.
                         </TableCell>
                     </TableRow>
                 </TableBody>
@@ -294,19 +459,19 @@ function executeRevocar() {
             </div>
         </FormModal>
 
-        <!-- Modal asignar perfil -->
+        <!-- Modal asignar perfil a IE -->
         <FormModal
-            v-model:show="showAsignarModal"
-            title="Asignar Perfil"
-            :processing="asignarForm.processing"
-            @submit="submitAsignar"
+            v-model:show="showAsignarIeModal"
+            title="Asignar Perfil a Institución Educativa"
+            :processing="asignarIeForm.processing"
+            @submit="submitAsignarIe"
         >
             <div class="grid gap-4">
                 <div class="grid gap-2">
-                    <Label for="perfil_id">Perfil *</Label>
+                    <Label for="perfil_ie">Perfil *</Label>
                     <select
-                        id="perfil_id"
-                        v-model="asignarForm.perfil_id"
+                        id="perfil_ie"
+                        v-model="asignarIeForm.perfil_id"
                         class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:ring-1 focus:ring-ring focus:outline-none"
                     >
                         <option :value="null" disabled>
@@ -317,22 +482,22 @@ function executeRevocar() {
                         </option>
                     </select>
                     <p
-                        v-if="asignarForm.errors.perfil_id"
+                        v-if="asignarIeForm.errors.perfil_id"
                         class="text-sm text-destructive"
                     >
-                        {{ asignarForm.errors.perfil_id }}
+                        {{ asignarIeForm.errors.perfil_id }}
                     </p>
                 </div>
 
                 <div class="grid gap-2">
-                    <Label for="ie_id">Institución Educativa</Label>
+                    <Label for="ie_id">Institución Educativa *</Label>
                     <select
                         id="ie_id"
-                        v-model="asignarForm.institucionEducativa_id"
+                        v-model="asignarIeForm.institucionEducativa_id"
                         class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:ring-1 focus:ring-ring focus:outline-none"
                     >
-                        <option :value="null">
-                            Global (UGEL — sin IE específica)
+                        <option :value="null" disabled>
+                            Seleccionar institución...
                         </option>
                         <option
                             v-for="ie in instituciones"
@@ -346,10 +511,77 @@ function executeRevocar() {
                         </option>
                     </select>
                     <p
-                        v-if="asignarForm.errors.institucionEducativa_id"
+                        v-if="asignarIeForm.errors.institucionEducativa_id"
                         class="text-sm text-destructive"
                     >
-                        {{ asignarForm.errors.institucionEducativa_id }}
+                        {{ asignarIeForm.errors.institucionEducativa_id }}
+                    </p>
+                </div>
+            </div>
+        </FormModal>
+
+        <!-- Modal dar acceso UGEL -->
+        <FormModal
+            v-model:show="showAsignarUgelModal"
+            title="Dar Acceso de Administrador de UGEL"
+            :processing="asignarUgelForm.processing"
+            @submit="submitAsignarUgel"
+        >
+            <div class="grid gap-4">
+                <div
+                    class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
+                >
+                    Un administrador de UGEL tiene acceso a
+                    <strong>todas</strong> las instituciones educativas de la
+                    UGEL seleccionada. Solo asigne este nivel a personal
+                    autorizado.
+                </div>
+
+                <div class="grid gap-2">
+                    <Label for="perfil_ugel">Perfil *</Label>
+                    <select
+                        id="perfil_ugel"
+                        v-model="asignarUgelForm.perfil_id"
+                        class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:ring-1 focus:ring-ring focus:outline-none"
+                    >
+                        <option :value="null" disabled>
+                            Seleccionar perfil...
+                        </option>
+                        <option v-for="p in perfiles" :key="p.id" :value="p.id">
+                            {{ p.nombre }}
+                        </option>
+                    </select>
+                    <p
+                        v-if="asignarUgelForm.errors.perfil_id"
+                        class="text-sm text-destructive"
+                    >
+                        {{ asignarUgelForm.errors.perfil_id }}
+                    </p>
+                </div>
+
+                <div class="grid gap-2">
+                    <Label for="ugel_id">UGEL *</Label>
+                    <select
+                        id="ugel_id"
+                        v-model="asignarUgelForm.entidadUgel_id"
+                        class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:ring-1 focus:ring-ring focus:outline-none"
+                    >
+                        <option :value="null" disabled>
+                            Seleccionar UGEL...
+                        </option>
+                        <option
+                            v-for="ugel in ugeles"
+                            :key="ugel.id"
+                            :value="ugel.id"
+                        >
+                            {{ ugel.razonSocial }}
+                        </option>
+                    </select>
+                    <p
+                        v-if="asignarUgelForm.errors.entidadUgel_id"
+                        class="text-sm text-destructive"
+                    >
+                        {{ asignarUgelForm.errors.entidadUgel_id }}
                     </p>
                 </div>
             </div>
@@ -370,7 +602,7 @@ function executeRevocar() {
         <!-- Modal confirmar revocar -->
         <ConfirmModal
             v-model:show="showRevocarModal"
-            title="Revocar Perfil"
+            title="Revocar Acceso"
             :description="`¿Revocar el perfil '${perfilIeAEliminar?.perfil?.nombre}' de este usuario?`"
             confirm-text="Revocar"
             cancel-text="Cancelar"

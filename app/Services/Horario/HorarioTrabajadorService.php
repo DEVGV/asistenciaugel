@@ -6,12 +6,17 @@ use App\Models\AltasTrabajadores;
 use App\Models\Conasis\ConasisCargaHoraria;
 use App\Models\Conasis\ConasisDetalleHorarios;
 use App\Models\Conasis\ConasisHorariosTrabajador;
+use App\Services\Auth\ContextoService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class HorarioTrabajadorService
 {
+    public function __construct(
+        private ContextoService $contextoService,
+    ) {}
+
     /**
      * Listar horarios del trabajador por año con todas las relaciones para la vista JSON.
      *
@@ -54,7 +59,7 @@ class HorarioTrabajadorService
      */
     public function listarInstitucionesActivas(): Collection
     {
-        return \App\Models\InstitucionesEduc::query()
+        return $this->contextoService->filtrarInstituciones(\App\Models\InstitucionesEduc::query())
             ->where(function ($q) {
                 $q->whereNull('fechaFin')
                     ->orWhere('fechaFin', '>=', now()->toDateString());

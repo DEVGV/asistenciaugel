@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Configuracion\AsignarPerfilIeRequest;
 use App\Http\Requests\Configuracion\CambiarPasswordRequest;
 use App\Models\Auth\UsuarioPerfilIe;
-use App\Models\InstitucionesEduc;
 use App\Models\User;
 use App\Services\Configuracion\PerfilService;
 use App\Services\Configuracion\UsuarioService;
@@ -36,10 +35,8 @@ class UsuarioController extends Controller
             'usuario'    => $usuario->load('trabajador.persona'),
             'perfilesIe' => $this->usuarioService->perfilesDelUsuario($usuario),
             'perfiles'   => $this->perfilService->listarTodos(),
-            'instituciones' => InstitucionesEduc::select('id', 'nombreLegal', 'codigoModular')
-                ->whereNull('fechaFin')
-                ->orderBy('nombreLegal')
-                ->get(),
+            'instituciones' => $this->usuarioService->institucionesParaAsignacion(),
+            'ugeles'     => $this->usuarioService->ugelesDisponibles(),
         ]);
     }
 
@@ -65,6 +62,7 @@ class UsuarioController extends Controller
             $usuario,
             $request->integer('perfil_id'),
             $request->input('institucionEducativa_id') ? $request->integer('institucionEducativa_id') : null,
+            $request->input('entidadUgel_id') ? $request->integer('entidadUgel_id') : null,
         );
 
         return back()->with('success', 'Perfil asignado exitosamente.');

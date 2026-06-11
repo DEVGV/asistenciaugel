@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\ContextoController;
 use App\Http\Controllers\Configuracion\AreaController;
 use App\Http\Controllers\Configuracion\CargoController;
 use App\Http\Controllers\Configuracion\CondicionLaboralController;
@@ -38,7 +39,16 @@ use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+// ── Contexto de trabajo (UGEL / IE) ─────────────────────────────────────────
+Route::middleware(['auth'])->group(function () {
+    Route::get('seleccionar-contexto', [ContextoController::class, 'create'])
+        ->name('contexto.seleccionar');
+    Route::post('seleccionar-contexto', [ContextoController::class, 'store'])
+        ->name('contexto.establecer');
+    Route::inertia('sin-acceso', 'auth/SinAcceso')->name('sin-acceso');
+});
+
+Route::middleware(['auth', 'verified', 'contexto'])->group(function () {
     Route::inertia('dashboard', 'Dashboard')->name('dashboard');
 
     Route::resource('entidades', EntidadController::class)

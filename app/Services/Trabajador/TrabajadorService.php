@@ -5,27 +5,34 @@ namespace App\Services\Trabajador;
 use App\DTOs\Trabajador\CreateTrabajadorDTO;
 use App\DTOs\Trabajador\UpdateTrabajadorDTO;
 use App\Models\Trabajador;
+use App\Services\Auth\ContextoService;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class TrabajadorService
 {
+    public function __construct(
+        private ContextoService $contextoService,
+    ) {}
+
     /**
      * @return LengthAwarePaginator<Trabajador>
      */
     public function listarPaginado(Request $request): LengthAwarePaginator
     {
-        return Trabajador::query()
+        return $this->contextoService->filtrarPorRelacionIe(Trabajador::query(), 'altas')
             ->with(['persona.tipoDocIdentidad', 'persona.sexo'])
             ->when($request->search, function ($query, $search) {
-                $query->where('codigo', 'like', "%{$search}%")
-                    ->orWhereHas('persona', function ($q) use ($search) {
-                        $q->where('docIdentidad', 'like', "%{$search}%")
-                            ->orWhere('paterno', 'ilike', "%{$search}%")
-                            ->orWhere('materno', 'ilike', "%{$search}%")
-                            ->orWhere('nombre', 'ilike', "%{$search}%");
-                    });
+                $query->where(function ($q) use ($search) {
+                    $q->where('codigo', 'like', "%{$search}%")
+                        ->orWhereHas('persona', function ($qp) use ($search) {
+                            $qp->where('docIdentidad', 'like', "%{$search}%")
+                                ->orWhere('paterno', 'ilike', "%{$search}%")
+                                ->orWhere('materno', 'ilike', "%{$search}%")
+                                ->orWhere('nombre', 'ilike', "%{$search}%");
+                        });
+                });
             })
             ->where('activo', true)
             ->orderByDesc('id')
@@ -71,7 +78,7 @@ class TrabajadorService
      */
     public function buscarParaAsignacion(Request $request): \Illuminate\Database\Eloquent\Collection
     {
-        $query = Trabajador::query()
+        $query = $this->contextoService->filtrarPorRelacionIe(Trabajador::query(), 'altas')
             ->with(['persona', 'altas' => function ($q) {
                 $q->whereNull('fechaBaja')->with(['cargo', 'institucionEducativa']);
             }])

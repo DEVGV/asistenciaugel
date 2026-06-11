@@ -8,6 +8,7 @@ use App\Models\InstitucionesEduc;
 use App\Models\Trabajador;
 use App\Models\User;
 use App\Models\Auth\UsuarioPerfilIe;
+use App\Services\Auth\ContextoService;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -15,6 +16,10 @@ use Illuminate\Support\Facades\DB;
 
 class AltaTrabajadorService
 {
+    public function __construct(
+        private ContextoService $contextoService,
+    ) {}
+
     /**
      * Lista todas las altas de un trabajador específico con relaciones.
      *
@@ -61,7 +66,7 @@ class AltaTrabajadorService
      */
     public function listarPaginado(Request $request): LengthAwarePaginator
     {
-        return AltasTrabajadores::query()
+        $paginator = $this->contextoService->filtrarPorIe(AltasTrabajadores::query())
             ->with([
                 'trabajador.persona',
                 'institucionEducativa',
@@ -71,13 +76,15 @@ class AltaTrabajadorService
                 'motivoBaja',
             ])
             ->when($request->search, function ($query, string $search) {
-                $query->whereHas('trabajador.persona', function ($q) use ($search) {
-                    $q->where('paterno', 'ilike', "%{$search}%")
-                        ->orWhere('materno', 'ilike', "%{$search}%")
-                        ->orWhere('nombre', 'ilike', "%{$search}%")
-                        ->orWhere('docIdentidad', 'like', "%{$search}%");
-                })->orWhereHas('trabajador', function ($q) use ($search) {
-                    $q->where('codigo', 'like', "%{$search}%");
+                $query->where(function ($outer) use ($search) {
+                    $outer->whereHas('trabajador.persona', function ($q) use ($search) {
+                        $q->where('paterno', 'ilike', "%{$search}%")
+                            ->orWhere('materno', 'ilike', "%{$search}%")
+                            ->orWhere('nombre', 'ilike', "%{$search}%")
+                            ->orWhere('docIdentidad', 'like', "%{$search}%");
+                    })->orWhereHas('trabajador', function ($q) use ($search) {
+                        $q->where('codigo', 'like', "%{$search}%");
+                    });
                 });
             })
             ->when($request->integer('institucion_id'), function ($query, int $ieId) {

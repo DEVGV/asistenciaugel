@@ -84,7 +84,9 @@ class UsuarioApiController extends Controller
                 'login'  => $user->login,
                 'activo' => $user->activo,
             ] : null,
-            'iesDisponibles'  => $user ? $this->usuarioService->ieDisponiblesParaUsuario($user) : [],
+            'iesDisponibles'    => $user ? $this->usuarioService->ieDisponiblesParaUsuario($user) : [],
+            'perfilesAsignados' => $user ? $this->usuarioService->perfilesDelUsuario($user)->toArray() : [],
+            'ugelesDisponibles' => $this->usuarioService->ugelesDisponibles()->toArray(),
             'permisosPorModulo' => $this->perfilService->permisosPorModulo(),
             'perfiles'          => $this->perfilService->listarTodos(),
         ];

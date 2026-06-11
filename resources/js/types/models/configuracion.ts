@@ -53,6 +53,11 @@ export interface UsuarioPerfilIe {
     id: number;
     perfil_id: number;
     perfil: Perfil;
+    entidadUgel_id: number | null;
+    entidadUgel: {
+        id: number;
+        razonSocial: string;
+    } | null;
     institucionEducativa_id: number | null;
     institucionEducativa: {
         id: number;

@@ -5,17 +5,22 @@ namespace App\Services\InstitucionEducativa;
 use App\DTOs\InstitucionEducativa\CreateInstEducDTO;
 use App\DTOs\InstitucionEducativa\UpdateInstEducDTO;
 use App\Models\InstitucionesEduc;
+use App\Services\Auth\ContextoService;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class InstitucionEducativaService
 {
+    public function __construct(
+        private ContextoService $contextoService,
+    ) {}
+
     /**
      * @return LengthAwarePaginator<InstitucionesEduc>
      */
     public function listarPaginado(Request $request): LengthAwarePaginator
     {
-        return InstitucionesEduc::query()
+        return $this->contextoService->filtrarInstituciones(InstitucionesEduc::query())
             ->with(['regimenEduc', 'tipoInstEduc', 'modalidadFormativa', 'nivelCiclo', 'entidadUgel', 'entidadAdmin'])
             ->when($request->search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
@@ -55,7 +60,7 @@ class InstitucionEducativaService
      */
     public function buscarParaSelect(Request $request): \Illuminate\Pagination\LengthAwarePaginator
     {
-        $query = InstitucionesEduc::query()
+        $query = $this->contextoService->filtrarInstituciones(InstitucionesEduc::query())
             ->select(['id', 'nombreLegal', 'codigoInstitucion', 'codigoModular']);
 
         if ($request->filled('search')) {

@@ -5,7 +5,10 @@ namespace App\Services\Configuracion;
 use App\Models\AltasTrabajadores;
 use App\Models\Auth\UsuarioPerfilIe;
 use App\Models\Auth\UsuarioPermisoIe;
+use App\Models\Entidades;
+use App\Models\InstitucionesEduc;
 use App\Models\User;
+use App\Services\Auth\ContextoService;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -13,20 +16,33 @@ use Illuminate\Support\Facades\Hash;
 
 class UsuarioService
 {
+    public function __construct(
+        private ContextoService $contextoService,
+    ) {}
+
     /**
      * @return LengthAwarePaginator<User>
      */
     public function listarPaginado(Request $request): LengthAwarePaginator
     {
         return User::query()
-            ->with(['trabajador.persona', 'permisosIe'])
+            ->with(['trabajador.persona', 'permisosIe', 'perfilesIe.perfil'])
+            // Solo usuarios visibles en el contexto actual (o sin asignaciones, para poder asignarles)
+            ->when($this->contextoService->ugelId(), function ($query) {
+                $query->where(function ($q) {
+                    $q->whereDoesntHave('perfilesIe')
+                        ->orWhereHas('perfilesIe', fn ($p) => $this->contextoService->filtrarAsignaciones($p));
+                });
+            })
             ->when($request->search, function ($query, $search) {
-                $query->where('login', 'ilike', "%{$search}%")
-                    ->orWhereHas('trabajador.persona', function ($q) use ($search) {
-                        $q->where('nombre', 'ilike', "%{$search}%")
-                            ->orWhere('paterno', 'ilike', "%{$search}%")
-                            ->orWhere('materno', 'ilike', "%{$search}%");
-                    });
+                $query->where(function ($q) use ($search) {
+                    $q->where('login', 'ilike', "%{$search}%")
+                        ->orWhereHas('trabajador.persona', function ($qp) use ($search) {
+                            $qp->where('nombre', 'ilike', "%{$search}%")
+                                ->orWhere('paterno', 'ilike', "%{$search}%")
+                                ->orWhere('materno', 'ilike', "%{$search}%");
+                        });
+                });
             })
             ->orderBy('login')
             ->paginate(15);
@@ -43,18 +59,22 @@ class UsuarioService
     }
 
     /**
-     * Devuelve las IEs donde el trabajador tiene alta activa + opción Global.
-     * Solo estas IEs estarán disponibles para asignar permisos.
+     * Devuelve las IEs donde el trabajador tiene alta activa (sin baja y vigente por fechas).
+     * Solo estas IEs estarán disponibles para asignar permisos directos.
      */
     public function ieDisponiblesParaUsuario(User $user): array
     {
         if (! $user->trabajador_id) {
-            return [['id' => null, 'label' => 'Global (UGEL)', 'codModular' => null]];
+            return [];
         }
 
-        $ies = AltasTrabajadores::where('trabajador_id', $user->trabajador_id)
+        return AltasTrabajadores::where('trabajador_id', $user->trabajador_id)
             ->whereNull('fechaBaja')
-            ->whereNull('fechaFin')
+            ->where(function ($q) {
+                $q->whereNull('fechaFin')
+                    ->orWhere('fechaFin', '>=', now()->toDateString());
+            })
+            ->where('fechaInicio', '<=', now()->toDateString())
             ->with('institucionEducativa')
             ->get()
             ->map(fn ($a) => [
@@ -65,11 +85,6 @@ class UsuarioService
             ->unique('id')
             ->values()
             ->toArray();
-
-        // Siempre incluir opción Global (UGEL)
-        array_unshift($ies, ['id' => null, 'label' => 'Global (UGEL)', 'codModular' => null]);
-
-        return $ies;
     }
 
     /**
@@ -129,19 +144,42 @@ class UsuarioService
     public function perfilesDelUsuario(User $user): Collection
     {
         return UsuarioPerfilIe::where('user_id', $user->id)
-            ->with(['perfil', 'institucionEducativa'])
+            ->with(['perfil', 'institucionEducativa', 'entidadUgel'])
             ->get();
     }
 
     /**
-     * Asigna un perfil al usuario para una IE concreta.
+     * Asigna un perfil al usuario.
+     * - IE indicada → asignación a esa IE (la UGEL se deriva de la IE).
+     * - Solo UGEL → administrador de esa UGEL (todas sus IEs).
+     * - Ambos null → administrador global del sistema.
      */
-    public function asignarPerfil(User $user, int $perfilId, ?int $ieId): void
+    public function asignarPerfil(User $user, int $perfilId, ?int $ieId, ?int $ugelId = null): void
     {
+        if ($ieId !== null) {
+            $ugelId ??= InstitucionesEduc::whereKey($ieId)->value('entidadUgel_id');
+
+            UsuarioPerfilIe::updateOrCreate(
+                [
+                    'user_id' => $user->id,
+                    'institucionEducativa_id' => $ieId,
+                ],
+                [
+                    'perfil_id' => $perfilId,
+                    'entidadUgel_id' => $ugelId,
+                    'activo' => true,
+                    'created_by' => auth()->id() ?? 1,
+                ]
+            );
+
+            return;
+        }
+
         UsuarioPerfilIe::updateOrCreate(
             [
                 'user_id' => $user->id,
-                'institucionEducativa_id' => $ieId,
+                'institucionEducativa_id' => null,
+                'entidadUgel_id' => $ugelId,
             ],
             [
                 'perfil_id' => $perfilId,
@@ -149,6 +187,35 @@ class UsuarioService
                 'created_by' => auth()->id() ?? 1,
             ]
         );
+    }
+
+    /**
+     * UGELs activas disponibles para asignar perfiles (limitadas al contexto actual).
+     *
+     * @return Collection<int, Entidades>
+     */
+    public function ugelesDisponibles(): Collection
+    {
+        return Entidades::query()
+            ->ugeles()
+            ->where('activo', true)
+            ->when($this->contextoService->ugelId(), fn ($q, int $ugelId) => $q->where('id', $ugelId))
+            ->orderBy('razonSocial')
+            ->get(['id', 'razonSocial']);
+    }
+
+    /**
+     * IEs vigentes disponibles para asignar perfiles (limitadas al contexto actual).
+     *
+     * @return Collection<int, InstitucionesEduc>
+     */
+    public function institucionesParaAsignacion(): Collection
+    {
+        return $this->contextoService->filtrarInstituciones(InstitucionesEduc::query())
+            ->select(['id', 'nombreLegal', 'codigoModular', 'entidadUgel_id'])
+            ->whereNull('fechaFin')
+            ->orderBy('nombreLegal')
+            ->get();
     }
 
     /**

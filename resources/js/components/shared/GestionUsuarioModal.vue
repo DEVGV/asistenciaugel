@@ -18,6 +18,9 @@ import {
     X,
     ChevronDown,
     ChevronUp,
+    Trash2,
+    Building2,
+    School,
 } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,20 +63,41 @@ interface IeDisponible {
     label: string;
     codModular: string | null;
 }
+interface PerfilAsignado {
+    id: number;
+    perfil_id: number;
+    perfil: { id: number; nombre: string } | null;
+    entidadUgel_id: number | null;
+    entidadUgel: { id: number; razonSocial: string } | null;
+    institucionEducativa_id: number | null;
+    institucionEducativa: {
+        id: number;
+        nombreLegal: string;
+        codigoModular: string | null;
+    } | null;
+    activo: boolean;
+}
 
-// ── Estado — declarar TODO antes del watch ─────────────────────────────────────
+interface UgelDisponible {
+    id: number;
+    razonSocial: string;
+}
+
+// ── Estado ─────────────────────────────────────────────────────────────────────
 const loading = ref(false);
 const error = ref<string | null>(null);
 const usuario = ref<UsuarioData | null>(null);
 const iesDisponibles = ref<IeDisponible[]>([]);
 const permisosPorModulo = ref<Record<string, Permiso[]>>({});
 const perfiles = ref<Perfil[]>([]);
+const perfilesAsignados = ref<PerfilAsignado[]>([]);
+const ugelesDisponibles = ref<UgelDisponible[]>([]);
 
 // Sección activa
-const section = ref<'main' | 'password' | 'permisos'>('main');
+const section = ref<'main' | 'password' | 'permisos' | 'asignar-ugel' | 'asignar-ie'>('main');
 
 // IE seleccionada para gestionar permisos
-const ieSeleccionada = ref<number | null | undefined>(undefined); // undefined = no seleccionada aún
+const ieSeleccionada = ref<number | null | undefined>(undefined);
 const permisosCargando = ref(false);
 const permisosSeleccionados = ref<Set<number>>(new Set());
 const savingPermisos = ref(false);
@@ -94,6 +118,46 @@ const savingPassword = ref(false);
 // Confirmaciones
 const showToggleConfirm = ref(false);
 const togglingActivo = ref(false);
+const showRevocarConfirm = ref(false);
+const perfilAEliminar = ref<PerfilAsignado | null>(null);
+const revocando = ref(false);
+
+// Asignar UGEL
+const asignarUgelPerfilId = ref<number | null>(null);
+const asignarUgelId = ref<number | null>(null);
+const savingAsignarUgel = ref(false);
+
+// Asignar IE
+const asignarIePerfilId = ref<number | null>(null);
+const asignarIeId = ref<number | null>(null);
+const savingAsignarIe = ref(false);
+
+// ── Clasificar asignaciones ────────────────────────────────────────────────────
+const asignacionesIe = computed(() =>
+    perfilesAsignados.value.filter(
+        (p) => p.institucionEducativa_id !== null && p.institucionEducativa_id !== undefined,
+    ),
+);
+
+const asignacionesUgel = computed(() =>
+    perfilesAsignados.value.filter(
+        (p) =>
+            (p.institucionEducativa_id === null || p.institucionEducativa_id === undefined) &&
+            p.entidadUgel_id !== null && p.entidadUgel_id !== undefined,
+    ),
+);
+
+const asignacionesGlobal = computed(() =>
+    perfilesAsignados.value.filter(
+        (p) =>
+            (p.institucionEducativa_id === null || p.institucionEducativa_id === undefined) &&
+            (p.entidadUgel_id === null || p.entidadUgel_id === undefined),
+    ),
+);
+
+const tieneAccesoUgel = computed(
+    () => asignacionesUgel.value.length > 0 || asignacionesGlobal.value.length > 0,
+);
 
 // ── Cargar datos base del usuario ──────────────────────────────────────────────
 async function cargarDatos() {
@@ -114,7 +178,8 @@ async function cargarDatos() {
         iesDisponibles.value = data.iesDisponibles ?? [];
         permisosPorModulo.value = data.permisosPorModulo ?? {};
         perfiles.value = data.perfiles ?? [];
-        // Expandir todos los módulos por defecto
+        perfilesAsignados.value = data.perfilesAsignados ?? [];
+        ugelesDisponibles.value = data.ugelesDisponibles ?? [];
         modulosExpandidos.value = new Set(
             Object.keys(data.permisosPorModulo ?? {}),
         );
@@ -156,6 +221,99 @@ function seleccionarIe(ieId: number | null) {
     cargarPermisosIe(ieId);
 }
 
+// ── Revocar perfil asignado ────────────────────────────────────────────────────
+function confirmRevocar(p: PerfilAsignado) {
+    perfilAEliminar.value = p;
+    showRevocarConfirm.value = true;
+}
+
+async function executeRevocar() {
+    if (!perfilAEliminar.value || !usuario.value) return;
+    revocando.value = true;
+    try {
+        const res = await fetch(
+            `/usuarios/${usuario.value.id}/perfiles/${perfilAEliminar.value.id}`,
+            {
+                method: 'DELETE',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': getCsrf(),
+                },
+                credentials: 'same-origin',
+            },
+        );
+        if (res.ok || res.status === 302 || res.status === 303) {
+            showRevocarConfirm.value = false;
+            perfilAEliminar.value = null;
+            await cargarDatos();
+            emit('updated');
+        }
+    } finally {
+        revocando.value = false;
+    }
+}
+
+// ── Asignar acceso UGEL ────────────────────────────────────────────────────────
+async function submitAsignarUgel() {
+    if (!usuario.value || !asignarUgelPerfilId.value || !asignarUgelId.value) return;
+    savingAsignarUgel.value = true;
+    try {
+        const res = await fetch(`/usuarios/${usuario.value.id}/perfiles`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': getCsrf(),
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                perfil_id: asignarUgelPerfilId.value,
+                institucionEducativa_id: null,
+                entidadUgel_id: asignarUgelId.value,
+            }),
+        });
+        if (res.ok || res.status === 302 || res.status === 303) {
+            asignarUgelPerfilId.value = null;
+            asignarUgelId.value = null;
+            section.value = 'main';
+            await cargarDatos();
+            emit('updated');
+        }
+    } finally {
+        savingAsignarUgel.value = false;
+    }
+}
+
+// ── Asignar perfil a IE ────────────────────────────────────────────────────────
+async function submitAsignarIe() {
+    if (!usuario.value || !asignarIePerfilId.value || !asignarIeId.value) return;
+    savingAsignarIe.value = true;
+    try {
+        const res = await fetch(`/usuarios/${usuario.value.id}/perfiles`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': getCsrf(),
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                perfil_id: asignarIePerfilId.value,
+                institucionEducativa_id: asignarIeId.value,
+            }),
+        });
+        if (res.ok || res.status === 302 || res.status === 303) {
+            asignarIePerfilId.value = null;
+            asignarIeId.value = null;
+            section.value = 'main';
+            await cargarDatos();
+            emit('updated');
+        }
+    } finally {
+        savingAsignarIe.value = false;
+    }
+}
+
 // ── Reset al cerrar ────────────────────────────────────────────────────────────
 function resetState() {
     usuario.value = null;
@@ -165,9 +323,13 @@ function resetState() {
     passwordData.value = { password: '', password_confirmation: '', error: '' };
     perfilPlantillaId.value = null;
     permisosSaved.value = false;
+    perfilesAsignados.value = [];
+    asignarUgelPerfilId.value = null;
+    asignarUgelId.value = null;
+    asignarIePerfilId.value = null;
+    asignarIeId.value = null;
 }
 
-// Fix del primer open: usar immediate + flush post
 watch(
     () => props.show,
     (val) => {
@@ -177,8 +339,6 @@ watch(
     { immediate: false },
 );
 
-// También disparar si el componente ya está montado con show=true
-// (caso cuando v-if crea el componente y show ya viene en true)
 if (props.show) cargarDatos();
 
 // ── Permisos — helpers ─────────────────────────────────────────────────────────
@@ -213,7 +373,6 @@ function toggleModuloExpand(modulo: string) {
     modulosExpandidos.value = s;
 }
 
-// Cargar permisos de un perfil como plantilla (sobreescribe selección)
 function cargarDesdePerfilPlantilla(perfilId: number | null) {
     if (!perfilId) return;
     const perfil = perfiles.value.find((p) => p.id === perfilId);
@@ -328,7 +487,7 @@ async function executeToggle() {
     }
 }
 
-// IE label para mostrar en el panel de permisos
+// IE label
 const ieLabel = computed(() => {
     if (ieSeleccionada.value === undefined) return '';
     return (
@@ -448,15 +607,144 @@ const ieLabel = computed(() => {
                             </div>
                         </div>
 
-                        <!-- Selector de IE para gestionar permisos -->
+                        <!-- ═══ Perfiles asignados (resumen) ═══ -->
+                        <div class="mb-5">
+                            <div class="mb-2 flex items-center gap-2">
+                                <Building2 class="h-4 w-4 text-muted-foreground" />
+                                <h3 class="text-sm font-semibold">
+                                    Acceso asignado
+                                </h3>
+                            </div>
+
+                            <!-- Asignaciones a IEs -->
+                            <div
+                                v-if="asignacionesIe.length > 0"
+                                class="mb-2 space-y-1"
+                            >
+                                <div
+                                    v-for="p in asignacionesIe"
+                                    :key="p.id"
+                                    class="flex items-center justify-between rounded border px-3 py-2 text-sm"
+                                >
+                                    <div>
+                                        <span class="font-medium">{{
+                                            p.institucionEducativa?.nombreLegal
+                                        }}</span>
+                                        <span
+                                            v-if="p.institucionEducativa?.codigoModular"
+                                            class="ml-1 font-mono text-xs text-muted-foreground"
+                                            >({{ p.institucionEducativa.codigoModular }})</span
+                                        >
+                                        <span class="ml-2 text-xs text-muted-foreground">
+                                            — {{ p.perfil?.nombre }}
+                                        </span>
+                                    </div>
+                                    <button
+                                        @click="confirmRevocar(p)"
+                                        class="shrink-0 rounded p-1 text-destructive hover:bg-destructive/10"
+                                        title="Revocar acceso"
+                                    >
+                                        <Trash2 class="h-3.5 w-3.5" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Asignaciones UGEL -->
+                            <div
+                                v-if="asignacionesUgel.length > 0"
+                                class="mb-2 space-y-1"
+                            >
+                                <div
+                                    v-for="p in asignacionesUgel"
+                                    :key="p.id"
+                                    class="flex items-center justify-between rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm dark:border-amber-800 dark:bg-amber-950/30"
+                                >
+                                    <div>
+                                        <span class="font-medium italic">
+                                            Admin UGEL — {{ p.entidadUgel?.razonSocial }}
+                                        </span>
+                                        <span class="ml-2 text-xs text-muted-foreground">
+                                            — {{ p.perfil?.nombre }}
+                                        </span>
+                                    </div>
+                                    <button
+                                        @click="confirmRevocar(p)"
+                                        class="shrink-0 rounded p-1 text-destructive hover:bg-destructive/10"
+                                        title="Revocar acceso UGEL"
+                                    >
+                                        <Trash2 class="h-3.5 w-3.5" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Asignaciones globales -->
+                            <div
+                                v-if="asignacionesGlobal.length > 0"
+                                class="mb-2 space-y-1"
+                            >
+                                <div
+                                    v-for="p in asignacionesGlobal"
+                                    :key="p.id"
+                                    class="flex items-center justify-between rounded border border-red-200 bg-red-50 px-3 py-2 text-sm dark:border-red-800 dark:bg-red-950/30"
+                                >
+                                    <div>
+                                        <span class="font-medium italic text-red-700 dark:text-red-400">
+                                            Admin Global (todas las UGELs)
+                                        </span>
+                                        <span class="ml-2 text-xs text-muted-foreground">
+                                            — {{ p.perfil?.nombre }}
+                                        </span>
+                                    </div>
+                                    <button
+                                        @click="confirmRevocar(p)"
+                                        class="shrink-0 rounded p-1 text-destructive hover:bg-destructive/10"
+                                        title="Revocar acceso global"
+                                    >
+                                        <Trash2 class="h-3.5 w-3.5" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div
+                                v-if="perfilesAsignados.length === 0"
+                                class="rounded border border-dashed p-3 text-center text-sm text-muted-foreground"
+                            >
+                                Sin perfiles explícitos asignados.
+                            </div>
+
+                            <!-- Botones para asignar -->
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    @click="section = 'asignar-ie'"
+                                >
+                                    <School class="mr-1 h-3.5 w-3.5" />
+                                    Asignar a IE
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    @click="section = 'asignar-ugel'"
+                                >
+                                    <Building2 class="mr-1 h-3.5 w-3.5" />
+                                    Dar Acceso UGEL
+                                </Button>
+                            </div>
+                        </div>
+
+                        <!-- ═══ Permisos directos por IE ═══ -->
                         <div>
-                            <h3 class="mb-2 text-sm font-semibold">
-                                Permisos por Institución
-                            </h3>
+                            <div class="mb-2 flex items-center gap-2">
+                                <School class="h-4 w-4 text-muted-foreground" />
+                                <h3 class="text-sm font-semibold">
+                                    Permisos directos por Institución
+                                </h3>
+                            </div>
                             <p class="mb-3 text-xs text-muted-foreground">
-                                Selecciona una institución para ver y editar sus
-                                permisos directos. Solo aparecen las IEs donde
-                                el trabajador tiene alta activa.
+                                Selecciona una IE para ver y editar permisos
+                                directos. Solo aparecen IEs donde el trabajador
+                                tiene alta activa vigente.
                             </p>
 
                             <div
@@ -464,7 +752,7 @@ const ieLabel = computed(() => {
                                 class="rounded border border-dashed p-4 text-center text-sm text-muted-foreground"
                             >
                                 Sin instituciones disponibles (el trabajador no
-                                tiene altas activas).
+                                tiene altas activas vigentes).
                             </div>
 
                             <div v-else class="grid gap-2">
@@ -476,12 +764,6 @@ const ieLabel = computed(() => {
                                         seleccionarIe(ie.id);
                                     "
                                     class="flex items-center justify-between rounded-md border px-4 py-2.5 text-left text-sm transition-colors hover:bg-muted/50"
-                                    :class="
-                                        ieSeleccionada === ie.id &&
-                                        section === 'permisos'
-                                            ? 'border-primary bg-primary/5'
-                                            : ''
-                                    "
                                 >
                                     <div>
                                         <span class="font-medium">{{
@@ -664,6 +946,78 @@ const ieLabel = computed(() => {
                             </div>
                         </div>
                     </template>
+
+                    <!-- ── ASIGNAR UGEL ──────────────────────────────────────── -->
+                    <template v-else-if="section === 'asignar-ugel'">
+                        <div class="space-y-4">
+                            <div class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+                                <strong>Atención:</strong> Al asignar acceso de UGEL, el usuario podrá ver y gestionar
+                                <em>todas</em> las instituciones educativas de la UGEL seleccionada.
+                            </div>
+
+                            <div class="grid gap-2">
+                                <Label>Perfil *</Label>
+                                <select
+                                    v-model="asignarUgelPerfilId"
+                                    class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:ring-1 focus:ring-ring focus:outline-none"
+                                >
+                                    <option :value="null" disabled>— Seleccionar perfil —</option>
+                                    <option v-for="p in perfiles" :key="p.id" :value="p.id">
+                                        {{ p.nombre }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="grid gap-2">
+                                <Label>UGEL *</Label>
+                                <select
+                                    v-model="asignarUgelId"
+                                    class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:ring-1 focus:ring-ring focus:outline-none"
+                                >
+                                    <option :value="null" disabled>— Seleccionar UGEL —</option>
+                                    <option v-for="u in ugelesDisponibles" :key="u.id" :value="u.id">
+                                        {{ u.razonSocial }}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- ── ASIGNAR IE ────────────────────────────────────────── -->
+                    <template v-else-if="section === 'asignar-ie'">
+                        <div class="space-y-4">
+                            <div class="grid gap-2">
+                                <Label>Perfil *</Label>
+                                <select
+                                    v-model="asignarIePerfilId"
+                                    class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:ring-1 focus:ring-ring focus:outline-none"
+                                >
+                                    <option :value="null" disabled>— Seleccionar perfil —</option>
+                                    <option v-for="p in perfiles" :key="p.id" :value="p.id">
+                                        {{ p.nombre }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="grid gap-2">
+                                <Label>Institución Educativa *</Label>
+                                <select
+                                    v-model="asignarIeId"
+                                    class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:ring-1 focus:ring-ring focus:outline-none"
+                                >
+                                    <option :value="null" disabled>— Seleccionar IE —</option>
+                                    <option v-for="ie in iesDisponibles" :key="ie.id" :value="ie.id">
+                                        {{ ie.label }}
+                                        <template v-if="ie.codModular"> ({{ ie.codModular }})</template>
+                                    </option>
+                                </select>
+                            </div>
+
+                            <p v-if="iesDisponibles.length === 0" class="text-xs text-muted-foreground">
+                                No hay IEs disponibles. El trabajador necesita tener altas activas vigentes.
+                            </p>
+                        </div>
+                    </template>
                 </div>
 
                 <!-- Footer -->
@@ -708,6 +1062,20 @@ const ieLabel = computed(() => {
                                     : 'Guardar Permisos'
                             }}
                         </Button>
+                        <Button
+                            v-if="section === 'asignar-ugel'"
+                            @click="submitAsignarUgel"
+                            :disabled="savingAsignarUgel || !asignarUgelPerfilId || !asignarUgelId"
+                        >
+                            {{ savingAsignarUgel ? 'Guardando...' : 'Asignar Acceso UGEL' }}
+                        </Button>
+                        <Button
+                            v-if="section === 'asignar-ie'"
+                            @click="submitAsignarIe"
+                            :disabled="savingAsignarIe || !asignarIePerfilId || !asignarIeId"
+                        >
+                            {{ savingAsignarIe ? 'Guardando...' : 'Asignar a IE' }}
+                        </Button>
                     </div>
                 </div>
 
@@ -731,5 +1099,16 @@ const ieLabel = computed(() => {
         :destructive="usuario?.activo"
         :processing="togglingActivo"
         @confirm="executeToggle"
+    />
+
+    <ConfirmModal
+        v-model:show="showRevocarConfirm"
+        title="Revocar Acceso"
+        :description="`¿Revocar el perfil '${perfilAEliminar?.perfil?.nombre}' de este usuario?`"
+        confirm-text="Revocar"
+        cancel-text="Cancelar"
+        destructive
+        :processing="revocando"
+        @confirm="executeRevocar"
     />
 </template>

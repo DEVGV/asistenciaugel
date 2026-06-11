@@ -4,6 +4,7 @@ namespace App\Services\Trabajador;
 
 use App\Models\AltasTrabajadores;
 use App\Models\Auth\UsuarioPerfilIe;
+use App\Models\InstitucionesEduc;
 use App\Models\Personas;
 use App\Models\Trabajador;
 use App\Models\User;
@@ -72,9 +73,12 @@ class RegistroTrabajadorService
 
                 // 5. Si se seleccionó perfil, asignar perfil por IE
                 if (! empty($data['perfil_id'])) {
+                    $ugelId = InstitucionesEduc::whereKey($data['institucionEducativa_id'])->value('entidadUgel_id');
+
                     UsuarioPerfilIe::create([
                         'user_id' => $user->id,
                         'perfil_id' => $data['perfil_id'],
+                        'entidadUgel_id' => $ugelId,
                         'institucionEducativa_id' => $data['institucionEducativa_id'],
                         'activo' => true,
                         'created_by' => auth()->id() ?? 1,
@@ -200,9 +204,12 @@ class RegistroTrabajadorService
 
                         // Asignar perfil de usuario para esa IE si corresponde
                         if (! empty($row['perfil_id'])) {
+                            $ugelIdRow = InstitucionesEduc::whereKey($row['institucionEducativa_id'])->value('entidadUgel_id');
+
                             UsuarioPerfilIe::create([
                                 'user_id' => $user->id,
                                 'perfil_id' => $row['perfil_id'],
+                                'entidadUgel_id' => $ugelIdRow,
                                 'institucionEducativa_id' => $row['institucionEducativa_id'],
                                 'activo' => true,
                                 'created_by' => auth()->id() ?? 1,
