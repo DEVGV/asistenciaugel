@@ -342,7 +342,8 @@ function checkDuplicadoEnCarga(fila: FilaTrabajador): boolean {
         (f) =>
             f._id !== fila._id &&
             (f.docIdentidad || f.paterno || f.nombre) &&
-            `${f.tipoDocIdentidad_id}_${f.docIdentidad.trim().toUpperCase()}` === key,
+            `${f.tipoDocIdentidad_id}_${f.docIdentidad.trim().toUpperCase()}` ===
+                key,
     );
     return otras.length > 0;
 }

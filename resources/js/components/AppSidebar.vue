@@ -4,7 +4,6 @@ import {
     LayoutGrid,
     Users,
     UserCheck,
-    UserPlus,
     School,
     Building2,
     Settings,
@@ -53,14 +52,14 @@ const mainNavItems: NavItem[] = [
         icon: UserCheck,
     },
     {
-        title: 'Instituciones Educativas',
-        href: InstitucionEducativaController.index().url,
-        icon: School,
-    },
-    {
         title: 'Entidades',
         href: EntidadController.index().url,
         icon: Building2,
+    },
+    {
+        title: 'Instituciones Educativas',
+        href: InstitucionEducativaController.index().url,
+        icon: School,
     },
     {
         title: 'Configuración',

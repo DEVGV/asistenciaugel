@@ -1344,14 +1344,24 @@ const tabs = [
                                 <TableCell>
                                     <div class="text-xs font-medium">
                                         {{
-                                            alta.condicionLaboral
-                                                ?.abreviatura ||
-                                            alta.condicionLaboral?.nombre ||
+                                            (
+                                                alta.condicion_laboral ||
+                                                alta.condicionLaboral
+                                            )?.abreviatura ||
+                                            (
+                                                alta.condicion_laboral ||
+                                                alta.condicionLaboral
+                                            )?.nombre ||
                                             '-'
                                         }}
                                     </div>
                                     <div class="text-xs text-muted-foreground">
-                                        {{ alta.rolTrabajador?.nombre || '-' }}
+                                        {{
+                                            (
+                                                alta.rol_trabajador ||
+                                                alta.rolTrabajador
+                                            )?.nombre || '-'
+                                        }}
                                     </div>
                                     <div
                                         v-if="alta.perfil_ie?.perfil"
