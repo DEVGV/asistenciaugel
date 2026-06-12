@@ -76,6 +76,12 @@ class StoreAltaTrabajadorRequest extends FormRequest
             'fechaAlta' => ['nullable', 'date'],
             'observacion' => ['nullable', 'string', 'max:500'],
             'perfil_id' => ['nullable', 'integer', Rule::exists(Perfil::class, 'id')],
+            'localInstEduc_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('conasis.t_localesInstEduc', 'id')
+                    ->where('institucionEduc_id', $this->input('institucionEducativa_id')),
+            ],
         ];
     }
 
@@ -96,6 +102,7 @@ class StoreAltaTrabajadorRequest extends FormRequest
             'fechaInicio.required' => 'La fecha de inicio es obligatoria.',
             'fechaInicio.date' => 'La fecha de inicio debe ser una fecha válida.',
             'fechaFin.after_or_equal' => 'La fecha de fin debe ser igual o posterior a la fecha de inicio.',
+            'localInstEduc_id.exists' => 'El local de marcación seleccionado no pertenece a la institución educativa.',
         ];
     }
 

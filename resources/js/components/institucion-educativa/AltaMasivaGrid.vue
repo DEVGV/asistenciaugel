@@ -9,7 +9,6 @@
  * - Validación visual por celda (borde rojo) antes de enviar.
  * - Inserts por lote en el backend → respuesta con conteo y errores.
  */
-import { ref, reactive, computed, onMounted, nextTick } from 'vue';
 import {
     Check,
     ChevronDown,
@@ -21,6 +20,7 @@ import {
     AlertCircle,
     X,
 } from 'lucide-vue-next';
+import { ref, reactive, computed, onMounted, nextTick } from 'vue';
 import { Button } from '@/components/ui/button';
 
 // ─── Props / Emits ────────────────────────────────────────────────────────────
@@ -54,6 +54,7 @@ interface FilaAlta {
     situacionLaboral_id: number | null;
     area_id: number | null;
     cargo_id: number | null;
+    localInstEduc_id: number | null;
     fechaInicio: string;
     fechaFin: string;
     codigoAirsp: string;
@@ -69,20 +70,35 @@ const cats = reactive<Record<string, CatItem[]>>({
     situaciones: [],
     areas: [],
     cargos: [],
+    locales: [],
 });
 const catsLoading = ref(true);
 
 async function fetchCat(type: string): Promise<CatItem[]> {
     const res = await fetch(`/api/params/${type}`);
     const json = await res.json();
+
     return (json.data ?? []).map((i: any) => ({
         id: i.id,
         nombre: i.nombre || i.descripcion || String(i.id),
     }));
 }
 
+// Locales de marcación de ESTA IE (endpoint distinto a /api/params)
+async function fetchLocales(): Promise<CatItem[]> {
+    const res = await fetch(
+        `/api/instituciones/${props.institucionId}/locales`,
+    );
+    const json = await res.json();
+
+    return (json.data ?? []).map((i: any) => ({
+        id: i.id,
+        nombre: i.nombre || String(i.id),
+    }));
+}
+
 onMounted(async () => {
-    const [condiciones, contratos, roles, situaciones, areas, cargos] =
+    const [condiciones, contratos, roles, situaciones, areas, cargos, locales] =
         await Promise.all([
             fetchCat('condiciones-laborales'),
             fetchCat('tipos-contrato'),
@@ -90,6 +106,7 @@ onMounted(async () => {
             fetchCat('situaciones-laborales'),
             fetchCat('areas'),
             fetchCat('cargos'),
+            fetchLocales(),
         ]);
     cats.condiciones = condiciones;
     cats.contratos = contratos;
@@ -97,6 +114,7 @@ onMounted(async () => {
     cats.situaciones = situaciones;
     cats.areas = areas;
     cats.cargos = cargos;
+    cats.locales = locales;
     catsLoading.value = false;
 });
 
@@ -113,6 +131,7 @@ function nuevaFila(): FilaAlta {
         situacionLaboral_id: null,
         area_id: null,
         cargo_id: null,
+        localInstEduc_id: null,
         fechaInicio: '',
         fechaFin: '',
         codigoAirsp: '',
@@ -127,17 +146,25 @@ function agregarFila() {
     filas.value.push(nuevaFila());
     nextTick(() => {
         const container = document.getElementById('grid-scroll');
-        if (container) container.scrollTop = container.scrollHeight;
+
+        if (container) {
+            container.scrollTop = container.scrollHeight;
+        }
     });
 }
 
 function agregarFilas(n: number) {
-    for (let i = 0; i < n; i++) filas.value.push(nuevaFila());
+    for (let i = 0; i < n; i++) {
+        filas.value.push(nuevaFila());
+    }
 }
 
 function eliminarFila(id: number) {
     filas.value = filas.value.filter((f) => f._id !== id);
-    if (filas.value.length === 0) filas.value.push(nuevaFila());
+
+    if (filas.value.length === 0) {
+        filas.value.push(nuevaFila());
+    }
 }
 
 function limpiarFilasVacias() {
@@ -155,6 +182,7 @@ function dropKey(filaId: number, campo: string) {
 
 function toggleDropdown(filaId: number, campo: string) {
     const key = dropKey(filaId, campo);
+
     if (activeDropdown.value === key) {
         activeDropdown.value = null;
     } else {
@@ -179,13 +207,20 @@ function selectCat(fila: FilaAlta, campo: keyof FilaAlta, item: CatItem) {
 }
 
 function catNombre(lista: CatItem[], id: number | null): string {
-    if (!id) return '';
+    if (!id) {
+        return '';
+    }
+
     return lista.find((i) => i.id === id)?.nombre ?? String(id);
 }
 
 function filteredCat(lista: CatItem[]): CatItem[] {
     const q = dropdownSearch.value.toLowerCase().trim();
-    if (!q) return lista.slice(0, 80);
+
+    if (!q) {
+        return lista.slice(0, 80);
+    }
+
     return lista.filter((i) => i.nombre.toLowerCase().includes(q)).slice(0, 80);
 }
 
@@ -194,7 +229,7 @@ const trabSearch = reactive<Record<number, string>>({}); // filaId → query
 const trabOptions = reactive<Record<number, TrabajadorItem[]>>({});
 const trabLoading = reactive<Record<number, boolean>>({});
 const trabDropOpen = ref<number | null>(null);
-let trabTimers: Record<number, ReturnType<typeof setTimeout>> = {};
+const trabTimers: Record<number, ReturnType<typeof setTimeout>> = {};
 
 function onTrabInput(fila: FilaAlta, val: string) {
     fila.trabajador_id = null;
@@ -202,19 +237,27 @@ function onTrabInput(fila: FilaAlta, val: string) {
     fila._errors['trabajador_id'] = '';
     trabSearch[fila._id] = val;
     clearTimeout(trabTimers[fila._id]);
+
     if (!val || val.length < 1) {
         trabOptions[fila._id] = [];
         trabDropOpen.value = null;
+
         return;
     }
+
     trabTimers[fila._id] = setTimeout(() => buscarTrabajador(fila), 300);
 }
 
 async function buscarTrabajador(fila: FilaAlta) {
     const q = trabSearch[fila._id] ?? '';
-    if (!q) return;
+
+    if (!q) {
+        return;
+    }
+
     trabLoading[fila._id] = true;
     trabDropOpen.value = fila._id;
+
     try {
         const res = await fetch(
             `/api/trabajadores/search?search=${encodeURIComponent(q)}`,
@@ -226,6 +269,7 @@ async function buscarTrabajador(fila: FilaAlta) {
             const p = t.persona ?? {};
             const apellidos = [p.paterno, p.materno].filter(Boolean).join(' ');
             const nombre = [apellidos, p.nombre].filter(Boolean).join(', ');
+
             return {
                 id: t.id,
                 codigo: t.codigo ?? '',
@@ -262,15 +306,19 @@ const REQUERIDOS: (keyof FilaAlta)[] = [
 
 function validar(): boolean {
     let ok = true;
+
     for (const fila of filas.value) {
         // Si la fila está completamente vacía, ignorarla
         if (
             !fila.trabajador_id &&
             !fila.condicionLaboral_id &&
             !fila.fechaInicio
-        )
+        ) {
             continue;
+        }
+
         fila._errors = {};
+
         for (const campo of REQUERIDOS) {
             if (!fila[campo]) {
                 fila._errors[campo as string] = 'Requerido';
@@ -278,6 +326,7 @@ function validar(): boolean {
             }
         }
     }
+
     return ok;
 }
 
@@ -297,12 +346,18 @@ const resultado = ref<{
 const errorGeneral = ref('');
 
 async function enviar() {
-    if (!validar()) return;
-    const filasFiltradas = filasConDatos.value;
-    if (!filasFiltradas.length) {
-        errorGeneral.value = 'No hay filas con datos para enviar.';
+    if (!validar()) {
         return;
     }
+
+    const filasFiltradas = filasConDatos.value;
+
+    if (!filasFiltradas.length) {
+        errorGeneral.value = 'No hay filas con datos para enviar.';
+
+        return;
+    }
+
     errorGeneral.value = '';
     enviando.value = true;
     resultado.value = null;
@@ -315,6 +370,7 @@ async function enviar() {
         situacionLaboral_id: f.situacionLaboral_id,
         area_id: f.area_id,
         cargo_id: f.cargo_id,
+        localInstEduc_id: f.localInstEduc_id || null,
         fechaInicio: f.fechaInicio,
         fechaFin: f.fechaFin || null,
         codigoAirsp: f.codigoAirsp || null,
@@ -340,10 +396,12 @@ async function enviar() {
             },
         );
         const data = await res.json();
+
         if (!res.ok) {
             errorGeneral.value = data.message ?? 'Error del servidor.';
         } else {
             resultado.value = data;
+
             if (data.insertados > 0) {
                 emit('success', data.insertados);
             }
@@ -364,8 +422,14 @@ function resetGrid() {
 // Cerrar dropdowns al hacer clic fuera
 function onGridClick(e: MouseEvent) {
     const target = e.target as HTMLElement;
-    if (!target.closest('[data-dropdown]')) closeDropdown();
-    if (!target.closest('[data-trab-drop]')) trabDropOpen.value = null;
+
+    if (!target.closest('[data-dropdown]')) {
+        closeDropdown();
+    }
+
+    if (!target.closest('[data-trab-drop]')) {
+        trabDropOpen.value = null;
+    }
 }
 
 // Columnas de catálogo
@@ -392,6 +456,14 @@ const colsCat = [
     { campo: 'area_id', lista: 'areas', label: 'Área', width: '130px' },
     { campo: 'cargo_id', lista: 'cargos', label: 'Cargo', width: '130px' },
 ] as const;
+
+// Columna de local de marcación (opcional, no obligatoria)
+const colLocal = {
+    campo: 'localInstEduc_id',
+    lista: 'locales',
+    label: 'Local Marcación',
+    width: '160px',
+} as const;
 </script>
 
 <template>
@@ -521,6 +593,13 @@ const colsCat = [
                                     >
                                         {{ col.label }}
                                         <span class="text-destructive">*</span>
+                                    </th>
+                                    <!-- Local de marcación (opcional) -->
+                                    <th
+                                        class="border-r border-b px-2 py-2 text-left font-semibold whitespace-nowrap"
+                                        :style="`min-width:${colLocal.width}`"
+                                    >
+                                        {{ colLocal.label }}
                                     </th>
                                     <!-- Fechas y extras -->
                                     <th
@@ -785,6 +864,126 @@ const colsCat = [
                                                     class="py-3 text-center text-xs text-muted-foreground"
                                                 >
                                                     Sin resultados
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- ── LOCAL DE MARCACIÓN (opcional) ── -->
+                                    <td
+                                        class="relative border-r border-b p-0"
+                                        data-dropdown
+                                    >
+                                        <button
+                                            type="button"
+                                            @click.stop="
+                                                toggleDropdown(
+                                                    fila._id,
+                                                    colLocal.campo,
+                                                )
+                                            "
+                                            class="flex w-full items-center justify-between gap-1 px-2.5 py-1.5 text-left text-xs outline-none hover:bg-muted/40"
+                                        >
+                                            <span
+                                                class="truncate"
+                                                :class="
+                                                    !fila.localInstEduc_id
+                                                        ? 'text-muted-foreground/50'
+                                                        : ''
+                                                "
+                                            >
+                                                {{
+                                                    catNombre(
+                                                        cats.locales,
+                                                        fila.localInstEduc_id,
+                                                    ) || 'Sin local'
+                                                }}
+                                            </span>
+                                            <ChevronDown
+                                                class="h-3 w-3 shrink-0 text-muted-foreground/60"
+                                            />
+                                        </button>
+
+                                        <div
+                                            v-if="
+                                                activeDropdown ===
+                                                dropKey(
+                                                    fila._id,
+                                                    colLocal.campo,
+                                                )
+                                            "
+                                            class="absolute top-full left-0 z-40 mt-0.5 w-60 rounded-md border bg-background shadow-lg"
+                                            data-dropdown
+                                        >
+                                            <div
+                                                class="flex items-center gap-1.5 border-b px-2.5 py-1.5"
+                                            >
+                                                <Search
+                                                    class="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                                                />
+                                                <input
+                                                    :id="`ds_${dropKey(fila._id, colLocal.campo)}`"
+                                                    v-model="dropdownSearch"
+                                                    type="text"
+                                                    placeholder="Buscar local..."
+                                                    class="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/60"
+                                                    @click.stop
+                                                />
+                                            </div>
+                                            <div
+                                                class="max-h-48 overflow-y-auto py-1"
+                                            >
+                                                <!-- Opción "sin local" -->
+                                                <div
+                                                    @mousedown.prevent="
+                                                        fila.localInstEduc_id =
+                                                            null;
+                                                        closeDropdown();
+                                                    "
+                                                    class="cursor-pointer px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                                >
+                                                    Sin local
+                                                </div>
+                                                <div
+                                                    v-for="item in filteredCat(
+                                                        cats.locales,
+                                                    )"
+                                                    :key="item.id"
+                                                    @mousedown.prevent="
+                                                        selectCat(
+                                                            fila,
+                                                            colLocal.campo as keyof FilaAlta,
+                                                            item,
+                                                        )
+                                                    "
+                                                    class="flex cursor-pointer items-center gap-2 px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground"
+                                                    :class="
+                                                        fila.localInstEduc_id ===
+                                                        item.id
+                                                            ? 'bg-primary/10 font-medium text-primary'
+                                                            : ''
+                                                    "
+                                                >
+                                                    <Check
+                                                        v-if="
+                                                            fila.localInstEduc_id ===
+                                                            item.id
+                                                        "
+                                                        class="h-3 w-3 shrink-0"
+                                                    />
+                                                    <span
+                                                        v-else
+                                                        class="w-3 shrink-0"
+                                                    />
+                                                    <span class="truncate">{{
+                                                        item.nombre
+                                                    }}</span>
+                                                </div>
+                                                <div
+                                                    v-if="!cats.locales.length"
+                                                    class="py-3 text-center text-xs text-muted-foreground"
+                                                >
+                                                    IE sin locales
                                                 </div>
                                             </div>
                                         </div>

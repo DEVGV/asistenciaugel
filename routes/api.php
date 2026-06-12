@@ -69,6 +69,9 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
     Route::get('instituciones/search', [InstitucionEducativaController::class, 'search'])->name('api.instituciones.search');
     Route::get('instituciones/{institucione}/detalles', [InstitucionEducativaController::class, 'detallesJson'])->name('api.instituciones.detalles');
 
+    // Locales de marcación disponibles de una IE (para select en formularios de altas)
+    Route::get('instituciones/{institucione}/locales', [InstitucionEducativaController::class, 'locales'])->name('api.instituciones.locales');
+
     Route::prefix('mobile')
         ->withoutMiddleware([ValidateCsrfToken::class, PreventRequestForgery::class])
         ->name('api.mobile.')

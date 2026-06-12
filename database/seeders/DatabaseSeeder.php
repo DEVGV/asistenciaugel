@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             AdminSeeder::class,
+            ParamTramiteSeeder::class,
             AreaCargoSeeder::class,
             CondicionesLaboralesSeeder::class,
             PersonasSeeder::class,

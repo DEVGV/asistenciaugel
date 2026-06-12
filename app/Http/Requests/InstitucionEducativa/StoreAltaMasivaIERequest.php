@@ -27,6 +27,7 @@ class StoreAltaMasivaIERequest extends FormRequest
             'filas.*.fechaFin'             => ['nullable', 'date'],
             'filas.*.codigoAirsp'          => ['nullable', 'string', 'max:50'],
             'filas.*.observacion'          => ['nullable', 'string', 'max:500'],
+            'filas.*.localInstEduc_id'     => ['nullable', 'integer'],
         ];
     }
 

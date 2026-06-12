@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\InstitucionEducativa\StoreInstEducRequest;
 use App\Http\Requests\InstitucionEducativa\UpdateInstEducRequest;
 use App\Models\InstitucionesEduc;
+use App\Services\Infraestructura\LocalInstEducService;
 use App\Services\InstitucionEducativa\InstitucionEducativaService;
 use App\Services\Trabajador\AltaTrabajadorService;
 use Illuminate\Http\JsonResponse;
@@ -19,6 +20,7 @@ class InstitucionEducativaController extends Controller
     public function __construct(
         private InstitucionEducativaService $ieService,
         private AltaTrabajadorService $altaService,
+        private LocalInstEducService $localInstEducService,
     ) {}
 
     public function index(Request $request): Response
@@ -56,6 +58,13 @@ class InstitucionEducativaController extends Controller
             'docentes'        => $this->altaService->listarPorInstitucion($institucione, $request),
             'docentesFiltros' => $request->only(['search', 'solo_activas', 'condicion_id']),
             'activeTab'       => 'docentes',
+        ]);
+    }
+
+    public function locales(InstitucionesEduc $institucione): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->localInstEducService->opcionesParaSelect($institucione),
         ]);
     }
 

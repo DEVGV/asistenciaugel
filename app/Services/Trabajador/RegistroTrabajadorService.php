@@ -4,6 +4,8 @@ namespace App\Services\Trabajador;
 
 use App\Models\AltasTrabajadores;
 use App\Models\Auth\UsuarioPerfilIe;
+use App\Models\Conasis\ConasisLocalesInstEduc;
+use App\Models\Conasis\ConasisLocalesMarcacion;
 use App\Models\InstitucionesEduc;
 use App\Models\Personas;
 use App\Models\Trabajador;
@@ -84,6 +86,18 @@ class RegistroTrabajadorService
                         'created_by' => auth()->id() ?? 1,
                     ]);
                 }
+
+                // 6. Si se seleccionó local de marcación, registrarlo (siempre como registro nuevo)
+                if (! empty($data['localInstEduc_id'])) {
+                    ConasisLocalesMarcacion::create([
+                        'trabajador_id'     => $trabajador->id,
+                        'altaTrabajador_id' => $alta->id,
+                        'localInstEduc_id'  => $data['localInstEduc_id'],
+                        'fechaInicio'       => $data['fechaInicio'],
+                        'fechaFin'          => $data['fechaFin'] ?? null,
+                        'created_by'        => auth()->id() ?? 1,
+                    ]);
+                }
             }
 
             return $trabajador->load('persona');
@@ -130,6 +144,7 @@ class RegistroTrabajadorService
                         $rules['codigoAirsp'] = 'nullable|string|max:50';
                         $rules['observacion'] = 'nullable|string';
                         $rules['perfil_id'] = 'nullable|integer';
+                        $rules['localInstEduc_id'] = 'nullable|integer';
                     }
 
                     $validator = validator($row, $rules);
@@ -185,7 +200,7 @@ class RegistroTrabajadorService
 
                     // Si se incluye alta, crearla
                     if (! empty($row['incluir_alta']) && ! empty($row['institucionEducativa_id'])) {
-                        AltasTrabajadores::create([
+                        $alta = AltasTrabajadores::create([
                             'trabajador_id' => $trabajador->id,
                             'institucionEducativa_id' => $row['institucionEducativa_id'],
                             'condicionLaboral_id' => $row['condicionLaboral_id'],
@@ -214,6 +229,24 @@ class RegistroTrabajadorService
                                 'activo' => true,
                                 'created_by' => auth()->id() ?? 1,
                             ]);
+                        }
+
+                        // Registrar local de marcación si pertenece a la IE (siempre registro nuevo)
+                        if (! empty($row['localInstEduc_id'])) {
+                            $localValido = ConasisLocalesInstEduc::where('id', $row['localInstEduc_id'])
+                                ->where('institucionEduc_id', $row['institucionEducativa_id'])
+                                ->exists();
+
+                            if ($localValido) {
+                                ConasisLocalesMarcacion::create([
+                                    'trabajador_id'     => $trabajador->id,
+                                    'altaTrabajador_id' => $alta->id,
+                                    'localInstEduc_id'  => $row['localInstEduc_id'],
+                                    'fechaInicio'       => $row['fechaInicio'],
+                                    'fechaFin'          => $row['fechaFin'] ?? null,
+                                    'created_by'        => auth()->id() ?? 1,
+                                ]);
+                            }
                         }
                     }
 

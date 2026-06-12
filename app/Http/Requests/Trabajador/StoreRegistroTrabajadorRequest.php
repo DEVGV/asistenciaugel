@@ -51,6 +51,14 @@ class StoreRegistroTrabajadorRequest extends FormRequest
 
             // ── Perfil (solo si hay alta) ──
             'perfil_id' => ['nullable', 'integer', Rule::exists(Perfil::class, 'id')],
+
+            // ── Local de marcación (solo si hay alta) ──
+            'localInstEduc_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('conasis.t_localesInstEduc', 'id')
+                    ->where('institucionEduc_id', $this->input('institucionEducativa_id')),
+            ],
         ];
 
         return $rules;
@@ -70,6 +78,7 @@ class StoreRegistroTrabajadorRequest extends FormRequest
             'area_id.required_if' => 'El área es requerida para registrar el alta.',
             'cargo_id.required_if' => 'El cargo es requerido para registrar el alta.',
             'fechaInicio.required_if' => 'La fecha de inicio es requerida para registrar el alta.',
+            'localInstEduc_id.exists' => 'El local de marcación seleccionado no pertenece a la institución educativa.',
         ];
     }
 }

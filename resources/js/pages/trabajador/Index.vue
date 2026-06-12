@@ -18,6 +18,7 @@ import { ref, watch, computed } from 'vue';
 import TrabajadorController from '@/actions/App/Http/Controllers/Trabajador/TrabajadorController';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import FormModal from '@/components/shared/FormModal.vue';
+import LocalMarcacionSelect from '@/components/shared/LocalMarcacionSelect.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
 import ParamSelect from '@/components/shared/ParamSelect.vue';
 import { Button } from '@/components/ui/button';
@@ -141,6 +142,9 @@ const form = useForm({
     fechaFin: '',
     fechaAlta: '',
     observacion: '',
+
+    // Local de marcación (opcional, depende de la IE)
+    localInstEduc_id: null as number | null,
 
     // Perfil
     perfil_id: null as number | null,
@@ -732,6 +736,21 @@ function onMasivoSuccess(count: number) {
                                 class="text-sm text-destructive"
                             >
                                 {{ form.errors.institucionEducativa_id }}
+                            </p>
+                        </div>
+
+                        <!-- Local de marcación (depende de la IE) -->
+                        <div class="grid gap-2">
+                            <LocalMarcacionSelect
+                                label="Local de Marcación"
+                                placeholder="Sin local de marcación"
+                                :institucion-id="form.institucionEducativa_id"
+                                v-model="form.localInstEduc_id"
+                                :error="form.errors.localInstEduc_id"
+                            />
+                            <p class="text-xs text-muted-foreground">
+                                Solo se listan los locales de la IE
+                                seleccionada.
                             </p>
                         </div>
 

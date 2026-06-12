@@ -34,6 +34,7 @@ use App\Http\Controllers\Persona\PersonaController;
 use App\Http\Controllers\Persona\PersonaMasivaController;
 use App\Http\Controllers\Persona\TelefonoController;
 use App\Http\Controllers\Trabajador\AltaTrabajadorController;
+use App\Http\Controllers\Tramite\PermisoController;
 use App\Http\Controllers\Trabajador\RegistroTrabajadorController;
 use App\Http\Controllers\Trabajador\TrabajadorController;
 use Illuminate\Support\Facades\Route;
@@ -245,6 +246,34 @@ Route::middleware(['auth', 'verified', 'contexto'])->group(function () {
     // API: listar todos los horarios activos de un trabajador (para el tab Horarios en Show)
     Route::get('trabajadores/{trabajador}/horarios', [HorarioTrabajadorController::class, 'porTrabajador'])
         ->name('trabajadores.horarios');
+
+    // ── Trámite: Solicitudes de Permiso ──────────────────────────────────────
+    // Listado para el tab Permisos del trabajador
+    Route::get('trabajadores/{trabajador}/permisos', [PermisoController::class, 'porTrabajador'])
+        ->name('trabajadores.permisos');
+
+    // Listado paginado para el tab Permisos de una IE
+    Route::get('instituciones/{institucione}/permisos', [PermisoController::class, 'porInstitucion'])
+        ->name('instituciones.permisos');
+
+    // Altas activas de una IE (opciones del select al crear desde la IE)
+    Route::get('instituciones/{institucione}/permisos-altas', [PermisoController::class, 'altasPorInstitucion'])
+        ->name('instituciones.permisos.altas');
+
+    // Crear solicitud de permiso (expediente + sustento + detalle)
+    Route::post('permisos', [PermisoController::class, 'store'])->name('permisos.store');
+
+    // Validar (aprobar/rechazar) una solicitud — pestaña de la IE
+    Route::post('permisos/{expediente}/validar', [PermisoController::class, 'validar'])
+        ->name('permisos.validar');
+
+    // Anular una solicitud pendiente
+    Route::post('permisos/{expediente}/anular', [PermisoController::class, 'anular'])
+        ->name('permisos.anular');
+
+    // Descargar el documento de sustento
+    Route::get('documentos-tram/{documentoTram}/descargar', [PermisoController::class, 'descargarSustento'])
+        ->name('documentos-tram.descargar');
 });
 
 require __DIR__.'/settings.php';

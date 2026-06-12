@@ -20,14 +20,11 @@ import {
     Search,
     ShieldCheck,
     CalendarOff,
+    ClipboardCheck,
     Sparkles,
     Loader2,
 } from 'lucide-vue-next';
 import { ref, watch, computed } from 'vue';
-import AltaMasivaGrid from '@/components/institucion-educativa/AltaMasivaGrid.vue';
-import GradosMasivaGrid from '@/components/institucion-educativa/GradosMasivaGrid.vue';
-import CursosMasivaGrid from '@/components/institucion-educativa/CursosMasivaGrid.vue';
-import RelojesMasivaGrid from '@/components/institucion-educativa/RelojesMasivaGrid.vue';
 import HorarioTrabajadorController from '@/actions/App/Http/Controllers/Horario/HorarioTrabajadorController';
 import LocalController from '@/actions/App/Http/Controllers/Infraestructura/LocalController';
 import LocalInstEducController from '@/actions/App/Http/Controllers/Infraestructura/LocalInstEducController';
@@ -38,6 +35,11 @@ import DiasNoLaborablesController from '@/actions/App/Http/Controllers/Instituci
 import GradoIEController from '@/actions/App/Http/Controllers/InstitucionEducativa/GradoIEController';
 import InstitucionEducativaController from '@/actions/App/Http/Controllers/InstitucionEducativa/InstitucionEducativaController';
 import SeccionIEController from '@/actions/App/Http/Controllers/InstitucionEducativa/SeccionIEController';
+import AltaMasivaGrid from '@/components/institucion-educativa/AltaMasivaGrid.vue';
+import CursosMasivaGrid from '@/components/institucion-educativa/CursosMasivaGrid.vue';
+import GradosMasivaGrid from '@/components/institucion-educativa/GradosMasivaGrid.vue';
+import PermisosIETab from '@/components/institucion-educativa/PermisosIETab.vue';
+import RelojesMasivaGrid from '@/components/institucion-educativa/RelojesMasivaGrid.vue';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import FormModal from '@/components/shared/FormModal.vue';
 import GestionUsuarioModal from '@/components/shared/GestionUsuarioModal.vue';
@@ -98,7 +100,7 @@ const props = defineProps<{
 }>();
 
 const activeTab = ref<
-    'datos' | 'cursos' | 'grados' | 'locales' | 'relojes' | 'docentes' | 'diasNoLaborables'
+    'datos' | 'cursos' | 'grados' | 'locales' | 'relojes' | 'docentes' | 'diasNoLaborables' | 'permisos'
 >((props.activeTab as any) ?? 'datos');
 
 // ─── Sub-recurso Modal (compartido para cursos, grados, secciones) ───
@@ -526,6 +528,7 @@ watch(docenteSoloActivas, () => cargarDocentes());
 
 function switchToDocentes() {
     activeTab.value = 'docentes';
+
     if (!props.docentes) {
         cargarDocentes();
     }
@@ -588,6 +591,7 @@ const tabs = [
     { key: 'relojes', label: 'Relojes', icon: Clock },
     { key: 'docentes', label: 'Docentes / Personal', icon: Users },
     { key: 'diasNoLaborables', label: 'Días No Laborables', icon: CalendarOff },
+    { key: 'permisos', label: 'Permisos', icon: ClipboardCheck },
 ] as const;
 
 // ─── Días No Laborables ────────────────────────────────────────────────────────
@@ -645,12 +649,16 @@ function submitDias() {
     if (diasIsEditing.value && diasEditingId.value) {
         diasForm.put(
             DiasNoLaborablesController.update({ diasNoLaborable: diasEditingId.value }).url,
-            { onSuccess: () => { showDiasModal.value = false; } },
+            { onSuccess: () => {
+ showDiasModal.value = false; 
+} },
         );
     } else {
         diasForm.post(
             DiasNoLaborablesController.store({ institucione: props.institucion.id }).url,
-            { onSuccess: () => { showDiasModal.value = false; } },
+            { onSuccess: () => {
+ showDiasModal.value = false; 
+} },
         );
     }
 }
@@ -667,13 +675,20 @@ function confirmDeleteDias(dia: DiasNoLaborable) {
 }
 
 function executeDeleteDias() {
-    if (!deleteDiasId.value) return;
+    if (!deleteDiasId.value) {
+return;
+}
+
     isDeletingDias.value = true;
     router.delete(
         DiasNoLaborablesController.destroy({ diasNoLaborable: deleteDiasId.value }).url,
         {
-            onSuccess: () => { showDeleteDias.value = false; deleteDiasId.value = null; },
-            onFinish: () => { isDeletingDias.value = false; },
+            onSuccess: () => {
+ showDeleteDias.value = false; deleteDiasId.value = null; 
+},
+            onFinish: () => {
+ isDeletingDias.value = false; 
+},
         },
     );
 }
@@ -681,6 +696,7 @@ function executeDeleteDias() {
 async function generarFeriados() {
     diasIsGenerating.value = true;
     diasGenerarMsg.value = '';
+
     try {
         const url = DiasNoLaborablesController.generarFeriados(
             { institucione: props.institucion.id },
@@ -1730,6 +1746,11 @@ async function generarFeriados() {
                     </TableBody>
                 </Table>
             </div>
+        </div>
+
+        <!-- TAB Permisos -->
+        <div v-if="activeTab === 'permisos'">
+            <PermisosIETab :institucion-id="props.institucion.id" />
         </div>
 
         <!-- Modal Carga Masiva Grid (Altas) -->

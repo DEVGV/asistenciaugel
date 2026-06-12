@@ -4,6 +4,7 @@ namespace App\Services\InstitucionEducativa;
 
 use App\Models\Areas;
 use App\Models\Cargos;
+use App\Models\Conasis\ConasisLocalesInstEduc;
 use App\Models\CondicionesLaborales;
 use App\Models\InstitucionesEduc;
 use App\Models\Param\ParamRolTrabajador;
@@ -43,6 +44,11 @@ class AltaMasivaIEService
         $validAreas         = $this->idsValidos(Areas::class,                $filas, 'area_id');
         $validCargos        = $this->idsValidos(Cargos::class,               $filas, 'cargo_id');
 
+        // Locales válidos: solo los que pertenecen a esta IE.
+        $validLocales = ConasisLocalesInstEduc::where('institucionEduc_id', $ie->id)
+            ->pluck('id')
+            ->flip();
+
         $validas = [];
         $errores = [];
 
@@ -71,6 +77,9 @@ class AltaMasivaIEService
             }
             if (! isset($validCargos[$fila['cargo_id']])) {
                 $rowErrors[] = "cargo_id {$fila['cargo_id']} no existe";
+            }
+            if (! empty($fila['localInstEduc_id']) && ! isset($validLocales[$fila['localInstEduc_id']])) {
+                $rowErrors[] = "localInstEduc_id {$fila['localInstEduc_id']} no pertenece a esta IE";
             }
 
             if ($rowErrors) {

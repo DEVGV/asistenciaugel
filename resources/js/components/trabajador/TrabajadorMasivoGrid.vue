@@ -8,7 +8,6 @@
  * - Shows validation feedback per cell before submitting.
  * - Submits all rows in a batch transaction to /trabajadores-masivos.
  */
-import { ref, reactive, computed, onMounted, nextTick } from 'vue';
 import {
     Check,
     ChevronDown,
@@ -20,6 +19,7 @@ import {
     AlertCircle,
     X,
 } from 'lucide-vue-next';
+import { ref, reactive, computed, onMounted, nextTick } from 'vue';
 import { Button } from '@/components/ui/button';
 
 const emit = defineEmits<{
@@ -59,9 +59,13 @@ interface FilaTrabajador {
     codigoAirsp: string;
     observacion: string;
     perfil_id: number | null;
+    localInstEduc_id: number | null;
 
     _errors: Record<string, string>;
     _reniecLoading: boolean;
+    // Locales de marcación de la IE de esta fila (cargados on-demand)
+    _locales: CatItem[];
+    _localesLoading: boolean;
 }
 
 // ─── Catálogos ────────────────────────────────────────────────────────────────
@@ -83,6 +87,7 @@ const incluirAltaGlobal = ref(false);
 async function fetchCat(type: string): Promise<CatItem[]> {
     const res = await fetch(`/api/params/${type}`);
     const json = await res.json();
+
     return (json.data ?? []).map((i: any) => ({
         id: i.id,
         nombre: i.nombre || i.descripcion || String(i.id),
@@ -163,9 +168,12 @@ function nuevaFila(): FilaTrabajador {
         codigoAirsp: '',
         observacion: '',
         perfil_id: null,
+        localInstEduc_id: null,
 
         _errors: {},
         _reniecLoading: false,
+        _locales: [],
+        _localesLoading: false,
     };
 }
 
@@ -184,17 +192,25 @@ function agregarFila() {
     filas.value.push(nuevaFila());
     nextTick(() => {
         const container = document.getElementById('grid-scroll');
-        if (container) container.scrollTop = container.scrollHeight;
+
+        if (container) {
+            container.scrollTop = container.scrollHeight;
+        }
     });
 }
 
 function agregarFilas(n: number) {
-    for (let i = 0; i < n; i++) filas.value.push(nuevaFila());
+    for (let i = 0; i < n; i++) {
+        filas.value.push(nuevaFila());
+    }
 }
 
 function eliminarFila(id: number) {
     filas.value = filas.value.filter((f) => f._id !== id);
-    if (filas.value.length === 0) filas.value.push(nuevaFila());
+
+    if (filas.value.length === 0) {
+        filas.value.push(nuevaFila());
+    }
 }
 
 // ─── Dropdown inline ──────────────────────────────────────────────────────────
@@ -207,6 +223,7 @@ function dropKey(filaId: number, campo: string) {
 
 function toggleDropdown(filaId: number, campo: string) {
     const key = dropKey(filaId, campo);
+
     if (activeDropdown.value === key) {
         activeDropdown.value = null;
     } else {
@@ -235,13 +252,20 @@ function selectCat(
 }
 
 function catNombre(lista: CatItem[], id: number | null): string {
-    if (!id) return '';
+    if (!id) {
+        return '';
+    }
+
     return lista.find((i) => i.id === id)?.nombre ?? String(id);
 }
 
 function filteredCat(lista: CatItem[]): CatItem[] {
     const q = dropdownSearch.value.toLowerCase().trim();
-    if (!q) return lista.slice(0, 80);
+
+    if (!q) {
+        return lista.slice(0, 80);
+    }
+
     return lista.filter((i) => i.nombre.toLowerCase().includes(q)).slice(0, 80);
 }
 
@@ -252,7 +276,7 @@ const ieOptions = reactive<Record<number, { id: number; nombre: string }[]>>(
 );
 const ieLoading = reactive<Record<number, boolean>>({});
 const ieDropOpen = ref<number | null>(null);
-let ieTimers: Record<number, ReturnType<typeof setTimeout>> = {};
+const ieTimers: Record<number, ReturnType<typeof setTimeout>> = {};
 
 function onIeInput(fila: FilaTrabajador, val: string) {
     fila.institucionEducativa_id = null;
@@ -260,19 +284,27 @@ function onIeInput(fila: FilaTrabajador, val: string) {
     fila._errors['institucionEducativa_id'] = '';
     ieSearch[fila._id] = val;
     clearTimeout(ieTimers[fila._id]);
+
     if (!val || val.length < 1) {
         ieOptions[fila._id] = [];
         ieDropOpen.value = null;
+
         return;
     }
+
     ieTimers[fila._id] = setTimeout(() => buscarIe(fila), 300);
 }
 
 async function buscarIe(fila: FilaTrabajador) {
     const q = ieSearch[fila._id] ?? '';
-    if (!q) return;
+
+    if (!q) {
+        return;
+    }
+
     ieLoading[fila._id] = true;
     ieDropOpen.value = fila._id;
+
     try {
         const res = await fetch(
             `/api/instituciones/search?search=${encodeURIComponent(q)}&per_page=30`,
@@ -296,15 +328,50 @@ function selectIe(fila: FilaTrabajador, ie: { id: number; nombre: string }) {
     fila._errors['institucionEducativa_id'] = '';
     ieDropOpen.value = null;
     ieOptions[fila._id] = [];
+    // Al cambiar de IE, el local previo deja de ser válido: limpiar y recargar.
+    fila.localInstEduc_id = null;
+    cargarLocalesFila(fila);
+}
+
+// Carga los locales de marcación de la IE de esta fila.
+async function cargarLocalesFila(fila: FilaTrabajador) {
+    if (!fila.institucionEducativa_id) {
+        fila._locales = [];
+
+        return;
+    }
+
+    fila._localesLoading = true;
+
+    try {
+        const res = await fetch(
+            `/api/instituciones/${fila.institucionEducativa_id}/locales`,
+        );
+        const json = await res.json();
+        fila._locales = (json.data ?? []).map((i: any) => ({
+            id: i.id,
+            nombre: i.nombre || String(i.id),
+        }));
+    } catch {
+        fila._locales = [];
+    } finally {
+        fila._localesLoading = false;
+    }
 }
 
 // ─── RENIEC/SUNAT Lookup per row ──────────────────────────────────────────────
 async function buscarReniecRow(fila: FilaTrabajador) {
-    if (!fila.docIdentidad || fila.docIdentidad.length !== 8) return;
+    if (!fila.docIdentidad || fila.docIdentidad.length !== 8) {
+        return;
+    }
+
     const isDni =
         cats.tiposDoc.find((t) => t.id === fila.tipoDocIdentidad_id)
             ?.abreviatura === 'DNI';
-    if (!isDni) return;
+
+    if (!isDni) {
+        return;
+    }
 
     fila._reniecLoading = true;
     fila._errors['docIdentidad'] = '';
@@ -319,7 +386,11 @@ async function buscarReniecRow(fila: FilaTrabajador) {
             body: JSON.stringify({ dni: fila.docIdentidad }),
         });
         const result = await response.json();
-        if (!response.ok) throw new Error(result.message || 'No encontrado');
+
+        if (!response.ok) {
+            throw new Error(result.message || 'No encontrado');
+        }
+
         if (result.data) {
             fila.nombre = result.data.nombres || '';
             fila.paterno = result.data.apellido_paterno || '';
@@ -336,7 +407,10 @@ async function buscarReniecRow(fila: FilaTrabajador) {
 }
 
 function checkDuplicadoEnCarga(fila: FilaTrabajador): boolean {
-    if (!fila.docIdentidad) return false;
+    if (!fila.docIdentidad) {
+        return false;
+    }
+
     const key = `${fila.tipoDocIdentidad_id}_${fila.docIdentidad.trim().toUpperCase()}`;
     const otras = filas.value.filter(
         (f) =>
@@ -345,6 +419,7 @@ function checkDuplicadoEnCarga(fila: FilaTrabajador): boolean {
             `${f.tipoDocIdentidad_id}_${f.docIdentidad.trim().toUpperCase()}` ===
                 key,
     );
+
     return otras.length > 0;
 }
 
@@ -355,12 +430,14 @@ function onDniInput(fila: FilaTrabajador, val: string) {
     // Verificar duplicado en tiempo real
     if (val && checkDuplicadoEnCarga({ ...fila, docIdentidad: val })) {
         fila._errors['docIdentidad'] = 'Documento repetido en esta carga';
+
         return;
     }
 
     const isDni =
         cats.tiposDoc.find((t) => t.id === fila.tipoDocIdentidad_id)
             ?.abreviatura === 'DNI';
+
     if (val.length === 8 && isDni) {
         buscarReniecRow(fila);
     }
@@ -375,15 +452,26 @@ function validar(): boolean {
         (f) => f.docIdentidad || f.paterno || f.nombre,
     );
     const docsSeen = new Map<string, number[]>(); // doc → [índices _id]
+
     for (const fila of filasActivas) {
-        if (!fila.docIdentidad) continue;
+        if (!fila.docIdentidad) {
+            continue;
+        }
+
         const key = `${fila.tipoDocIdentidad_id}_${fila.docIdentidad.trim().toUpperCase()}`;
-        if (!docsSeen.has(key)) docsSeen.set(key, []);
+
+        if (!docsSeen.has(key)) {
+            docsSeen.set(key, []);
+        }
+
         docsSeen.get(key)!.push(fila._id);
     }
 
     for (const fila of filas.value) {
-        if (!fila.docIdentidad && !fila.paterno && !fila.nombre) continue;
+        if (!fila.docIdentidad && !fila.paterno && !fila.nombre) {
+            continue;
+        }
+
         fila._errors = {};
 
         // Validar Persona
@@ -396,6 +484,7 @@ function validar(): boolean {
             'sexo_id',
             'pais_id',
         ];
+
         for (const campo of personaReq) {
             if (!fila[campo]) {
                 fila._errors[campo as string] = 'Requerido';
@@ -407,6 +496,7 @@ function validar(): boolean {
         if (fila.docIdentidad) {
             const key = `${fila.tipoDocIdentidad_id}_${fila.docIdentidad.trim().toUpperCase()}`;
             const duplicados = docsSeen.get(key) ?? [];
+
             if (duplicados.length > 1) {
                 fila._errors['docIdentidad'] =
                     'Documento repetido en esta carga';
@@ -425,6 +515,7 @@ function validar(): boolean {
                 'cargo_id',
                 'fechaInicio',
             ];
+
             for (const campo of altaReq) {
                 if (!fila[campo]) {
                     fila._errors[campo as string] = 'Requerido';
@@ -433,6 +524,7 @@ function validar(): boolean {
             }
         }
     }
+
     return ok;
 }
 
@@ -450,12 +542,18 @@ const resultado = ref<{
 const errorGeneral = ref('');
 
 async function enviar() {
-    if (!validar()) return;
-    const filasFiltradas = filasConDatos.value;
-    if (!filasFiltradas.length) {
-        errorGeneral.value = 'No hay filas con datos para enviar.';
+    if (!validar()) {
         return;
     }
+
+    const filasFiltradas = filasConDatos.value;
+
+    if (!filasFiltradas.length) {
+        errorGeneral.value = 'No hay filas con datos para enviar.';
+
+        return;
+    }
+
     errorGeneral.value = '';
     enviando.value = true;
     resultado.value = null;
@@ -490,6 +588,9 @@ async function enviar() {
         codigoAirsp: incluirAltaGlobal.value ? f.codigoAirsp || null : null,
         observacion: incluirAltaGlobal.value ? f.observacion || null : null,
         perfil_id: incluirAltaGlobal.value ? f.perfil_id : null,
+        localInstEduc_id: incluirAltaGlobal.value
+            ? f.localInstEduc_id || null
+            : null,
     }));
 
     try {
@@ -508,10 +609,12 @@ async function enviar() {
             body: JSON.stringify({ filas: payload }),
         });
         const data = await res.json();
+
         if (!res.ok) {
             errorGeneral.value = data.message ?? 'Error del servidor.';
         } else {
             resultado.value = data;
+
             if (data.insertados > 0) {
                 emit('success', data.insertados);
             }
@@ -531,8 +634,14 @@ function resetGrid() {
 
 function onGridClick(e: MouseEvent) {
     const target = e.target as HTMLElement;
-    if (!target.closest('[data-dropdown]')) closeDropdown();
-    if (!target.closest('[data-ie-drop]')) ieDropOpen.value = null;
+
+    if (!target.closest('[data-dropdown]')) {
+        closeDropdown();
+    }
+
+    if (!target.closest('[data-ie-drop]')) {
+        ieDropOpen.value = null;
+    }
 }
 </script>
 
@@ -830,6 +939,12 @@ function onGridClick(e: MouseEvent) {
                                             style="min-width: 140px"
                                         >
                                             Perfil IE
+                                        </th>
+                                        <th
+                                            class="border-r border-b bg-primary/5 px-2 py-2 text-left font-semibold text-primary"
+                                            style="min-width: 160px"
+                                        >
+                                            Local Marcación
                                         </th>
                                     </template>
 
@@ -2184,6 +2299,139 @@ function onGridClick(e: MouseEvent) {
                                                 </div>
                                             </div>
                                         </td>
+
+                                        <!-- Local de Marcación (depende de la IE de la fila) -->
+                                        <td
+                                            class="relative border-r border-b bg-primary/5 p-0"
+                                            data-dropdown
+                                        >
+                                            <button
+                                                type="button"
+                                                :disabled="
+                                                    !fila.institucionEducativa_id
+                                                "
+                                                @click.stop="
+                                                    toggleDropdown(
+                                                        fila._id,
+                                                        'localInstEduc_id',
+                                                    )
+                                                "
+                                                class="flex w-full items-center justify-between gap-1 px-2.5 py-1.5 text-left text-xs outline-none hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                <span
+                                                    class="truncate"
+                                                    :class="
+                                                        !fila.localInstEduc_id
+                                                            ? 'text-muted-foreground/50'
+                                                            : ''
+                                                    "
+                                                >
+                                                    {{
+                                                        !fila.institucionEducativa_id
+                                                            ? 'Seleccione IE'
+                                                            : fila._localesLoading
+                                                              ? 'Cargando...'
+                                                              : catNombre(
+                                                                    fila._locales,
+                                                                    fila.localInstEduc_id,
+                                                                ) || 'Sin local'
+                                                    }}
+                                                </span>
+                                                <ChevronDown
+                                                    class="h-3 w-3 shrink-0 text-muted-foreground/60"
+                                                />
+                                            </button>
+                                            <div
+                                                v-if="
+                                                    activeDropdown ===
+                                                    dropKey(
+                                                        fila._id,
+                                                        'localInstEduc_id',
+                                                    )
+                                                "
+                                                class="absolute top-full right-0 z-40 mt-0.5 w-56 rounded-md border bg-background shadow-lg"
+                                                data-dropdown
+                                            >
+                                                <div
+                                                    class="flex items-center gap-1.5 border-b px-2.5 py-1.5"
+                                                >
+                                                    <Search
+                                                        class="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                                                    />
+                                                    <input
+                                                        :id="`ds_${dropKey(fila._id, 'localInstEduc_id')}`"
+                                                        v-model="dropdownSearch"
+                                                        type="text"
+                                                        placeholder="Buscar local..."
+                                                        class="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/60"
+                                                        @click.stop
+                                                    />
+                                                </div>
+                                                <div
+                                                    class="max-h-48 overflow-y-auto py-1"
+                                                >
+                                                    <div
+                                                        @mousedown.prevent="
+                                                            fila.localInstEduc_id =
+                                                                null;
+                                                            closeDropdown();
+                                                        "
+                                                        class="cursor-pointer px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                                    >
+                                                        Sin local
+                                                    </div>
+                                                    <div
+                                                        v-for="item in filteredCat(
+                                                            fila._locales,
+                                                        )"
+                                                        :key="item.id"
+                                                        @mousedown.prevent="
+                                                            selectCat(
+                                                                fila,
+                                                                'localInstEduc_id',
+                                                                item,
+                                                            )
+                                                        "
+                                                        class="flex cursor-pointer items-center gap-2 px-2.5 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground"
+                                                        :class="
+                                                            fila.localInstEduc_id ===
+                                                            item.id
+                                                                ? 'bg-primary/10 font-medium text-primary'
+                                                                : ''
+                                                        "
+                                                    >
+                                                        <Check
+                                                            v-if="
+                                                                fila.localInstEduc_id ===
+                                                                item.id
+                                                            "
+                                                            class="h-3 w-3 shrink-0"
+                                                        />
+                                                        <span
+                                                            v-else
+                                                            class="w-3 shrink-0"
+                                                        />
+                                                        <span
+                                                            class="truncate"
+                                                            >{{
+                                                                item.nombre
+                                                            }}</span
+                                                        >
+                                                    </div>
+                                                    <div
+                                                        v-if="
+                                                            fila.institucionEducativa_id &&
+                                                            !fila._locales
+                                                                .length &&
+                                                            !fila._localesLoading
+                                                        "
+                                                        class="py-3 text-center text-xs text-muted-foreground"
+                                                    >
+                                                        IE sin locales
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
                                     </template>
 
                                     <!-- Eliminar Fila -->
@@ -2202,7 +2450,7 @@ function onGridClick(e: MouseEvent) {
 
                                 <tr v-if="!filas.length">
                                     <td
-                                        :colspan="incluirAltaGlobal ? 22 : 10"
+                                        :colspan="incluirAltaGlobal ? 23 : 10"
                                         class="py-8 text-center text-sm text-muted-foreground"
                                     >
                                         No hay filas añadidas.

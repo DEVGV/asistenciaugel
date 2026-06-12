@@ -4,6 +4,7 @@ namespace App\Services\Trabajador;
 
 use App\DTOs\Trabajador\CreateAltaTrabajadorDTO;
 use App\Models\AltasTrabajadores;
+use App\Models\Conasis\ConasisLocalesMarcacion;
 use App\Models\InstitucionesEduc;
 use App\Models\Trabajador;
 use App\Models\User;
@@ -218,7 +219,8 @@ class AltaTrabajadorService
 
     /**
      * Inserta altas masivas para una IE desde datos ya validados (array de DTOs).
-     * Usa insert en lotes para máximo rendimiento.
+     * Crea cada alta y, si la fila trae localInstEduc_id, registra también el
+     * local de marcación correspondiente (siempre como registro nuevo).
      *
      * @param  array<int, array<string, mixed>>  $rows
      * @return array{insertados: int, errores: array<int, string>}
@@ -232,12 +234,29 @@ class AltaTrabajadorService
         foreach ($chunks as $chunk) {
             try {
                 DB::transaction(function () use ($chunk, $ie, $createdBy, &$insertados) {
-                    $batch = array_map(fn ($row) => array_merge($row, [
-                        'institucionEducativa_id' => $ie->id,
-                        'created_by' => $createdBy,
-                    ]), $chunk);
-                    AltasTrabajadores::insert($batch);
-                    $insertados += count($batch);
+                    foreach ($chunk as $row) {
+                        // localInstEduc_id no es columna de t_altasTrabajadores: se separa.
+                        $localInstEducId = $row['localInstEduc_id'] ?? null;
+                        unset($row['localInstEduc_id']);
+
+                        $alta = AltasTrabajadores::create(array_merge($row, [
+                            'institucionEducativa_id' => $ie->id,
+                            'created_by'              => $createdBy,
+                        ]));
+
+                        if ($localInstEducId) {
+                            $this->asignarLocalMarcacion(
+                                trabajadorId: (int) $row['trabajador_id'],
+                                altaTrabajadorId: $alta->id,
+                                localInstEducId: (int) $localInstEducId,
+                                fechaInicio: $row['fechaInicio'] ?? null,
+                                fechaFin: $row['fechaFin'] ?? null,
+                                createdBy: $createdBy,
+                            );
+                        }
+
+                        $insertados++;
+                    }
                 });
             } catch (\Throwable $e) {
                 $errores[] = $e->getMessage();
@@ -251,9 +270,21 @@ class AltaTrabajadorService
     {
         return DB::transaction(function () use ($dto) {
             $datos = $dto->toArray();
-            unset($datos['perfil_id']);
+            unset($datos['perfil_id'], $datos['localInstEduc_id']);
 
             $alta = AltasTrabajadores::create($datos);
+
+            // Asignar local de marcación (siempre se crea un registro nuevo, nunca se edita).
+            if ($dto->localInstEduc_id) {
+                $this->asignarLocalMarcacion(
+                    trabajadorId: $dto->trabajador_id,
+                    altaTrabajadorId: $alta->id,
+                    localInstEducId: $dto->localInstEduc_id,
+                    fechaInicio: $dto->fechaInicio,
+                    fechaFin: $dto->fechaFin,
+                    createdBy: $dto->created_by,
+                );
+            }
 
             $user = User::where('trabajador_id', $dto->trabajador_id)->first();
             if ($user && $dto->perfil_id) {
@@ -358,5 +389,29 @@ class AltaTrabajadorService
 
             return $res;
         });
+    }
+
+    /**
+     * Crea un registro en conasis.t_localesMarcacion asociando un trabajador a un local de la IE.
+     *
+     * Regla de negocio: cambiar de local NO edita el registro previo; siempre se crea
+     * un registro nuevo. Un trabajador puede tener más de un local de marcación.
+     */
+    public function asignarLocalMarcacion(
+        int $trabajadorId,
+        ?int $altaTrabajadorId,
+        int $localInstEducId,
+        ?string $fechaInicio,
+        ?string $fechaFin,
+        int $createdBy,
+    ): ConasisLocalesMarcacion {
+        return ConasisLocalesMarcacion::create([
+            'trabajador_id'     => $trabajadorId,
+            'altaTrabajador_id' => $altaTrabajadorId,
+            'localInstEduc_id'  => $localInstEducId,
+            'fechaInicio'       => $fechaInicio,
+            'fechaFin'          => $fechaFin,
+            'created_by'        => $createdBy,
+        ]);
     }
 }

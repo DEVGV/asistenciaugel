@@ -5,6 +5,7 @@ import {
     User,
     FileText,
     Calendar,
+    ClipboardCheck,
     Phone,
     Mail,
     MapPin,
@@ -19,6 +20,7 @@ import GestionUsuarioModal from '@/components/shared/GestionUsuarioModal.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
 import AltasList from '@/components/trabajador/AltasList.vue';
 import HorariosTrabajadorTab from '@/components/trabajador/HorariosTrabajadorTab.vue';
+import PermisosTrabajadorTab from '@/components/trabajador/PermisosTrabajadorTab.vue';
 import { Button } from '@/components/ui/button';
 import type { Trabajador } from '@/types/models/trabajador';
 
@@ -35,13 +37,16 @@ defineOptions({
     },
 });
 
-const activeTab = ref<'datos' | 'contacto' | 'laboral' | 'horarios'>('datos');
+const activeTab = ref<
+    'datos' | 'contacto' | 'laboral' | 'horarios' | 'permisos'
+>('datos');
 
 const tabs = [
     { key: 'datos', label: 'Datos Personales', icon: User },
     { key: 'contacto', label: 'Contacto y Domicilio', icon: MapPin },
     { key: 'laboral', label: 'Información Laboral', icon: FileText },
     { key: 'horarios', label: 'Horarios', icon: Calendar },
+    { key: 'permisos', label: 'Permisos', icon: ClipboardCheck },
 ] as const;
 
 // ── Modal usuario ─────────────────────────────────────────────────────────────
@@ -49,7 +54,11 @@ const showUsuarioModal = ref(false);
 
 const nombreTrabajador = computed(() => {
     const p = props.trabajador.persona;
-    if (!p) return `Trabajador #${props.trabajador.id}`;
+
+    if (!p) {
+return `Trabajador #${props.trabajador.id}`;
+}
+
     return [p.paterno, p.materno, p.nombre].filter(Boolean).join(' ');
 });
 </script>
@@ -239,6 +248,11 @@ const nombreTrabajador = computed(() => {
             <!-- TAB: Horarios -->
             <div v-if="activeTab === 'horarios'">
                 <HorariosTrabajadorTab :trabajador-id="props.trabajador.id" />
+            </div>
+
+            <!-- TAB: Permisos -->
+            <div v-if="activeTab === 'permisos'">
+                <PermisosTrabajadorTab :trabajador="props.trabajador" />
             </div>
         </div>
     </div>

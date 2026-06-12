@@ -20,6 +20,7 @@ final readonly class CreateAltaTrabajadorDTO
         public ?string $observacion,
         public int $created_by,
         public ?int $perfil_id = null,
+        public ?int $localInstEduc_id = null,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -41,6 +42,7 @@ final readonly class CreateAltaTrabajadorDTO
             observacion: $data['observacion'] ?? null,
             created_by: auth()->id() ?? 1,
             perfil_id: isset($data['perfil_id']) ? (int) $data['perfil_id'] : null,
+            localInstEduc_id: isset($data['localInstEduc_id']) ? (int) $data['localInstEduc_id'] : null,
         );
     }
 
