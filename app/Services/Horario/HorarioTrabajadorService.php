@@ -189,17 +189,28 @@ class HorarioTrabajadorService
                 $totalMinutos = $cursosDia->sum('minAcum');
                 $horasAcumuladas = $totalMinutos / 60.0;
 
-                // Determinar el turno según la hora de inicio del primer curso
-                $inicioParse = Carbon::parse($minHoraInicio);
-                if ($inicioParse->hour < 13) {
-                    $turnoId = 1; // MAÑANA
-                    $nombreTurno = 'MAÑANA';
-                } elseif ($inicioParse->hour < 18) {
-                    $turnoId = 2; // TARDE
-                    $nombreTurno = 'TARDE';
+                // Usar el turno definido manualmente en el horario de curso.
+                // Si el usuario no lo definió, se calcula como fallback por hora de inicio.
+                if ($cursoIni->turno_id) {
+                    $turnoId    = $cursoIni->turno_id;
+                    $nombreTurno = $cursoIni->nombreTurno ?? match ($turnoId) {
+                        1 => 'MAÑANA',
+                        2 => 'TARDE',
+                        3 => 'NOCHE',
+                        default => 'MAÑANA',
+                    };
                 } else {
-                    $turnoId = 3; // NOCHE
-                    $nombreTurno = 'NOCHE';
+                    $inicioParse = Carbon::parse($minHoraInicio);
+                    if ($inicioParse->hour < 13) {
+                        $turnoId    = 1;
+                        $nombreTurno = 'MAÑANA';
+                    } elseif ($inicioParse->hour < 18) {
+                        $turnoId    = 2;
+                        $nombreTurno = 'TARDE';
+                    } else {
+                        $turnoId    = 3;
+                        $nombreTurno = 'NOCHE';
+                    }
                 }
 
                 ConasisDetalleHorarios::create([

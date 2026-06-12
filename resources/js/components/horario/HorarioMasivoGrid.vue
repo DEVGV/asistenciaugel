@@ -75,6 +75,7 @@ interface FilaHorario {
     curso_id: number | null;
     _cursoNombre: string;
     nroDia: number;
+    turno_id: number | null;
     horaInicio: string;
     horaFin: string;
     trabajador_id: number | null;
@@ -86,6 +87,12 @@ interface FilaHorario {
     _isExisting: boolean; // true si vino de horariosExistentes
     _errors: Record<string, string>;
 }
+
+const TURNOS_MASIVO = [
+    { id: 1, label: 'M', title: 'Mañana' },
+    { id: 2, label: 'T', title: 'Tarde' },
+    { id: 3, label: 'N', title: 'Noche' },
+];
 
 // ─── Catálogo cursos (dropdown inline) ───────────────────────────────────────
 const activeDropdown = ref<string | null>(null);
@@ -219,6 +226,7 @@ function filaFromExistente(h: HorarioCurso): FilaHorario {
         curso_id: h.curso_id,
         _cursoNombre: h.curso?.nombre ?? '',
         nroDia: h.nroDia,
+        turno_id: h.turno_id ?? null,
         horaInicio: h.horaInicio?.substring(0, 5) ?? '08:00',
         horaFin: h.horaFin?.substring(0, 5) ?? '09:30',
         trabajador_id: w?.id ?? null,
@@ -240,6 +248,7 @@ function nuevaFila(): FilaHorario {
         curso_id: null,
         _cursoNombre: '',
         nroDia: 1,
+        turno_id: null,
         horaInicio: '08:00',
         horaFin: '09:30',
         trabajador_id: null,
@@ -383,6 +392,7 @@ async function enviar() {
             anio: props.anio,
             curso_id: f.curso_id,
             nroDia: f.nroDia,
+            turno_id: f.turno_id,
             diaSemana: DAYS.find((d) => d.nro === f.nroDia)?.char ?? 'L',
             horaInicio: f.horaInicio,
             horaFin: f.horaFin,
@@ -583,6 +593,13 @@ function resetGrid() {
                                     >
                                         Día
                                         <span class="text-destructive">*</span>
+                                    </th>
+                                    <!-- Turno -->
+                                    <th
+                                        class="border-r border-b px-2 py-2 text-left font-semibold"
+                                        style="min-width: 90px"
+                                    >
+                                        Turno
                                     </th>
                                     <!-- Hora Inicio -->
                                     <th
@@ -832,6 +849,23 @@ function resetGrid() {
                                                 />
                                                 {{ day.label }}
                                             </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- ── TURNO ── -->
+                                    <td class="border-r border-b px-1 py-1">
+                                        <div class="flex gap-0.5">
+                                            <button
+                                                v-for="t in TURNOS_MASIVO"
+                                                :key="t.id"
+                                                type="button"
+                                                :title="t.title"
+                                                @click="fila.turno_id = fila.turno_id === t.id ? null : t.id"
+                                                class="h-6 w-6 rounded text-xs font-bold transition-colors"
+                                                :class="fila.turno_id === t.id
+                                                    ? 'bg-primary text-primary-foreground'
+                                                    : 'bg-muted text-muted-foreground hover:bg-muted/70'"
+                                            >{{ t.label }}</button>
                                         </div>
                                     </td>
 

@@ -9,6 +9,8 @@ export interface HorarioCurso {
     curso_id: number;
     diaSemana: string;
     nroDia: number;
+    turno_id: number | null;
+    nombreTurno: string | null;
     horaInicio: string;
     horaFin: string;
     minAcum: number | null;

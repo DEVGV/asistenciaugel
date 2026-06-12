@@ -50,6 +50,7 @@ class InstitucionEducativaService
             'localesInstEduc.local.zona',
             'localesInstEduc.relojes',
             'localesInstEduc.localesMarcacion.trabajador.persona',
+            'diasNoLaborables' => fn ($q) => $q->where('activo', true)->orderBy('fecha')->with('feriado'),
         ]);
     }
 

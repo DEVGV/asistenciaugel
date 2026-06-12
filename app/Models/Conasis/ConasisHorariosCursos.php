@@ -20,6 +20,8 @@ class ConasisHorariosCursos extends Model
         'curso_id',
         'diaSemana',
         'nroDia',
+        'turno_id',
+        'nombreTurno',
         'horaInicio',
         'horaFin',
         'minAcum',

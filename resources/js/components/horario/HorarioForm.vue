@@ -24,8 +24,15 @@ const emit = defineEmits<{
 // ── Datos del horario ──────────────────────────────────────────────────────────
 const cursoId = ref<number | null>(null);
 const nroDia = ref<number>(1);
+const turnoId = ref<number | null>(null);
 const horaInicio = ref<string>('08:00');
 const horaFin = ref<string>('09:30');
+
+const TURNOS = [
+    { id: 1, label: 'Mañana' },
+    { id: 2, label: 'Tarde' },
+    { id: 3, label: 'Noche' },
+];
 
 const cursoError = ref<string | null>(null);
 const cursoContainerRef = ref<HTMLElement | null>(null);
@@ -98,6 +105,7 @@ function resetForm() {
     if (props.horarioCurso) {
         cursoId.value = props.horarioCurso.curso_id;
         nroDia.value = props.horarioCurso.nroDia;
+        turnoId.value = props.horarioCurso.turno_id ?? null;
         horaInicio.value = props.horarioCurso.horaInicio.substring(0, 5);
         horaFin.value = props.horarioCurso.horaFin.substring(0, 5);
 
@@ -121,6 +129,7 @@ function resetForm() {
     } else {
         cursoId.value = null;
         nroDia.value = 1;
+        turnoId.value = null;
         horaInicio.value = '08:00';
         horaFin.value = '09:30';
         selectedWorkerId.value = null;
@@ -180,6 +189,7 @@ function handleSubmit() {
         curso_id: cursoId.value,
         nroDia: nroDia.value,
         diaSemana: getDiaSemanaChar(nroDia.value),
+        turno_id: turnoId.value,
         horaInicio: horaInicio.value,
         horaFin: horaFin.value,
         // Datos del docente (opcionales)
@@ -234,6 +244,32 @@ defineExpose({ handleSubmit });
                     {{ day.label }}
                 </button>
             </div>
+        </div>
+
+        <!-- Turno -->
+        <div class="space-y-1.5">
+            <Label class="text-sm font-semibold">
+                Turno <span class="font-normal text-muted-foreground">(Requerido)</span>
+            </Label>
+            <div class="flex gap-3">
+                <button
+                    v-for="turno in TURNOS"
+                    :key="turno.id"
+                    type="button"
+                    class="flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-all duration-150"
+                    :class="[
+                        turnoId === turno.id
+                            ? 'border-primary bg-primary text-primary-foreground shadow-xs'
+                            : 'bg-background text-foreground hover:bg-muted',
+                    ]"
+                    @click="turnoId = turno.id"
+                >
+                    {{ turno.label }}
+                </button>
+            </div>
+            <p v-if="!turnoId" class="text-xs text-amber-500 font-medium">
+                Seleccione el turno al que pertenece este horario.
+            </p>
         </div>
 
         <!-- Horas -->

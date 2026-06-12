@@ -34,6 +34,7 @@ export interface InstitucionEducativa {
     cursos?: CursoIE[];
     grados?: GradoIE[];
     locales_inst_educ?: LocalInstEduc[];
+    dias_no_laborables?: DiasNoLaborable[];
 }
 
 export interface CursoIE {
@@ -68,6 +69,24 @@ export interface SeccionIE {
     activo: boolean;
     // Relations
     grado?: GradoIE;
+}
+
+export interface DiasNoLaborable {
+    id: number;
+    institucionEduc_id: number;
+    feriado_id: number | null;
+    fecha: string;
+    observacion: string | null;
+    nacionalLocal: 'N' | 'L' | null;
+    recuperable: 'S' | 'N' | null;
+    created_by: number | null;
+    activo: boolean;
+    // Relations
+    feriado?: {
+        id: number;
+        descripcion: string | null;
+        diaMesDefault: string | null;
+    };
 }
 
 export interface PaginatedResponse<T> {

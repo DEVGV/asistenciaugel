@@ -19,6 +19,9 @@ import {
     Upload,
     Search,
     ShieldCheck,
+    CalendarOff,
+    Sparkles,
+    Loader2,
 } from 'lucide-vue-next';
 import { ref, watch, computed } from 'vue';
 import AltaMasivaGrid from '@/components/institucion-educativa/AltaMasivaGrid.vue';
@@ -31,6 +34,7 @@ import LocalInstEducController from '@/actions/App/Http/Controllers/Infraestruct
 import LocalMarcacionController from '@/actions/App/Http/Controllers/Infraestructura/LocalMarcacionController';
 import RelojController from '@/actions/App/Http/Controllers/Infraestructura/RelojController';
 import CursoIEController from '@/actions/App/Http/Controllers/InstitucionEducativa/CursoIEController';
+import DiasNoLaborablesController from '@/actions/App/Http/Controllers/InstitucionEducativa/DiasNoLaborablesController';
 import GradoIEController from '@/actions/App/Http/Controllers/InstitucionEducativa/GradoIEController';
 import InstitucionEducativaController from '@/actions/App/Http/Controllers/InstitucionEducativa/InstitucionEducativaController';
 import SeccionIEController from '@/actions/App/Http/Controllers/InstitucionEducativa/SeccionIEController';
@@ -61,6 +65,7 @@ import type { LocalInstEduc, Reloj } from '@/types/models/infraestructura';
 import type {
     InstitucionEducativa,
     CursoIE,
+    DiasNoLaborable,
     GradoIE,
     SeccionIE,
 } from '@/types/models/institucion-educativa';
@@ -93,7 +98,7 @@ const props = defineProps<{
 }>();
 
 const activeTab = ref<
-    'datos' | 'cursos' | 'grados' | 'locales' | 'relojes' | 'docentes'
+    'datos' | 'cursos' | 'grados' | 'locales' | 'relojes' | 'docentes' | 'diasNoLaborables'
 >((props.activeTab as any) ?? 'datos');
 
 // ─── Sub-recurso Modal (compartido para cursos, grados, secciones) ───
@@ -582,7 +587,115 @@ const tabs = [
     { key: 'locales', label: 'Locales', icon: MapPin },
     { key: 'relojes', label: 'Relojes', icon: Clock },
     { key: 'docentes', label: 'Docentes / Personal', icon: Users },
+    { key: 'diasNoLaborables', label: 'Días No Laborables', icon: CalendarOff },
 ] as const;
+
+// ─── Días No Laborables ────────────────────────────────────────────────────────
+const showDiasModal = ref(false);
+const diasIsEditing = ref(false);
+const diasEditingId = ref<number | null>(null);
+const diasIsGenerating = ref(false);
+const diasGenerarAnio = ref(new Date().getFullYear());
+const diasGenerarMsg = ref('');
+
+const diasForm = useForm({
+    institucionEduc_id: props.institucion.id,
+    fecha: '',
+    feriado_id: null as number | null,
+    observacion: '',
+    nacionalLocal: 'N' as 'N' | 'L',
+    recuperable: 'N' as 'S' | 'N',
+});
+
+watch(showDiasModal, (val) => {
+    if (!val) {
+        diasForm.reset();
+        diasForm.clearErrors();
+        diasForm.institucionEduc_id = props.institucion.id;
+        diasIsEditing.value = false;
+        diasEditingId.value = null;
+    }
+});
+
+function openDiasCreate() {
+    diasIsEditing.value = false;
+    diasEditingId.value = null;
+    diasForm.reset();
+    diasForm.clearErrors();
+    diasForm.institucionEduc_id = props.institucion.id;
+    diasForm.nacionalLocal = 'N';
+    diasForm.recuperable = 'N';
+    showDiasModal.value = true;
+}
+
+function openDiasEdit(dia: DiasNoLaborable) {
+    diasIsEditing.value = true;
+    diasEditingId.value = dia.id;
+    diasForm.clearErrors();
+    diasForm.institucionEduc_id = props.institucion.id;
+    diasForm.fecha = dia.fecha;
+    diasForm.feriado_id = dia.feriado_id ?? null;
+    diasForm.observacion = dia.observacion ?? '';
+    diasForm.nacionalLocal = (dia.nacionalLocal as 'N' | 'L') ?? 'N';
+    diasForm.recuperable = (dia.recuperable as 'S' | 'N') ?? 'N';
+    showDiasModal.value = true;
+}
+
+function submitDias() {
+    if (diasIsEditing.value && diasEditingId.value) {
+        diasForm.put(
+            DiasNoLaborablesController.update({ diasNoLaborable: diasEditingId.value }).url,
+            { onSuccess: () => { showDiasModal.value = false; } },
+        );
+    } else {
+        diasForm.post(
+            DiasNoLaborablesController.store({ institucione: props.institucion.id }).url,
+            { onSuccess: () => { showDiasModal.value = false; } },
+        );
+    }
+}
+
+const showDeleteDias = ref(false);
+const deleteDiasId = ref<number | null>(null);
+const deleteDiasLabel = ref('');
+const isDeletingDias = ref(false);
+
+function confirmDeleteDias(dia: DiasNoLaborable) {
+    deleteDiasId.value = dia.id;
+    deleteDiasLabel.value = dia.fecha;
+    showDeleteDias.value = true;
+}
+
+function executeDeleteDias() {
+    if (!deleteDiasId.value) return;
+    isDeletingDias.value = true;
+    router.delete(
+        DiasNoLaborablesController.destroy({ diasNoLaborable: deleteDiasId.value }).url,
+        {
+            onSuccess: () => { showDeleteDias.value = false; deleteDiasId.value = null; },
+            onFinish: () => { isDeletingDias.value = false; },
+        },
+    );
+}
+
+async function generarFeriados() {
+    diasIsGenerating.value = true;
+    diasGenerarMsg.value = '';
+    try {
+        const url = DiasNoLaborablesController.generarFeriados(
+            { institucione: props.institucion.id },
+            { query: { anio: diasGenerarAnio.value } },
+        ).url;
+        const res = await fetch(url, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+        });
+        const data = await res.json();
+        diasGenerarMsg.value = data.message ?? '';
+        router.reload({ only: ['institucion'] });
+    } finally {
+        diasIsGenerating.value = false;
+    }
+}
 </script>
 
 <template>
@@ -623,7 +736,7 @@ const tabs = [
                 @click="
                     tab.key === 'docentes'
                         ? switchToDocentes()
-                        : (activeTab = tab.key)
+                        : (activeTab = (tab.key as typeof activeTab.value))
                 "
                 :class="[
                     '-mb-px flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
@@ -1502,6 +1615,123 @@ const tabs = [
             </div>
         </div>
 
+        <!-- Tab: Días No Laborables -->
+        <div v-if="activeTab === 'diasNoLaborables'" class="space-y-4">
+            <!-- Encabezado -->
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <h2 class="text-lg font-semibold">Días No Laborables</h2>
+                <div class="flex items-center gap-2">
+                    <!-- Generar feriados por defecto -->
+                    <div class="flex items-center gap-1.5 rounded-md border px-2 py-1">
+                        <label class="text-xs text-muted-foreground">Año:</label>
+                        <Input
+                            v-model.number="diasGenerarAnio"
+                            type="number"
+                            class="h-7 w-20 text-xs"
+                            :min="2020"
+                            :max="2099"
+                        />
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            class="h-7 gap-1.5 border-amber-200 text-amber-600 hover:bg-amber-50 hover:text-amber-700 dark:border-amber-900/50 dark:text-amber-400 dark:hover:bg-amber-950/20"
+                            :disabled="diasIsGenerating"
+                            @click="generarFeriados"
+                        >
+                            <Loader2 v-if="diasIsGenerating" class="h-3.5 w-3.5 animate-spin" />
+                            <Sparkles v-else class="h-3.5 w-3.5" />
+                            Generar Feriados
+                        </Button>
+                    </div>
+                    <Button size="sm" @click="openDiasCreate">
+                        <Plus class="mr-2 h-4 w-4" /> Nuevo Día
+                    </Button>
+                </div>
+            </div>
+
+            <!-- Mensaje de generación -->
+            <p v-if="diasGenerarMsg" class="text-sm text-muted-foreground italic">
+                {{ diasGenerarMsg }}
+            </p>
+
+            <!-- Tabla -->
+            <div class="overflow-hidden rounded-md border bg-card">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead class="w-[130px]">Fecha</TableHead>
+                            <TableHead>Descripción / Feriado</TableHead>
+                            <TableHead class="w-[100px]">Ámbito</TableHead>
+                            <TableHead class="w-[100px]">Recuperable</TableHead>
+                            <TableHead class="w-[100px] text-right">Acciones</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        <TableRow
+                            v-for="dia in props.institucion.dias_no_laborables || []"
+                            :key="dia.id"
+                        >
+                            <TableCell class="font-mono text-sm font-medium">
+                                {{ dia.fecha }}
+                            </TableCell>
+                            <TableCell class="text-sm">
+                                <span v-if="dia.feriado">
+                                    <span class="font-medium">{{ dia.feriado.descripcion }}</span>
+                                </span>
+                                <span v-if="dia.observacion" class="block text-xs text-muted-foreground">
+                                    {{ dia.observacion }}
+                                </span>
+                                <span v-if="!dia.feriado && !dia.observacion" class="text-muted-foreground">—</span>
+                            </TableCell>
+                            <TableCell class="text-xs">
+                                <span
+                                    :class="dia.nacionalLocal === 'N'
+                                        ? 'inline-flex rounded bg-blue-50 px-1.5 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-700/10 dark:bg-blue-950/30 dark:text-blue-400 dark:ring-blue-400/20'
+                                        : 'inline-flex rounded bg-purple-50 px-1.5 py-0.5 text-xs font-semibold text-purple-700 ring-1 ring-purple-700/10 dark:bg-purple-950/30 dark:text-purple-400 dark:ring-purple-400/20'"
+                                >
+                                    {{ dia.nacionalLocal === 'N' ? 'Nacional' : 'Local' }}
+                                </span>
+                            </TableCell>
+                            <TableCell class="text-xs">
+                                <span
+                                    :class="dia.recuperable === 'S'
+                                        ? 'inline-flex rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-700/10 dark:bg-emerald-950/30 dark:text-emerald-400 dark:ring-emerald-400/20'
+                                        : 'inline-flex rounded bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground ring-1 ring-muted-foreground/20'"
+                                >
+                                    {{ dia.recuperable === 'S' ? 'Sí' : 'No' }}
+                                </span>
+                            </TableCell>
+                            <TableCell class="text-right">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger as-child>
+                                        <Button variant="ghost" size="sm" class="h-7">
+                                            <ChevronDown class="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem @click="openDiasEdit(dia)">
+                                            <Pencil class="mr-2 h-4 w-4" /> Editar
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            @click="confirmDeleteDias(dia)"
+                                            class="text-destructive"
+                                        >
+                                            <Trash2 class="mr-2 h-4 w-4" /> Eliminar
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </TableCell>
+                        </TableRow>
+                        <TableRow v-if="!props.institucion.dias_no_laborables?.length">
+                            <TableCell colspan="5" class="h-20 text-center text-muted-foreground">
+                                No hay días no laborables registrados para esta IE.
+                            </TableCell>
+                        </TableRow>
+                    </TableBody>
+                </Table>
+            </div>
+        </div>
+
         <!-- Modal Carga Masiva Grid (Altas) -->
         <AltaMasivaGrid
             v-if="showMasivaModal"
@@ -1860,6 +2090,73 @@ const tabs = [
             :trabajador-id="usuarioModalTrabajadorId"
             :trabajador-nombre="usuarioModalNombre"
             @updated="cargarDocentes()"
+        />
+
+        <!-- Modal Crear / Editar Día No Laborable -->
+        <FormModal
+            v-model:show="showDiasModal"
+            :title="diasIsEditing ? 'Editar Día No Laborable' : 'Nuevo Día No Laborable'"
+            :processing="diasForm.processing"
+            @submit="submitDias"
+        >
+            <div class="space-y-4">
+                <div class="grid gap-2">
+                    <Label>Fecha *</Label>
+                    <Input
+                        v-model="diasForm.fecha"
+                        type="date"
+                        :class="{ 'border-destructive': diasForm.errors.fecha }"
+                    />
+                    <p v-if="diasForm.errors.fecha" class="text-sm text-destructive">
+                        {{ diasForm.errors.fecha }}
+                    </p>
+                </div>
+                <div class="grid gap-2">
+                    <Label>Descripción / Observación</Label>
+                    <Input
+                        v-model="diasForm.observacion"
+                        placeholder="Ej: Aniversario de la IE, día cívico..."
+                        :class="{ 'border-destructive': diasForm.errors.observacion }"
+                    />
+                    <p v-if="diasForm.errors.observacion" class="text-sm text-destructive">
+                        {{ diasForm.errors.observacion }}
+                    </p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="grid gap-2">
+                        <Label>Ámbito</Label>
+                        <select
+                            v-model="diasForm.nacionalLocal"
+                            class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        >
+                            <option value="N">Nacional</option>
+                            <option value="L">Local</option>
+                        </select>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label>Recuperable</Label>
+                        <select
+                            v-model="diasForm.recuperable"
+                            class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        >
+                            <option value="N">No</option>
+                            <option value="S">Sí</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </FormModal>
+
+        <!-- Modal Confirmar Eliminar Día No Laborable -->
+        <ConfirmModal
+            v-model:show="showDeleteDias"
+            title="Eliminar Día No Laborable"
+            :description="`¿Eliminar el día no laborable del ${deleteDiasLabel}?`"
+            confirm-text="Eliminar"
+            destructive
+            :processing="isDeletingDias"
+            @confirm="executeDeleteDias"
+            @cancel="deleteDiasId = null"
         />
     </div>
 </template>

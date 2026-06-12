@@ -22,6 +22,7 @@ use App\Http\Controllers\Infraestructura\RelojesMasivaController;
 use App\Http\Controllers\InstitucionEducativa\AltaMasivaIEController;
 use App\Http\Controllers\InstitucionEducativa\CursoIEController;
 use App\Http\Controllers\InstitucionEducativa\CursosMasivaIEController;
+use App\Http\Controllers\InstitucionEducativa\DiasNoLaborablesController;
 use App\Http\Controllers\InstitucionEducativa\GradoIEController;
 use App\Http\Controllers\InstitucionEducativa\GradosMasivaIEController;
 use App\Http\Controllers\InstitucionEducativa\InstitucionEducativaController;
@@ -171,6 +172,15 @@ Route::middleware(['auth', 'verified', 'contexto'])->group(function () {
     // Carga masiva de cursos para una IE
     Route::post('instituciones/{institucione}/cursos-masivos', [CursosMasivaIEController::class, 'store'])
         ->name('instituciones.cursos-masivos.store');
+
+    // Días No Laborables por IE
+    Route::resource('instituciones.dias-no-laborables', DiasNoLaborablesController::class)
+        ->only(['store', 'update', 'destroy'])
+        ->shallow()
+        ->parameters(['instituciones' => 'institucione', 'dias-no-laborables' => 'diasNoLaborable']);
+
+    Route::get('instituciones/{institucione}/dias-no-laborables/generar-feriados', [DiasNoLaborablesController::class, 'generarFeriados'])
+        ->name('instituciones.dias-no-laborables.generar-feriados');
 
     Route::resource('instituciones.cursos', CursoIEController::class)
         ->only(['store', 'update', 'destroy'])
