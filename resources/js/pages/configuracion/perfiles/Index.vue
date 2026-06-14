@@ -7,7 +7,7 @@ import {
     ChevronDown,
     ShieldCheck,
 } from 'lucide-vue-next';
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, onMounted } from 'vue';
 import PerfilController from '@/actions/App/Http/Controllers/Configuracion/PerfilController';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import FormModal from '@/components/shared/FormModal.vue';
@@ -56,6 +56,11 @@ const props = defineProps<{
     filters: { search?: string };
 }>();
 
+const isMounted = ref(false);
+onMounted(() => {
+    isMounted.value = true;
+});
+
 // ── Crear / Editar perfil ─────────────────────────────────────────────────────
 const showModal = ref(false);
 const isEditing = ref(false);
@@ -96,11 +101,14 @@ function openEdit(p: Perfil) {
 
 function submitForm() {
     if (isEditing.value && editingId.value) {
-        form.put(PerfilController.update({ perfil: editingId.value }).url, {
-            onSuccess: () => {
-                showModal.value = false;
+        form.put(
+            PerfilController.update({ perfil: String(editingId.value) }).url,
+            {
+                onSuccess: () => {
+                    showModal.value = false;
+                },
             },
-        });
+        );
     } else {
         form.post(PerfilController.store().url, {
             onSuccess: () => {
@@ -125,7 +133,8 @@ function executeDelete() {
     if (!perfilToDelete.value) return;
     isDeleting.value = true;
     router.delete(
-        PerfilController.destroy({ perfil: perfilToDelete.value.id }).url,
+        PerfilController.destroy({ perfil: String(perfilToDelete.value.id) })
+            .url,
         {
             onSuccess: () => {
                 showDeleteModal.value = false;
@@ -186,7 +195,7 @@ function savePermisos() {
     isSavingPermisos.value = true;
     router.post(
         PerfilController.syncPermisos({
-            perfil: perfilEditandoPermisos.value.id,
+            perfil: String(perfilEditandoPermisos.value.id),
         }).url,
         { permiso_ids: Array.from(selectedPermisos.value) },
         {
@@ -401,7 +410,7 @@ watch(showPermisosModal, (val) => {
         />
 
         <!-- Panel de permisos (modal grande) -->
-        <Teleport to="body">
+        <Teleport to="body" v-if="isMounted">
             <div
                 v-if="showPermisosModal"
                 class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
