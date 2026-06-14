@@ -8,7 +8,7 @@
  *   :trabajador-id  → carga vía /api/trabajadores/{id}/usuario
  *   :user-id        → carga vía /api/usuarios/{id}/datos
  */
-import { ref, watch, computed, onMounted } from 'vue';
+import { ref, watch, computed } from 'vue';
 import {
     KeyRound,
     ShieldCheck,
@@ -84,11 +84,6 @@ interface UgelDisponible {
 }
 
 // ── Estado ─────────────────────────────────────────────────────────────────────
-const isMounted = ref(false);
-onMounted(() => {
-    isMounted.value = true;
-});
-
 const loading = ref(false);
 const error = ref<string | null>(null);
 const usuario = ref<UsuarioData | null>(null);
@@ -99,9 +94,7 @@ const perfilesAsignados = ref<PerfilAsignado[]>([]);
 const ugelesDisponibles = ref<UgelDisponible[]>([]);
 
 // Sección activa
-const section = ref<
-    'main' | 'password' | 'permisos' | 'asignar-ugel' | 'asignar-ie'
->('main');
+const section = ref<'main' | 'password' | 'permisos' | 'asignar-ugel' | 'asignar-ie'>('main');
 
 // IE seleccionada para gestionar permisos
 const ieSeleccionada = ref<number | null | undefined>(undefined);
@@ -142,35 +135,28 @@ const savingAsignarIe = ref(false);
 // ── Clasificar asignaciones ────────────────────────────────────────────────────
 const asignacionesIe = computed(() =>
     perfilesAsignados.value.filter(
-        (p) =>
-            p.institucionEducativa_id !== null &&
-            p.institucionEducativa_id !== undefined,
+        (p) => p.institucionEducativa_id !== null && p.institucionEducativa_id !== undefined,
     ),
 );
 
 const asignacionesUgel = computed(() =>
     perfilesAsignados.value.filter(
         (p) =>
-            (p.institucionEducativa_id === null ||
-                p.institucionEducativa_id === undefined) &&
-            p.entidadUgel_id !== null &&
-            p.entidadUgel_id !== undefined,
+            (p.institucionEducativa_id === null || p.institucionEducativa_id === undefined) &&
+            p.entidadUgel_id !== null && p.entidadUgel_id !== undefined,
     ),
 );
 
 const asignacionesGlobal = computed(() =>
     perfilesAsignados.value.filter(
         (p) =>
-            (p.institucionEducativa_id === null ||
-                p.institucionEducativa_id === undefined) &&
+            (p.institucionEducativa_id === null || p.institucionEducativa_id === undefined) &&
             (p.entidadUgel_id === null || p.entidadUgel_id === undefined),
     ),
 );
 
 const tieneAccesoUgel = computed(
-    () =>
-        asignacionesUgel.value.length > 0 ||
-        asignacionesGlobal.value.length > 0,
+    () => asignacionesUgel.value.length > 0 || asignacionesGlobal.value.length > 0,
 );
 
 // ── Cargar datos base del usuario ──────────────────────────────────────────────
@@ -269,8 +255,7 @@ async function executeRevocar() {
 
 // ── Asignar acceso UGEL ────────────────────────────────────────────────────────
 async function submitAsignarUgel() {
-    if (!usuario.value || !asignarUgelPerfilId.value || !asignarUgelId.value)
-        return;
+    if (!usuario.value || !asignarUgelPerfilId.value || !asignarUgelId.value) return;
     savingAsignarUgel.value = true;
     try {
         const res = await fetch(`/usuarios/${usuario.value.id}/perfiles`, {
@@ -301,8 +286,7 @@ async function submitAsignarUgel() {
 
 // ── Asignar perfil a IE ────────────────────────────────────────────────────────
 async function submitAsignarIe() {
-    if (!usuario.value || !asignarIePerfilId.value || !asignarIeId.value)
-        return;
+    if (!usuario.value || !asignarIePerfilId.value || !asignarIeId.value) return;
     savingAsignarIe.value = true;
     try {
         const res = await fetch(`/usuarios/${usuario.value.id}/perfiles`, {
@@ -514,7 +498,7 @@ const ieLabel = computed(() => {
 </script>
 
 <template>
-    <Teleport to="body" v-if="isMounted">
+    <Teleport to="body">
         <div
             v-if="show"
             class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
@@ -626,9 +610,7 @@ const ieLabel = computed(() => {
                         <!-- ═══ Perfiles asignados (resumen) ═══ -->
                         <div class="mb-5">
                             <div class="mb-2 flex items-center gap-2">
-                                <Building2
-                                    class="h-4 w-4 text-muted-foreground"
-                                />
+                                <Building2 class="h-4 w-4 text-muted-foreground" />
                                 <h3 class="text-sm font-semibold">
                                     Acceso asignado
                                 </h3>
@@ -649,19 +631,11 @@ const ieLabel = computed(() => {
                                             p.institucionEducativa?.nombreLegal
                                         }}</span>
                                         <span
-                                            v-if="
-                                                p.institucionEducativa
-                                                    ?.codigoModular
-                                            "
+                                            v-if="p.institucionEducativa?.codigoModular"
                                             class="ml-1 font-mono text-xs text-muted-foreground"
-                                            >({{
-                                                p.institucionEducativa
-                                                    .codigoModular
-                                            }})</span
+                                            >({{ p.institucionEducativa.codigoModular }})</span
                                         >
-                                        <span
-                                            class="ml-2 text-xs text-muted-foreground"
-                                        >
+                                        <span class="ml-2 text-xs text-muted-foreground">
                                             — {{ p.perfil?.nombre }}
                                         </span>
                                     </div>
@@ -687,12 +661,9 @@ const ieLabel = computed(() => {
                                 >
                                     <div>
                                         <span class="font-medium italic">
-                                            Admin UGEL —
-                                            {{ p.entidadUgel?.razonSocial }}
+                                            Admin UGEL — {{ p.entidadUgel?.razonSocial }}
                                         </span>
-                                        <span
-                                            class="ml-2 text-xs text-muted-foreground"
-                                        >
+                                        <span class="ml-2 text-xs text-muted-foreground">
                                             — {{ p.perfil?.nombre }}
                                         </span>
                                     </div>
@@ -717,14 +688,10 @@ const ieLabel = computed(() => {
                                     class="flex items-center justify-between rounded border border-red-200 bg-red-50 px-3 py-2 text-sm dark:border-red-800 dark:bg-red-950/30"
                                 >
                                     <div>
-                                        <span
-                                            class="font-medium text-red-700 italic dark:text-red-400"
-                                        >
+                                        <span class="font-medium italic text-red-700 dark:text-red-400">
                                             Admin Global (todas las UGELs)
                                         </span>
-                                        <span
-                                            class="ml-2 text-xs text-muted-foreground"
-                                        >
+                                        <span class="ml-2 text-xs text-muted-foreground">
                                             — {{ p.perfil?.nombre }}
                                         </span>
                                     </div>
@@ -983,13 +950,9 @@ const ieLabel = computed(() => {
                     <!-- ── ASIGNAR UGEL ──────────────────────────────────────── -->
                     <template v-else-if="section === 'asignar-ugel'">
                         <div class="space-y-4">
-                            <div
-                                class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
-                            >
-                                <strong>Atención:</strong> Al asignar acceso de
-                                UGEL, el usuario podrá ver y gestionar
-                                <em>todas</em> las instituciones educativas de
-                                la UGEL seleccionada.
+                            <div class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+                                <strong>Atención:</strong> Al asignar acceso de UGEL, el usuario podrá ver y gestionar
+                                <em>todas</em> las instituciones educativas de la UGEL seleccionada.
                             </div>
 
                             <div class="grid gap-2">
@@ -998,14 +961,8 @@ const ieLabel = computed(() => {
                                     v-model="asignarUgelPerfilId"
                                     class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:ring-1 focus:ring-ring focus:outline-none"
                                 >
-                                    <option :value="null" disabled>
-                                        — Seleccionar perfil —
-                                    </option>
-                                    <option
-                                        v-for="p in perfiles"
-                                        :key="p.id"
-                                        :value="p.id"
-                                    >
+                                    <option :value="null" disabled>— Seleccionar perfil —</option>
+                                    <option v-for="p in perfiles" :key="p.id" :value="p.id">
                                         {{ p.nombre }}
                                     </option>
                                 </select>
@@ -1017,14 +974,8 @@ const ieLabel = computed(() => {
                                     v-model="asignarUgelId"
                                     class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:ring-1 focus:ring-ring focus:outline-none"
                                 >
-                                    <option :value="null" disabled>
-                                        — Seleccionar UGEL —
-                                    </option>
-                                    <option
-                                        v-for="u in ugelesDisponibles"
-                                        :key="u.id"
-                                        :value="u.id"
-                                    >
+                                    <option :value="null" disabled>— Seleccionar UGEL —</option>
+                                    <option v-for="u in ugelesDisponibles" :key="u.id" :value="u.id">
                                         {{ u.razonSocial }}
                                     </option>
                                 </select>
@@ -1041,14 +992,8 @@ const ieLabel = computed(() => {
                                     v-model="asignarIePerfilId"
                                     class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:ring-1 focus:ring-ring focus:outline-none"
                                 >
-                                    <option :value="null" disabled>
-                                        — Seleccionar perfil —
-                                    </option>
-                                    <option
-                                        v-for="p in perfiles"
-                                        :key="p.id"
-                                        :value="p.id"
-                                    >
+                                    <option :value="null" disabled>— Seleccionar perfil —</option>
+                                    <option v-for="p in perfiles" :key="p.id" :value="p.id">
                                         {{ p.nombre }}
                                     </option>
                                 </select>
@@ -1060,28 +1005,16 @@ const ieLabel = computed(() => {
                                     v-model="asignarIeId"
                                     class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:ring-1 focus:ring-ring focus:outline-none"
                                 >
-                                    <option :value="null" disabled>
-                                        — Seleccionar IE —
-                                    </option>
-                                    <option
-                                        v-for="ie in iesDisponibles"
-                                        :key="String(ie.id)"
-                                        :value="ie.id"
-                                    >
+                                    <option :value="null" disabled>— Seleccionar IE —</option>
+                                    <option v-for="ie in iesDisponibles" :key="ie.id" :value="ie.id">
                                         {{ ie.label }}
-                                        <template v-if="ie.codModular">
-                                            ({{ ie.codModular }})</template
-                                        >
+                                        <template v-if="ie.codModular"> ({{ ie.codModular }})</template>
                                     </option>
                                 </select>
                             </div>
 
-                            <p
-                                v-if="iesDisponibles.length === 0"
-                                class="text-xs text-muted-foreground"
-                            >
-                                No hay IEs disponibles. El trabajador necesita
-                                tener altas activas vigentes.
+                            <p v-if="iesDisponibles.length === 0" class="text-xs text-muted-foreground">
+                                No hay IEs disponibles. El trabajador necesita tener altas activas vigentes.
                             </p>
                         </div>
                     </template>
@@ -1132,32 +1065,16 @@ const ieLabel = computed(() => {
                         <Button
                             v-if="section === 'asignar-ugel'"
                             @click="submitAsignarUgel"
-                            :disabled="
-                                savingAsignarUgel ||
-                                !asignarUgelPerfilId ||
-                                !asignarUgelId
-                            "
+                            :disabled="savingAsignarUgel || !asignarUgelPerfilId || !asignarUgelId"
                         >
-                            {{
-                                savingAsignarUgel
-                                    ? 'Guardando...'
-                                    : 'Asignar Acceso UGEL'
-                            }}
+                            {{ savingAsignarUgel ? 'Guardando...' : 'Asignar Acceso UGEL' }}
                         </Button>
                         <Button
                             v-if="section === 'asignar-ie'"
                             @click="submitAsignarIe"
-                            :disabled="
-                                savingAsignarIe ||
-                                !asignarIePerfilId ||
-                                !asignarIeId
-                            "
+                            :disabled="savingAsignarIe || !asignarIePerfilId || !asignarIeId"
                         >
-                            {{
-                                savingAsignarIe
-                                    ? 'Guardando...'
-                                    : 'Asignar a IE'
-                            }}
+                            {{ savingAsignarIe ? 'Guardando...' : 'Asignar a IE' }}
                         </Button>
                     </div>
                 </div>
