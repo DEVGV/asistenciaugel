@@ -30,8 +30,6 @@ use App\Http\Controllers\InstitucionEducativa\InstitucionEducativaMasivaControll
 use App\Http\Controllers\InstitucionEducativa\SeccionIEController;
 use App\Http\Controllers\Persona\DomicilioController;
 use App\Http\Controllers\Persona\EmailController;
-use App\Http\Controllers\Persona\PersonaController;
-use App\Http\Controllers\Persona\PersonaMasivaController;
 use App\Http\Controllers\Persona\TelefonoController;
 use App\Http\Controllers\Trabajador\AltaTrabajadorController;
 use App\Http\Controllers\Trabajador\MarcacionesTrabajadorController;
@@ -101,13 +99,8 @@ Route::middleware(['auth', 'verified', 'contexto'])->group(function () {
     Route::post('perfiles/{perfil}/permisos', [PerfilController::class, 'syncPermisos'])
         ->name('perfiles.permisos.sync');
 
-    Route::resource('personas', PersonaController::class)
-        ->only(['index', 'show', 'store', 'update', 'destroy']);
-    Route::post('personas/{persona}/convertir-trabajador', [PersonaController::class, 'convertirTrabajador'])
-        ->name('personas.convertir-trabajador');
-    Route::post('personas-masivas', [PersonaMasivaController::class, 'store'])
-        ->name('personas.masivo.store');
-
+    // ── Contacto de persona (teléfonos, emails, domicilios) ─────────────────
+    // Las rutas usan persona_id como parent (modelo de BD) pero redirigen a trabajadores
     Route::resource('personas.telefonos', TelefonoController::class)
         ->only(['store', 'update', 'destroy'])
         ->shallow();
@@ -127,7 +120,7 @@ Route::middleware(['auth', 'verified', 'contexto'])->group(function () {
         ->name('domicilios.dar-de-baja');
 
     Route::resource('trabajadores', TrabajadorController::class)
-        ->except(['create', 'edit', 'update'])
+        ->except(['create', 'edit'])
         ->parameters(['trabajadores' => 'trabajador']);
 
     // Registro unificado de trabajador (persona + usuario + alta + perfil)

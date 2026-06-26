@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import {
     ArrowLeft,
     User,
@@ -11,12 +11,15 @@ import {
     Mail,
     MapPin,
     ShieldCheck,
+    Pencil,
 } from 'lucide-vue-next';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import TrabajadorController from '@/actions/App/Http/Controllers/Trabajador/TrabajadorController';
 import DomiciliosList from '@/components/persona/DomiciliosList.vue';
 import EmailsList from '@/components/persona/EmailsList.vue';
+import PersonaForm from '@/components/persona/PersonaForm.vue';
 import TelefonosList from '@/components/persona/TelefonosList.vue';
+import FormModal from '@/components/shared/FormModal.vue';
 import GestionUsuarioModal from '@/components/shared/GestionUsuarioModal.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
 import AltasList from '@/components/trabajador/AltasList.vue';
@@ -59,11 +62,54 @@ const nombreTrabajador = computed(() => {
     const p = props.trabajador.persona;
 
     if (!p) {
-return `Trabajador #${props.trabajador.id}`;
-}
+        return `Trabajador #${props.trabajador.id}`;
+    }
 
     return [p.paterno, p.materno, p.nombre].filter(Boolean).join(' ');
 });
+
+// ── Modal editar datos personales ─────────────────────────────────────────────
+const showEditPersonaModal = ref(false);
+
+const editForm = useForm({
+    tipoDocIdentidad_id: null as number | null,
+    docIdentidad: '',
+    paterno: '',
+    materno: '',
+    nombre: '',
+    sexo_id: null as number | null,
+    fechaNac: '',
+    pais_id: null as number | null,
+    ubigeo: '',
+    foto: '',
+    activo: true,
+});
+
+watch(showEditPersonaModal, (open) => {
+    if (open) {
+        const p = props.trabajador.persona;
+        editForm.tipoDocIdentidad_id = p?.tipoDocIdentidad_id ?? null;
+        editForm.docIdentidad = p?.docIdentidad ?? '';
+        editForm.paterno = p?.paterno ?? '';
+        editForm.materno = p?.materno ?? '';
+        editForm.nombre = p?.nombre ?? '';
+        editForm.sexo_id = p?.sexo_id ?? null;
+        editForm.fechaNac = p?.fechaNac ?? '';
+        editForm.pais_id = p?.pais_id ?? null;
+        editForm.ubigeo = p?.ubigeo ?? '';
+        editForm.foto = p?.foto ?? '';
+        editForm.activo = p?.activo ?? true;
+        editForm.clearErrors();
+    }
+});
+
+function submitEditPersona() {
+    editForm.put(TrabajadorController.show({ trabajador: props.trabajador.id }).url, {
+        onSuccess: () => {
+            showEditPersonaModal.value = false;
+        },
+    });
+}
 </script>
 
 <template>
@@ -146,6 +192,19 @@ return `Trabajador #${props.trabajador.id}`;
                 v-if="activeTab === 'datos'"
                 class="rounded-xl border bg-card p-6 shadow-xs"
             >
+                <div class="mb-4 flex items-center justify-between">
+                    <h2 class="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                        Datos Personales
+                    </h2>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        @click="showEditPersonaModal = true"
+                    >
+                        <Pencil class="mr-2 h-3.5 w-3.5" />
+                        Editar
+                    </Button>
+                </div>
                 <div
                     class="grid grid-cols-1 gap-x-8 gap-y-4 text-sm md:grid-cols-3"
                 >
@@ -264,6 +323,16 @@ return `Trabajador #${props.trabajador.id}`;
             </div>
         </div>
     </div>
+
+    <!-- Modal Editar Datos Personales -->
+    <FormModal
+        v-model:show="showEditPersonaModal"
+        title="Editar Datos Personales"
+        :processing="editForm.processing"
+        @submit="submitEditPersona"
+    >
+        <PersonaForm :form="editForm" :is-editing="true" />
+    </FormModal>
 
     <GestionUsuarioModal
         v-model:show="showUsuarioModal"

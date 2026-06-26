@@ -2,7 +2,6 @@
 import { Link } from '@inertiajs/vue3';
 import {
     LayoutGrid,
-    Users,
     UserCheck,
     School,
     Building2,
@@ -18,7 +17,6 @@ import UsuarioController from '@/actions/App/Http/Controllers/Configuracion/Usua
 import ZonaController from '@/actions/App/Http/Controllers/Configuracion/ZonaController';
 import EntidadController from '@/actions/App/Http/Controllers/Entidad/EntidadController';
 import InstitucionEducativaController from '@/actions/App/Http/Controllers/InstitucionEducativa/InstitucionEducativaController';
-import PersonaController from '@/actions/App/Http/Controllers/Persona/PersonaController';
 import TrabajadorController from '@/actions/App/Http/Controllers/Trabajador/TrabajadorController';
 import AppLogo from '@/components/AppLogo.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -40,11 +38,6 @@ const mainNavItems: NavItem[] = [
         title: 'Panel de Control',
         href: dashboard(),
         icon: LayoutGrid,
-    },
-    {
-        title: 'Personas',
-        href: PersonaController.index().url,
-        icon: Users,
     },
     {
         title: 'Trabajadores',

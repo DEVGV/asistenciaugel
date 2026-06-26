@@ -14,6 +14,14 @@ import { onMounted, ref, watch } from 'vue';
 import ExpedienteFormModal from '@/components/tramite/ExpedienteFormModal.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import { TIPO_EXPEDIENTE_LABELS, type Expediente } from '@/types/models/tramite';
 
 const props = defineProps<{
@@ -36,6 +44,12 @@ const ESTADO_CLASES: Record<string, string> = {
     '4': 'bg-blue-100 text-blue-700 ring-1 ring-blue-200',
     '5': 'bg-muted text-muted-foreground ring-1 ring-border',
 };
+
+function nombreTrabajador(exp: Expediente): string {
+    const p = exp.trabajador?.persona;
+    if (!p) return '—';
+    return [p.paterno, p.materno, p.nombre].filter(Boolean).join(' ');
+}
 
 async function loadExpedientes() {
     loading.value = true;
@@ -122,14 +136,37 @@ watch(search, () => debouncedSearch());
         </div>
 
         <!-- Skeleton -->
-        <div v-else-if="loading" class="space-y-3">
-            <div v-for="i in 3" :key="i" class="h-16 animate-pulse rounded-xl border bg-muted/30" />
+        <div v-else-if="loading" class="rounded-lg border bg-card">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Código</TableHead>
+                        <TableHead>Trabajador</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Asunto</TableHead>
+                        <TableHead>Fecha</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead class="w-16" />
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    <TableRow v-for="i in 3" :key="i">
+                        <TableCell><div class="h-4 w-16 animate-pulse rounded bg-muted" /></TableCell>
+                        <TableCell><div class="h-4 w-32 animate-pulse rounded bg-muted" /></TableCell>
+                        <TableCell><div class="h-4 w-20 animate-pulse rounded bg-muted" /></TableCell>
+                        <TableCell><div class="h-4 w-40 animate-pulse rounded bg-muted" /></TableCell>
+                        <TableCell><div class="h-4 w-24 animate-pulse rounded bg-muted" /></TableCell>
+                        <TableCell><div class="h-6 w-20 animate-pulse rounded bg-muted" /></TableCell>
+                        <TableCell><div class="h-8 w-8 animate-pulse rounded bg-muted" /></TableCell>
+                    </TableRow>
+                </TableBody>
+            </Table>
         </div>
 
         <!-- Vacío -->
         <div
             v-else-if="expedientes.length === 0"
-            class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed py-14 text-center"
+            class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed py-14 text-center bg-card"
         >
             <ClipboardCheck class="mb-3 h-10 w-10 text-muted-foreground/40" />
             <p class="text-sm font-medium text-muted-foreground">Sin expedientes para los filtros seleccionados.</p>
@@ -141,34 +178,52 @@ watch(search, () => debouncedSearch());
 
         <!-- Lista -->
         <template v-else>
-            <div class="space-y-2">
-                <div
-                    v-for="exp in expedientes"
-                    :key="exp.id"
-                    class="flex items-center justify-between rounded-xl border bg-card px-4 py-3 shadow-xs"
-                >
-                    <div class="space-y-0.5">
-                        <div class="flex items-center gap-2 text-sm">
-                            <span class="font-mono text-xs font-semibold text-primary">
+            <div class="rounded-lg border bg-card">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Código</TableHead>
+                            <TableHead>Trabajador</TableHead>
+                            <TableHead>Tipo</TableHead>
+                            <TableHead>Asunto</TableHead>
+                            <TableHead>Fecha</TableHead>
+                            <TableHead>Estado</TableHead>
+                            <TableHead class="w-16" />
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        <TableRow v-for="exp in expedientes" :key="exp.id">
+                            <TableCell class="font-mono text-xs font-semibold text-primary">
                                 {{ exp.codigo ?? `EXP-${exp.id}` }}
-                            </span>
-                            <span
-                                class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                                :class="ESTADO_CLASES[exp.estado?.codigo ?? ''] ?? ESTADO_CLASES['1']"
-                            >
-                                {{ exp.estado?.nombre ?? 'Registrado' }}
-                            </span>
-                        </div>
-                        <p class="text-sm font-medium">{{ exp.asunto }}</p>
-                        <p class="text-xs text-muted-foreground">
-                            {{ exp.tipoExpediente ? TIPO_EXPEDIENTE_LABELS[exp.tipoExpediente] : '' }}
-                            · {{ exp.fecha }}
-                        </p>
-                    </div>
-                    <Button as="a" :href="`/expedientes/${exp.id}`" variant="ghost" size="sm">
-                        <ExternalLink class="h-4 w-4" />
-                    </Button>
-                </div>
+                            </TableCell>
+                            <TableCell class="text-sm">
+                                {{ nombreTrabajador(exp) }}
+                            </TableCell>
+                            <TableCell class="text-sm">
+                                {{ exp.tipoExpediente ? TIPO_EXPEDIENTE_LABELS[exp.tipoExpediente] : '—' }}
+                            </TableCell>
+                            <TableCell class="max-w-xs truncate text-sm">
+                                {{ exp.asunto }}
+                            </TableCell>
+                            <TableCell class="text-sm">
+                                {{ exp.fecha }}
+                            </TableCell>
+                            <TableCell>
+                                <span
+                                    class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                                    :class="ESTADO_CLASES[exp.estado?.codigo ?? ''] ?? ESTADO_CLASES['1']"
+                                >
+                                    {{ exp.estado?.nombre ?? 'Registrado' }}
+                                </span>
+                            </TableCell>
+                            <TableCell class="text-right">
+                                <Button as="a" :href="`/expedientes/${exp.id}`" variant="ghost" size="sm">
+                                    <ExternalLink class="h-4 w-4" />
+                                </Button>
+                            </TableCell>
+                        </TableRow>
+                    </TableBody>
+                </Table>
             </div>
 
             <!-- Paginación -->
