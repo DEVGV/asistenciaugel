@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { AlertCircle, ClipboardCheck, ExternalLink, Plus, RefreshCw } from 'lucide-vue-next';
+import { AlertCircle, ClipboardCheck, Eye, Plus, RefreshCw } from 'lucide-vue-next';
 import { onMounted, ref } from 'vue';
+import ExpedienteDetailModal from '@/components/tramite/ExpedienteDetailModal.vue';
 import ExpedienteFormModal from '@/components/tramite/ExpedienteFormModal.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +23,13 @@ const expedientes = ref<Expediente[]>([]);
 const loading = ref(false);
 const error = ref(false);
 const showModal = ref(false);
+const showDetailModal = ref(false);
+const selectedExpedienteId = ref<number | null>(null);
+
+function openDetail(exp: Expediente) {
+    selectedExpedienteId.value = exp.id;
+    showDetailModal.value = true;
+}
 
 const ESTADO_CLASES: Record<string, string> = {
     '1': 'bg-amber-100 text-amber-700 ring-1 ring-amber-200',
@@ -166,8 +174,8 @@ onMounted(() => loadExpedientes());
                             </span>
                         </TableCell>
                         <TableCell class="text-right">
-                            <Button as="a" :href="`/expedientes/${exp.id}`" variant="ghost" size="sm">
-                                <ExternalLink class="h-4 w-4" />
+                            <Button variant="ghost" size="sm" @click="openDetail(exp)" title="Ver detalle">
+                                <Eye class="h-4 w-4" />
                             </Button>
                         </TableCell>
                     </TableRow>
@@ -181,5 +189,11 @@ onMounted(() => loadExpedientes());
         v-model:show="showModal"
         :trabajador-id="props.trabajador.id"
         @success="loadExpedientes"
+    />
+
+    <!-- Modal detalle expediente -->
+    <ExpedienteDetailModal
+        v-model:show="showDetailModal"
+        :expediente-id="selectedExpedienteId"
     />
 </template>

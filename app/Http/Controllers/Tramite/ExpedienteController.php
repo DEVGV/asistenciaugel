@@ -84,6 +84,11 @@ class ExpedienteController extends Controller
 
     // ── API JSON (para tabs embebidos) ───────────────────────────────────────
 
+    public function detalleJson(ConasisExpediente $expediente): JsonResponse
+    {
+        return response()->json($this->expedienteService->obtener($expediente));
+    }
+
     public function porTrabajador(Trabajador $trabajador): JsonResponse
     {
         return response()->json([

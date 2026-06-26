@@ -27,7 +27,10 @@ use App\Http\Controllers\InstitucionEducativa\GradoIEController;
 use App\Http\Controllers\InstitucionEducativa\GradosMasivaIEController;
 use App\Http\Controllers\InstitucionEducativa\InstitucionEducativaController;
 use App\Http\Controllers\InstitucionEducativa\InstitucionEducativaMasivaController;
+use App\Http\Controllers\InstitucionEducativa\DomicilioIEController;
+use App\Http\Controllers\InstitucionEducativa\EmailIEController;
 use App\Http\Controllers\InstitucionEducativa\SeccionIEController;
+use App\Http\Controllers\InstitucionEducativa\TelefonoIEController;
 use App\Http\Controllers\Persona\DomicilioController;
 use App\Http\Controllers\Persona\EmailController;
 use App\Http\Controllers\Persona\TelefonoController;
@@ -123,6 +126,12 @@ Route::middleware(['auth', 'verified', 'contexto'])->group(function () {
         ->except(['create', 'edit'])
         ->parameters(['trabajadores' => 'trabajador']);
 
+    // Tabs de trabajador con URL limpia
+    // 'horario' (singular) evita conflicto con GET trabajadores/{id}/horarios (JSON)
+    Route::get('trabajadores/{trabajador}/{tab}', [TrabajadorController::class, 'showTab'])
+        ->where('tab', 'laboral|horario|asistencia|permisos')
+        ->name('trabajadores.show-tab');
+
     // Registro unificado de trabajador (persona + usuario + alta + perfil)
     Route::get('registro-trabajador', [RegistroTrabajadorController::class, 'create'])
         ->name('registro-trabajador.create');
@@ -152,6 +161,12 @@ Route::middleware(['auth', 'verified', 'contexto'])->group(function () {
     Route::post('instituciones-masivas', [InstitucionEducativaMasivaController::class, 'store'])
         ->name('instituciones.masivo.store');
 
+    // Tabs de IE sin carga extra de datos (cursos, grados, locales, permisos, días no laborables)
+    // 'no-laborables' evita conflicto con el recurso anidado instituciones.dias-no-laborables
+    Route::get('instituciones/{institucione}/{tab}', [InstitucionEducativaController::class, 'showTab'])
+        ->where('tab', 'cursos|grados|locales|permisos|no-laborables')
+        ->name('instituciones.show-tab');
+
     // Tab Docentes/Personal de una IE (altas paginadas)
     Route::get('instituciones/{institucione}/docentes', [InstitucionEducativaController::class, 'docentes'])
         ->name('instituciones.docentes');
@@ -167,6 +182,28 @@ Route::middleware(['auth', 'verified', 'contexto'])->group(function () {
     // Carga masiva de cursos para una IE
     Route::post('instituciones/{institucione}/cursos-masivos', [CursosMasivaIEController::class, 'store'])
         ->name('instituciones.cursos-masivos.store');
+
+    // Contacto de IE (teléfonos, emails, domicilios)
+    Route::resource('instituciones.telefonos-ie', TelefonoIEController::class)
+        ->only(['store', 'update', 'destroy'])
+        ->shallow()
+        ->parameters(['instituciones' => 'institucione', 'telefonos-ie' => 'telefono']);
+    Route::patch('instituciones-telefonos/{telefono}/dar-de-baja', [TelefonoIEController::class, 'darDeBaja'])
+        ->name('instituciones.telefonos-ie.dar-de-baja');
+
+    Route::resource('instituciones.emails-ie', EmailIEController::class)
+        ->only(['store', 'update', 'destroy'])
+        ->shallow()
+        ->parameters(['instituciones' => 'institucione', 'emails-ie' => 'email']);
+    Route::patch('instituciones-emails/{email}/dar-de-baja', [EmailIEController::class, 'darDeBaja'])
+        ->name('instituciones.emails-ie.dar-de-baja');
+
+    Route::resource('instituciones.domicilios-ie', DomicilioIEController::class)
+        ->only(['store', 'update', 'destroy'])
+        ->shallow()
+        ->parameters(['instituciones' => 'institucione', 'domicilios-ie' => 'domicilio']);
+    Route::patch('instituciones-domicilios/{domicilio}/dar-de-baja', [DomicilioIEController::class, 'darDeBaja'])
+        ->name('instituciones.domicilios-ie.dar-de-baja');
 
     // Días No Laborables por IE
     Route::resource('instituciones.dias-no-laborables', DiasNoLaborablesController::class)

@@ -37,6 +37,9 @@ import GradoIEController from '@/actions/App/Http/Controllers/InstitucionEducati
 import InstitucionEducativaController from '@/actions/App/Http/Controllers/InstitucionEducativa/InstitucionEducativaController';
 import SeccionIEController from '@/actions/App/Http/Controllers/InstitucionEducativa/SeccionIEController';
 import AltaMasivaGrid from '@/components/institucion-educativa/AltaMasivaGrid.vue';
+import DomiciliosIEList from '@/components/institucion-educativa/DomiciliosIEList.vue';
+import EmailsIEList from '@/components/institucion-educativa/EmailsIEList.vue';
+import TelefonosIEList from '@/components/institucion-educativa/TelefonosIEList.vue';
 import CargarAsistenciaModal from '@/components/institucion-educativa/CargarAsistenciaModal.vue';
 import CursosMasivaGrid from '@/components/institucion-educativa/CursosMasivaGrid.vue';
 import GradosMasivaGrid from '@/components/institucion-educativa/GradosMasivaGrid.vue';
@@ -101,16 +104,40 @@ const props = defineProps<{
     activeTab?: string;
 }>();
 
-const activeTab = ref<
-    | 'datos'
-    | 'cursos'
-    | 'grados'
-    | 'locales'
-    | 'relojes'
-    | 'docentes'
-    | 'diasNoLaborables'
-    | 'permisos'
->((props.activeTab as any) ?? 'datos');
+type TabKey = 'datos' | 'cursos' | 'grados' | 'locales' | 'docentes' | 'diasNoLaborables' | 'permisos';
+
+function resolveInitialTab(): TabKey {
+    return (props.activeTab as TabKey) ?? 'datos';
+}
+
+const activeTab = ref<TabKey>(resolveInitialTab());
+
+// Mapeo de clave de tab → segmento de URL en Laravel
+const tabSegments: Partial<Record<TabKey, string>> = {
+    cursos: 'cursos',
+    grados: 'grados',
+    locales: 'locales',
+    diasNoLaborables: 'no-laborables',
+    permisos: 'permisos',
+};
+
+function tabUrl(key: TabKey): string {
+    const base = InstitucionEducativaController.show({ institucione: props.institucion.id }).url;
+    const segment = tabSegments[key];
+    return segment ? `${base}/${segment}` : base;
+}
+
+function switchTab(key: TabKey) {
+    if (key === 'docentes') {
+        switchToDocentes();
+        return;
+    }
+    router.visit(tabUrl(key), { preserveScroll: false });
+}
+
+function switchToDocentesTab() {
+    switchToDocentes();
+}
 
 // ─── Sub-recurso Modal (compartido para cursos, grados, secciones) ───
 const showSubModal = ref(false);
@@ -613,8 +640,7 @@ const tabs = [
     { key: 'datos', label: 'Datos Generales', icon: School },
     { key: 'cursos', label: 'Cursos', icon: BookOpen },
     { key: 'grados', label: 'Grados y Secciones', icon: GraduationCap },
-    { key: 'locales', label: 'Locales', icon: MapPin },
-    { key: 'relojes', label: 'Relojes', icon: Clock },
+    { key: 'locales', label: 'Locales y Relojes', icon: MapPin },
     { key: 'docentes', label: 'Docentes / Personal', icon: Users },
     { key: 'diasNoLaborables', label: 'Días No Laborables', icon: CalendarOff },
     { key: 'permisos', label: 'Expedientes', icon: ClipboardCheck },
@@ -789,11 +815,7 @@ async function generarFeriados() {
             <button
                 v-for="tab in tabs"
                 :key="tab.key"
-                @click="
-                    tab.key === 'docentes'
-                        ? switchToDocentes()
-                        : (activeTab = tab.key as typeof activeTab.value)
-                "
+                @click="tab.key === 'docentes' ? switchToDocentesTab() : switchTab(tab.key as TabKey)"
                 :class="[
                     '-mb-px flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
                     activeTab === tab.key
@@ -807,67 +829,93 @@ async function generarFeriados() {
         </div>
 
         <!-- Tab: Datos Generales -->
-        <div
-            v-if="activeTab === 'datos'"
-            class="rounded-xl border bg-card p-6 shadow-xs"
-        >
-            <div class="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
-                <div>
-                    <span class="text-muted-foreground">Tipo Institución:</span>
-                    <p class="font-medium">
-                        {{ props.institucion.tipo_inst_educ?.nombre || '-' }}
-                    </p>
+        <div v-if="activeTab === 'datos'" class="space-y-6">
+            <!-- Datos de la Institución -->
+            <div class="rounded-xl border bg-card p-6 shadow-xs">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-4 text-sm">
+                    <div>
+                        <span class="text-muted-foreground">Tipo Institución:</span>
+                        <p class="font-medium">
+                            {{ props.institucion.tipo_inst_educ?.nombre || '-' }}
+                        </p>
+                    </div>
+                    <div>
+                        <span class="text-muted-foreground"
+                            >Régimen Educativo:</span
+                        >
+                        <p class="font-medium">
+                            {{ props.institucion.regimen_educ?.nombre || '-' }}
+                        </p>
+                    </div>
+                    <div>
+                        <span class="text-muted-foreground"
+                            >Modalidad Formativa:</span
+                        >
+                        <p class="font-medium">
+                            {{
+                                props.institucion.modalidad_formativa?.nombre || '-'
+                            }}
+                        </p>
+                    </div>
+                    <div>
+                        <span class="text-muted-foreground">Nivel / Ciclo:</span>
+                        <p class="font-medium">
+                            {{ props.institucion.nivel_ciclo?.nombre || '-' }}
+                        </p>
+                    </div>
+                    <div>
+                        <span class="text-muted-foreground">UGEL:</span>
+                        <p class="font-medium">
+                            {{ props.institucion.entidad_ugel?.razonSocial || '-' }}
+                        </p>
+                    </div>
+                    <div>
+                        <span class="text-muted-foreground">Entidad Admin:</span>
+                        <p class="font-medium">
+                            {{
+                                props.institucion.entidad_admin?.razonSocial || '-'
+                            }}
+                        </p>
+                    </div>
+                    <div>
+                        <span class="text-muted-foreground">Fecha Inicio:</span>
+                        <p class="font-medium">
+                            {{ props.institucion.fechaInicio || '-' }}
+                        </p>
+                    </div>
+                    <div>
+                        <span class="text-muted-foreground">Fecha Fin:</span>
+                        <p class="font-medium">
+                            {{ props.institucion.fechaFin || '-' }}
+                        </p>
+                    </div>
                 </div>
-                <div>
-                    <span class="text-muted-foreground"
-                        >Régimen Educativo:</span
-                    >
-                    <p class="font-medium">
-                        {{ props.institucion.regimen_educ?.nombre || '-' }}
-                    </p>
+            </div>
+
+            <!-- Información de Contacto -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Teléfonos -->
+                <div class="rounded-xl border bg-card p-6 shadow-xs">
+                    <TelefonosIEList
+                        :telefonos="props.institucion.telefonos || []"
+                        :institucion-id="props.institucion.id"
+                    />
                 </div>
-                <div>
-                    <span class="text-muted-foreground"
-                        >Modalidad Formativa:</span
-                    >
-                    <p class="font-medium">
-                        {{
-                            props.institucion.modalidad_formativa?.nombre || '-'
-                        }}
-                    </p>
+                <!-- Correos -->
+                <div class="rounded-xl border bg-card p-6 shadow-xs">
+                    <EmailsIEList
+                        :emails="props.institucion.emails || []"
+                        :institucion-id="props.institucion.id"
+                    />
                 </div>
-                <div>
-                    <span class="text-muted-foreground">Nivel / Ciclo:</span>
-                    <p class="font-medium">
-                        {{ props.institucion.nivel_ciclo?.nombre || '-' }}
-                    </p>
-                </div>
-                <div>
-                    <span class="text-muted-foreground">UGEL:</span>
-                    <p class="font-medium">
-                        {{ props.institucion.entidad_ugel?.razonSocial || '-' }}
-                    </p>
-                </div>
-                <div>
-                    <span class="text-muted-foreground">Entidad Admin:</span>
-                    <p class="font-medium">
-                        {{
-                            props.institucion.entidad_admin?.razonSocial || '-'
-                        }}
-                    </p>
-                </div>
-                <div>
-                    <span class="text-muted-foreground">Fecha Inicio:</span>
-                    <p class="font-medium">
-                        {{ props.institucion.fechaInicio || '-' }}
-                    </p>
-                </div>
-                <div>
-                    <span class="text-muted-foreground">Fecha Fin:</span>
-                    <p class="font-medium">
-                        {{ props.institucion.fechaFin || '-' }}
-                    </p>
-                </div>
+            </div>
+
+            <!-- Domicilios -->
+            <div class="rounded-xl border bg-card p-6 shadow-xs">
+                <DomiciliosIEList
+                    :domicilios="props.institucion.domicilios || []"
+                    :institucion-id="props.institucion.id"
+                />
             </div>
         </div>
 
@@ -1141,13 +1189,13 @@ async function generarFeriados() {
             </div>
         </div>
 
-        <!-- Tab: Locales -->
+        <!-- Tab: Locales y Relojes -->
         <div v-if="activeTab === 'locales'" class="space-y-4">
             <div class="flex items-center justify-between">
-                <h2 class="text-lg font-semibold">Locales Asignados</h2>
-                <Button size="sm" @click="openLocalCreate()"
-                    ><Plus class="mr-2 h-4 w-4" /> Asignar Local</Button
-                >
+                <h2 class="text-lg font-semibold">Locales y Relojes</h2>
+                <Button size="sm" @click="openLocalCreate()">
+                    <Plus class="mr-2 h-4 w-4" /> Asignar Local
+                </Button>
             </div>
 
             <div
@@ -1155,60 +1203,40 @@ async function generarFeriados() {
                 :key="lie.id"
                 class="overflow-hidden rounded-lg border bg-card"
             >
-                <div
-                    class="flex items-center justify-between border-b bg-muted/30 px-4 py-2.5"
-                >
+                <!-- Cabecera del local -->
+                <div class="flex items-center justify-between border-b bg-muted/30 px-4 py-2.5">
                     <div class="flex items-center gap-2">
                         <MapPin class="h-4 w-4 text-primary" />
                         <span class="text-sm font-semibold">{{
                             lie.local?.nombre || 'Sin nombre'
                         }}</span>
-                        <span
-                            v-if="lie.local?.zona"
-                            class="text-xs text-muted-foreground"
-                            >· {{ lie.local.zona.nombre }}</span
-                        >
-                        <span
-                            v-if="lie.fechaInicio"
-                            class="text-xs text-muted-foreground"
-                            >· Desde: {{ lie.fechaInicio }}</span
-                        >
+                        <span v-if="lie.local?.zona" class="text-xs text-muted-foreground">
+                            · {{ lie.local.zona.nombre }}
+                        </span>
+                        <span v-if="lie.fechaInicio" class="text-xs text-muted-foreground">
+                            · Desde: {{ lie.fechaInicio }}
+                        </span>
                     </div>
                     <div class="flex gap-1">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            class="h-7"
-                            @click="openLocalEdit(lie)"
-                        >
+                        <Button variant="ghost" size="sm" class="h-7" @click="openLocalEdit(lie)">
                             <Pencil class="h-3.5 w-3.5" />
                         </Button>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            class="h-7 text-destructive"
-                            @click="confirmDeleteLocal(lie)"
-                        >
+                        <Button variant="ghost" size="sm" class="h-7 text-destructive" @click="confirmDeleteLocal(lie)">
                             <Trash2 class="h-3.5 w-3.5" />
                         </Button>
                     </div>
                 </div>
-                <div class="space-y-3 p-4">
-                    <div
-                        v-if="lie.local?.domicilio"
-                        class="text-sm text-muted-foreground"
-                    >
-                        <span class="font-medium text-foreground"
-                            >Domicilio:</span
-                        >
+
+                <div class="space-y-4 p-4">
+                    <!-- Domicilio -->
+                    <div v-if="lie.local?.domicilio" class="text-sm text-muted-foreground">
+                        <span class="font-medium text-foreground">Domicilio:</span>
                         {{ lie.local.domicilio }}
                     </div>
 
                     <!-- Trabajadores de Marcación -->
                     <div v-if="lie.locales_marcacion?.length" class="space-y-1">
-                        <p
-                            class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
-                        >
+                        <p class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                             Trabajadores de Marcación
                         </p>
                         <div class="flex flex-wrap gap-2">
@@ -1217,49 +1245,95 @@ async function generarFeriados() {
                                 :key="lm.id"
                                 class="flex items-center gap-2 rounded-md border bg-background px-3 py-1.5 text-sm"
                             >
-                                <UserPlus
-                                    class="h-3.5 w-3.5 text-muted-foreground"
-                                />
+                                <UserPlus class="h-3.5 w-3.5 text-muted-foreground" />
                                 <span class="font-medium">
                                     {{ lm.trabajador?.persona?.paterno }}
                                     {{ lm.trabajador?.persona?.materno }},
                                     {{ lm.trabajador?.persona?.nombre }}
                                 </span>
-                                <span
-                                    v-if="lm.fechaInicio"
-                                    class="text-xs text-muted-foreground"
-                                    >({{ lm.fechaInicio }})</span
-                                >
+                                <span v-if="lm.fechaInicio" class="text-xs text-muted-foreground">
+                                    ({{ lm.fechaInicio }})
+                                </span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Relojes del Local -->
-                    <div v-if="lie.relojes?.length" class="space-y-1">
-                        <p
-                            class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
-                        >
-                            Relojes Biométricos
-                        </p>
-                        <div class="flex flex-wrap gap-2">
-                            <div
-                                v-for="reloj in lie.relojes"
-                                :key="reloj.id"
-                                class="flex items-center gap-2 rounded-md border bg-background px-3 py-1.5 text-sm"
-                            >
-                                <Clock
-                                    class="h-3.5 w-3.5 text-muted-foreground"
-                                />
-                                <span class="font-medium">{{
-                                    reloj.nombre || 'Sin nombre'
-                                }}</span>
-                                <span
-                                    v-if="reloj.dreccionIP"
-                                    class="text-xs text-muted-foreground"
-                                    >{{ reloj.dreccionIP }}</span
+                    <!-- Relojes — tabla completa -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <p class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                Relojes Biométricos
+                            </p>
+                            <div class="flex items-center gap-2">
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    @click="openRelojesMasiva(lie.id, lie.local?.nombre || 'Sin nombre')"
+                                    class="gap-1.5 border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 dark:border-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-950/20"
                                 >
-                                <StatusBadge :active="reloj.activo ?? false" />
+                                    <Upload class="h-4 w-4" />
+                                    Carga Masiva
+                                </Button>
+                                <Button size="sm" variant="outline" @click="openRelojCreate(lie.id)">
+                                    <Plus class="mr-2 h-4 w-4" /> Nuevo Reloj
+                                </Button>
                             </div>
+                        </div>
+
+                        <div class="overflow-hidden rounded-md border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Nombre</TableHead>
+                                        <TableHead>IP</TableHead>
+                                        <TableHead>MAC</TableHead>
+                                        <TableHead class="w-[80px]">Puerto</TableHead>
+                                        <TableHead>Serie</TableHead>
+                                        <TableHead class="w-[80px]">Estado</TableHead>
+                                        <TableHead class="w-[100px] text-right">Acciones</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    <TableRow v-for="reloj in lie.relojes || []" :key="reloj.id">
+                                        <TableCell class="text-sm font-medium">{{ reloj.nombre || '-' }}</TableCell>
+                                        <TableCell class="font-mono text-xs">{{ reloj.dreccionIP || '-' }}</TableCell>
+                                        <TableCell class="font-mono text-xs">{{ reloj.direccionMac || '-' }}</TableCell>
+                                        <TableCell class="text-xs">{{ reloj.puerto || '-' }}</TableCell>
+                                        <TableCell class="text-xs">{{ reloj.serie || '-' }}</TableCell>
+                                        <TableCell><StatusBadge :active="reloj.activo ?? false" /></TableCell>
+                                        <TableCell class="text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger as-child>
+                                                    <Button variant="ghost" size="sm" class="h-7">
+                                                        <ChevronDown class="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem
+                                                        @click="openCargarAsistencia(reloj.id, reloj.nombre || 'Sin nombre', lie.local?.nombre || 'Sin nombre')"
+                                                    >
+                                                        <FileSpreadsheet class="mr-2 h-4 w-4 text-emerald-600" />
+                                                        Cargar Asistencia
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem @click="openRelojEdit(reloj)">
+                                                        <Pencil class="mr-2 h-4 w-4" />
+                                                        Editar
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem @click="confirmDeleteReloj(reloj)" class="text-destructive">
+                                                        <Trash2 class="mr-2 h-4 w-4" />
+                                                        Desactivar
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                    <TableRow v-if="!lie.relojes?.length">
+                                        <TableCell colspan="7" class="h-14 text-center text-sm text-muted-foreground">
+                                            Sin relojes registrados en este local.
+                                        </TableCell>
+                                    </TableRow>
+                                </TableBody>
+                            </Table>
                         </div>
                     </div>
                 </div>
@@ -1270,154 +1344,6 @@ async function generarFeriados() {
                 class="rounded-md border p-8 text-center text-muted-foreground"
             >
                 No hay locales asignados a esta institución.
-            </div>
-        </div>
-
-        <!-- Tab: Relojes -->
-        <div v-if="activeTab === 'relojes'" class="space-y-4">
-            <div class="flex items-center justify-between">
-                <h2 class="text-lg font-semibold">Relojes por Local</h2>
-            </div>
-
-            <div
-                v-for="lie in props.institucion.locales_inst_educ || []"
-                :key="lie.id"
-                class="space-y-2"
-            >
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <MapPin class="h-4 w-4 text-primary" />
-                        <span class="text-sm font-semibold">{{
-                            lie.local?.nombre || 'Sin nombre'
-                        }}</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            @click="
-                                openRelojesMasiva(
-                                    lie.id,
-                                    lie.local?.nombre || 'Sin nombre',
-                                )
-                            "
-                            class="gap-1.5 border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 dark:border-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-950/20"
-                        >
-                            <Upload class="h-4 w-4" />
-                            Carga Masiva
-                        </Button>
-
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            @click="openRelojCreate(lie.id)"
-                        >
-                            <Plus class="mr-2 h-4 w-4" /> Nuevo Reloj
-                        </Button>
-                    </div>
-                </div>
-
-                <div class="overflow-hidden rounded-md border bg-card">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Nombre</TableHead>
-                                <TableHead>IP</TableHead>
-                                <TableHead>MAC</TableHead>
-                                <TableHead class="w-[80px]">Puerto</TableHead>
-                                <TableHead>Serie</TableHead>
-                                <TableHead class="w-[80px]">Estado</TableHead>
-                                <TableHead class="w-[100px] text-right"
-                                    >Acciones</TableHead
-                                >
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            <TableRow
-                                v-for="reloj in lie.relojes || []"
-                                :key="reloj.id"
-                            >
-                                <TableCell class="text-sm font-medium">{{
-                                    reloj.nombre || '-'
-                                }}</TableCell>
-                                <TableCell class="font-mono text-xs">{{
-                                    reloj.dreccionIP || '-'
-                                }}</TableCell>
-                                <TableCell class="font-mono text-xs">{{
-                                    reloj.direccionMac || '-'
-                                }}</TableCell>
-                                <TableCell class="text-xs">{{
-                                    reloj.puerto || '-'
-                                }}</TableCell>
-                                <TableCell class="text-xs">{{
-                                    reloj.serie || '-'
-                                }}</TableCell>
-                                <TableCell
-                                    ><StatusBadge
-                                        :active="reloj.activo ?? false"
-                                /></TableCell>
-                                <TableCell class="text-right">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger as-child
-                                            ><Button
-                                                variant="ghost"
-                                                size="sm"
-                                                class="h-7"
-                                                ><ChevronDown
-                                                    class="h-4 w-4" /></Button
-                                        ></DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem
-                                                @click="
-                                                    openCargarAsistencia(
-                                                        reloj.id,
-                                                        reloj.nombre ||
-                                                            'Sin nombre',
-                                                        lie.local?.nombre ||
-                                                            'Sin nombre',
-                                                    )
-                                                "
-                                            >
-                                                <FileSpreadsheet
-                                                    class="mr-2 h-4 w-4 text-emerald-600"
-                                                />
-                                                Cargar Asistencia
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                @click="openRelojEdit(reloj)"
-                                                ><Pencil class="mr-2 h-4 w-4" />
-                                                Editar</DropdownMenuItem
-                                            >
-                                            <DropdownMenuItem
-                                                @click="
-                                                    confirmDeleteReloj(reloj)
-                                                "
-                                                class="text-destructive"
-                                                ><Trash2 class="mr-2 h-4 w-4" />
-                                                Desactivar</DropdownMenuItem
-                                            >
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
-                            </TableRow>
-                            <TableRow v-if="!lie.relojes?.length">
-                                <TableCell
-                                    colspan="7"
-                                    class="h-16 text-center text-muted-foreground"
-                                    >Sin relojes registrados en este
-                                    local.</TableCell
-                                >
-                            </TableRow>
-                        </TableBody>
-                    </Table>
-                </div>
-            </div>
-
-            <div
-                v-if="!props.institucion.locales_inst_educ?.length"
-                class="rounded-md border p-8 text-center text-muted-foreground"
-            >
-                Debe asignar locales primero para gestionar relojes.
             </div>
         </div>
 

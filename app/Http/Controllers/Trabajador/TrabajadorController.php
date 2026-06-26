@@ -52,6 +52,17 @@ class TrabajadorController extends Controller
         ]);
     }
 
+    public function showTab(Trabajador $trabajador, string $tab): Response
+    {
+        // 'horario' en URL → 'horarios' como clave de tab en el frontend
+        $tabMap = ['horario' => 'horarios'];
+
+        return Inertia::render('trabajador/Show', [
+            'trabajador' => $this->trabajadorService->obtenerConRelaciones($trabajador),
+            'activeTab'  => $tabMap[$tab] ?? $tab,
+        ]);
+    }
+
     public function update(UpdatePersonaTrabajadorRequest $request, Trabajador $trabajador): RedirectResponse
     {
         $this->personaService->actualizar($trabajador->persona, $request->toDTO());

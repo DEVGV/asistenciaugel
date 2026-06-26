@@ -74,6 +74,8 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
     Route::get('instituciones/{institucione}/locales', [InstitucionEducativaController::class, 'locales'])->name('api.instituciones.locales');
 
     // Trámite: Expedientes (para tabs embebidos en Trabajador e IE)
+    Route::get('expedientes/{expediente}/detalle', [ExpedienteController::class, 'detalleJson'])
+        ->name('api.expedientes.detalle');
     Route::get('trabajadores/{trabajador}/expedientes', [ExpedienteController::class, 'porTrabajador'])
         ->name('api.trabajadores.expedientes');
     Route::get('trabajadores/{trabajador}/altas-activas', [ExpedienteController::class, 'altasActivas'])

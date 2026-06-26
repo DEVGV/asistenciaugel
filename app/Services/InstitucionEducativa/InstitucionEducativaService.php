@@ -51,6 +51,9 @@ class InstitucionEducativaService
             'localesInstEduc.relojes',
             'localesInstEduc.localesMarcacion.trabajador.persona',
             'diasNoLaborables' => fn ($q) => $q->where('activo', true)->orderBy('fecha')->with('feriado'),
+            'telefonos' => fn ($q) => $q->with('operador')->orderBy('fechaInicio'),
+            'emails' => fn ($q) => $q->orderBy('fechaInicio'),
+            'domicilios' => fn ($q) => $q->with('zona')->orderBy('fechaInicio'),
         ]);
     }
 

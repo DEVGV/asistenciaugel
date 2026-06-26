@@ -5,12 +5,13 @@ import {
     ChevronLeft,
     ChevronRight,
     ClipboardCheck,
-    ExternalLink,
+    Eye,
     Plus,
     RefreshCw,
     Search,
 } from 'lucide-vue-next';
 import { onMounted, ref, watch } from 'vue';
+import ExpedienteDetailModal from '@/components/tramite/ExpedienteDetailModal.vue';
 import ExpedienteFormModal from '@/components/tramite/ExpedienteFormModal.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +37,15 @@ const page = ref(1);
 const lastPage = ref(1);
 const total = ref(0);
 const showModal = ref(false);
+
+// Modal de detalle
+const showDetailModal = ref(false);
+const selectedExpedienteId = ref<number | null>(null);
+
+function openDetail(exp: Expediente) {
+    selectedExpedienteId.value = exp.id;
+    showDetailModal.value = true;
+}
 
 const ESTADO_CLASES: Record<string, string> = {
     '1': 'bg-amber-100 text-amber-700 ring-1 ring-amber-200',
@@ -217,8 +227,8 @@ watch(search, () => debouncedSearch());
                                 </span>
                             </TableCell>
                             <TableCell class="text-right">
-                                <Button as="a" :href="`/expedientes/${exp.id}`" variant="ghost" size="sm">
-                                    <ExternalLink class="h-4 w-4" />
+                                <Button variant="ghost" size="sm" @click="openDetail(exp)" title="Ver detalle">
+                                    <Eye class="h-4 w-4" />
                                 </Button>
                             </TableCell>
                         </TableRow>
@@ -256,5 +266,11 @@ watch(search, () => debouncedSearch());
         v-model:show="showModal"
         :institucion-id="props.institucionId"
         @success="loadExpedientes"
+    />
+
+    <!-- Modal detalle expediente -->
+    <ExpedienteDetailModal
+        v-model:show="showDetailModal"
+        :expediente-id="selectedExpedienteId"
     />
 </template>
