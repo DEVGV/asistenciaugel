@@ -9,6 +9,7 @@ use App\Http\Controllers\Entidad\EntidadController;
 use App\Http\Controllers\InstitucionEducativa\InstitucionEducativaController;
 use App\Http\Controllers\Persona\PersonaController;
 use App\Http\Controllers\Trabajador\TrabajadorController;
+use App\Http\Controllers\Tramite\ExpedienteController;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
@@ -71,6 +72,16 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
 
     // Locales de marcación disponibles de una IE (para select en formularios de altas)
     Route::get('instituciones/{institucione}/locales', [InstitucionEducativaController::class, 'locales'])->name('api.instituciones.locales');
+
+    // Trámite: Expedientes (para tabs embebidos en Trabajador e IE)
+    Route::get('trabajadores/{trabajador}/expedientes', [ExpedienteController::class, 'porTrabajador'])
+        ->name('api.trabajadores.expedientes');
+    Route::get('trabajadores/{trabajador}/altas-activas', [ExpedienteController::class, 'altasActivas'])
+        ->name('api.trabajadores.altas-activas');
+    Route::get('instituciones/{institucione}/expedientes', [ExpedienteController::class, 'porInstitucion'])
+        ->name('api.instituciones.expedientes');
+    Route::get('instituciones/{institucione}/personal-activo', [ExpedienteController::class, 'personalActivo'])
+        ->name('api.instituciones.personal-activo');
 
     Route::prefix('mobile')
         ->withoutMiddleware([ValidateCsrfToken::class, PreventRequestForgery::class])

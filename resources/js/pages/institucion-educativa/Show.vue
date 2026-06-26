@@ -617,7 +617,7 @@ const tabs = [
     { key: 'relojes', label: 'Relojes', icon: Clock },
     { key: 'docentes', label: 'Docentes / Personal', icon: Users },
     { key: 'diasNoLaborables', label: 'Días No Laborables', icon: CalendarOff },
-    { key: 'permisos', label: 'Permisos', icon: ClipboardCheck },
+    { key: 'permisos', label: 'Expedientes', icon: ClipboardCheck },
 ] as const;
 
 // ─── Días No Laborables ────────────────────────────────────────────────────────

@@ -2,6 +2,8 @@
 
 namespace App\Models\Conasis;
 
+use App\Enums\TipoExpediente;
+use App\Models\AltasTrabajadores;
 use App\Models\Param\ParamEstadosTram;
 use App\Models\Trabajador;
 use App\Traits\HasCodigo;
@@ -20,13 +22,19 @@ class ConasisExpediente extends Model
     protected string $codigoPrefix = 'EXP';
 
     protected $fillable = [
+        'tipoExpediente',
         'anio',
         'trabajador_id',
+        'altaTrabajador_id',
         'asunto',
         'fecha',
         'observacion',
         'estado_id',
         'created_by',
+    ];
+
+    protected $casts = [
+        'tipoExpediente' => TipoExpediente::class,
     ];
 
     public function estado(): BelongsTo
@@ -39,18 +47,13 @@ class ConasisExpediente extends Model
         return $this->belongsTo(Trabajador::class, 'trabajador_id');
     }
 
+    public function alta(): BelongsTo
+    {
+        return $this->belongsTo(AltasTrabajadores::class, 'altaTrabajador_id');
+    }
+
     public function documentos(): HasMany
     {
         return $this->hasMany(ConasisDocumentosTram::class, 'expediente_id');
-    }
-
-    public function justificaciones(): HasMany
-    {
-        return $this->hasMany(ConasisJustificaciones::class, 'expediente_id');
-    }
-
-    public function exoneraciones(): HasMany
-    {
-        return $this->hasMany(ConasisExoneracionesMarcacion::class, 'expediente_id');
     }
 }

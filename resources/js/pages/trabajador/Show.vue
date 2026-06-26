@@ -49,7 +49,7 @@ const tabs = [
     { key: 'laboral', label: 'Información Laboral', icon: FileText },
     { key: 'horarios', label: 'Horarios', icon: Calendar },
     { key: 'asistencia', label: 'Registro de Asistencia', icon: CalendarCheck2 },
-    { key: 'permisos', label: 'Permisos', icon: ClipboardCheck },
+    { key: 'permisos', label: 'Expedientes', icon: ClipboardCheck },
 ] as const;
 
 // ── Modal usuario ─────────────────────────────────────────────────────────────

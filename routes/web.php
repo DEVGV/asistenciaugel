@@ -37,7 +37,7 @@ use App\Http\Controllers\Trabajador\AltaTrabajadorController;
 use App\Http\Controllers\Trabajador\MarcacionesTrabajadorController;
 use App\Http\Controllers\Trabajador\RegistroTrabajadorController;
 use App\Http\Controllers\Trabajador\TrabajadorController;
-use App\Http\Controllers\Tramite\PermisoController;
+use App\Http\Controllers\Tramite\ExpedienteController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
@@ -252,32 +252,16 @@ Route::middleware(['auth', 'verified', 'contexto'])->group(function () {
     Route::get('trabajadores/{trabajador}/marcaciones', [MarcacionesTrabajadorController::class, 'porTrabajador'])
         ->name('trabajadores.marcaciones');
 
-    // ── Trámite: Solicitudes de Permiso ──────────────────────────────────────
-    // Listado para el tab Permisos del trabajador
-    Route::get('trabajadores/{trabajador}/permisos', [PermisoController::class, 'porTrabajador'])
-        ->name('trabajadores.permisos');
+    // ── Trámite: Expedientes ─────────────────────────────────────────────────
+    Route::resource('expedientes', ExpedienteController::class)
+        ->except(['destroy']);
 
-    // Listado paginado para el tab Permisos de una IE
-    Route::get('instituciones/{institucione}/permisos', [PermisoController::class, 'porInstitucion'])
-        ->name('instituciones.permisos');
+    // Anular un expediente registrado
+    Route::post('expedientes/{expediente}/anular', [ExpedienteController::class, 'anular'])
+        ->name('expedientes.anular');
 
-    // Altas activas de una IE (opciones del select al crear desde la IE)
-    Route::get('instituciones/{institucione}/permisos-altas', [PermisoController::class, 'altasPorInstitucion'])
-        ->name('instituciones.permisos.altas');
-
-    // Crear solicitud de permiso (expediente + sustento + detalle)
-    Route::post('permisos', [PermisoController::class, 'store'])->name('permisos.store');
-
-    // Validar (aprobar/rechazar) una solicitud — pestaña de la IE
-    Route::post('permisos/{expediente}/validar', [PermisoController::class, 'validar'])
-        ->name('permisos.validar');
-
-    // Anular una solicitud pendiente
-    Route::post('permisos/{expediente}/anular', [PermisoController::class, 'anular'])
-        ->name('permisos.anular');
-
-    // Descargar el documento de sustento
-    Route::get('documentos-tram/{documentoTram}/descargar', [PermisoController::class, 'descargarSustento'])
+    // Descargar documento de trámite
+    Route::get('documentos-tram/{documentoTram}/descargar', [ExpedienteController::class, 'descargarDocumento'])
         ->name('documentos-tram.descargar');
 });
 
