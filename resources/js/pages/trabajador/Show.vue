@@ -5,6 +5,7 @@ import {
     User,
     FileText,
     Calendar,
+    CalendarCheck2,
     ClipboardCheck,
     Phone,
     Mail,
@@ -19,6 +20,7 @@ import TelefonosList from '@/components/persona/TelefonosList.vue';
 import GestionUsuarioModal from '@/components/shared/GestionUsuarioModal.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
 import AltasList from '@/components/trabajador/AltasList.vue';
+import AsistenciaTrabajadorTab from '@/components/trabajador/AsistenciaTrabajadorTab.vue';
 import HorariosTrabajadorTab from '@/components/trabajador/HorariosTrabajadorTab.vue';
 import PermisosTrabajadorTab from '@/components/trabajador/PermisosTrabajadorTab.vue';
 import { Button } from '@/components/ui/button';
@@ -38,7 +40,7 @@ defineOptions({
 });
 
 const activeTab = ref<
-    'datos' | 'contacto' | 'laboral' | 'horarios' | 'permisos'
+    'datos' | 'contacto' | 'laboral' | 'horarios' | 'asistencia' | 'permisos'
 >('datos');
 
 const tabs = [
@@ -46,6 +48,7 @@ const tabs = [
     { key: 'contacto', label: 'Contacto y Domicilio', icon: MapPin },
     { key: 'laboral', label: 'Información Laboral', icon: FileText },
     { key: 'horarios', label: 'Horarios', icon: Calendar },
+    { key: 'asistencia', label: 'Registro de Asistencia', icon: CalendarCheck2 },
     { key: 'permisos', label: 'Permisos', icon: ClipboardCheck },
 ] as const;
 
@@ -248,6 +251,11 @@ return `Trabajador #${props.trabajador.id}`;
             <!-- TAB: Horarios -->
             <div v-if="activeTab === 'horarios'">
                 <HorariosTrabajadorTab :trabajador-id="props.trabajador.id" />
+            </div>
+
+            <!-- TAB: Registro de Asistencia -->
+            <div v-if="activeTab === 'asistencia'">
+                <AsistenciaTrabajadorTab :trabajador-id="props.trabajador.id" />
             </div>
 
             <!-- TAB: Permisos -->

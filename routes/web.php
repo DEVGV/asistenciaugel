@@ -34,9 +34,10 @@ use App\Http\Controllers\Persona\PersonaController;
 use App\Http\Controllers\Persona\PersonaMasivaController;
 use App\Http\Controllers\Persona\TelefonoController;
 use App\Http\Controllers\Trabajador\AltaTrabajadorController;
-use App\Http\Controllers\Tramite\PermisoController;
+use App\Http\Controllers\Trabajador\MarcacionesTrabajadorController;
 use App\Http\Controllers\Trabajador\RegistroTrabajadorController;
 use App\Http\Controllers\Trabajador\TrabajadorController;
+use App\Http\Controllers\Tramite\PermisoController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
@@ -246,6 +247,10 @@ Route::middleware(['auth', 'verified', 'contexto'])->group(function () {
     // API: listar todos los horarios activos de un trabajador (para el tab Horarios en Show)
     Route::get('trabajadores/{trabajador}/horarios', [HorarioTrabajadorController::class, 'porTrabajador'])
         ->name('trabajadores.horarios');
+
+    // API: marcaciones de asistencia del trabajador (para el tab Registro de Asistencia)
+    Route::get('trabajadores/{trabajador}/marcaciones', [MarcacionesTrabajadorController::class, 'porTrabajador'])
+        ->name('trabajadores.marcaciones');
 
     // ── Trámite: Solicitudes de Permiso ──────────────────────────────────────
     // Listado para el tab Permisos del trabajador

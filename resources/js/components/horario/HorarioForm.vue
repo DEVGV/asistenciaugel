@@ -105,7 +105,7 @@ function resetForm() {
     if (props.horarioCurso) {
         cursoId.value = props.horarioCurso.curso_id;
         nroDia.value = props.horarioCurso.nroDia;
-        turnoId.value = props.horarioCurso.turno_id ?? null;
+        turnoId.value = (props.horarioCurso as any).detalles_ini?.[0]?.turno_id ?? null;
         horaInicio.value = props.horarioCurso.horaInicio.substring(0, 5);
         horaFin.value = props.horarioCurso.horaFin.substring(0, 5);
 

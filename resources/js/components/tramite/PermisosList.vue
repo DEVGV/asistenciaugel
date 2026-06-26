@@ -31,10 +31,11 @@ const emit = defineEmits<{
 }>();
 
 const ESTADO_STYLES: Record<string, string> = {
-    PEN: 'bg-amber-100 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-900/50',
-    VAL: 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-900/50',
-    REC: 'bg-red-100 text-red-700 ring-1 ring-red-200 dark:bg-red-950/30 dark:text-red-300 dark:ring-red-900/50',
-    ANU: 'bg-muted text-muted-foreground ring-1 ring-border',
+    '1': 'bg-amber-100 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-900/50',
+    '2': 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-900/50',
+    '3': 'bg-red-100 text-red-700 ring-1 ring-red-200 dark:bg-red-950/30 dark:text-red-300 dark:ring-red-900/50',
+    '4': 'bg-blue-100 text-blue-700 ring-1 ring-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:ring-blue-900/50',
+    '5': 'bg-muted text-muted-foreground ring-1 ring-border',
 };
 
 const MARCA_LABELS: Record<string, string> = {
@@ -45,7 +46,7 @@ const MARCA_LABELS: Record<string, string> = {
 
 function estadoClass(permiso: ExpedientePermiso): string {
     return (
-        ESTADO_STYLES[permiso.estado?.codigo ?? ''] ?? ESTADO_STYLES['PEN']
+        ESTADO_STYLES[permiso.estado?.codigo ?? ''] ?? ESTADO_STYLES['1']
     );
 }
 
@@ -78,7 +79,7 @@ function nombreTrabajador(permiso: ExpedientePermiso): string {
 }
 
 function esPendiente(permiso: ExpedientePermiso): boolean {
-    return permiso.estado?.codigo === 'PEN';
+    return permiso.estado?.codigo === '1';
 }
 
 function rangoFechas(permiso: ExpedientePermiso): string {

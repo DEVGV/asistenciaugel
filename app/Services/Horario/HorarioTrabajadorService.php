@@ -6,6 +6,7 @@ use App\Models\AltasTrabajadores;
 use App\Models\Conasis\ConasisCargaHoraria;
 use App\Models\Conasis\ConasisDetalleHorarios;
 use App\Models\Conasis\ConasisHorariosTrabajador;
+use App\Models\InstitucionesEduc;
 use App\Services\Auth\ContextoService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
@@ -24,7 +25,7 @@ class HorarioTrabajadorService
      */
     public function listarPorTrabajador(int $trabajadorId, int $anio): Collection
     {
-        return ConasisHorariosTrabajador::query()
+        $horarios = ConasisHorariosTrabajador::query()
             ->with([
                 'detalles.horarioCursoIni.curso',
                 'detalles.horarioCursoIni.seccion.grado',
@@ -35,6 +36,27 @@ class HorarioTrabajadorService
             ->where('anio', $anio)
             ->where('activo', true)
             ->get();
+
+        // Cargar las cargas horarias (cursos individuales) para cada horario
+        foreach ($horarios as $horario) {
+            $cargas = ConasisCargaHoraria::query()
+                ->where('trabajador_id', $horario->trabajador_id)
+                ->whereHas('horarioCurso', function ($query) use ($horario) {
+                    $query->where('anio', $horario->anio)
+                        ->whereHas('seccion.grado', function ($q) use ($horario) {
+                            $q->where('institucionEduc_id', $horario->institucionEduc_id);
+                        });
+                })
+                ->with([
+                    'horarioCurso.curso',
+                    'horarioCurso.seccion.grado',
+                ])
+                ->get();
+
+            $horario->setAttribute('cargas_horarias', $cargas);
+        }
+
+        return $horarios;
     }
 
     /**
@@ -55,11 +77,11 @@ class HorarioTrabajadorService
     /**
      * Lista las instituciones educativas activas para el selector del índice de horarios.
      *
-     * @return Collection<int, \App\Models\InstitucionesEduc>
+     * @return Collection<int, InstitucionesEduc>
      */
     public function listarInstitucionesActivas(): Collection
     {
-        return $this->contextoService->filtrarInstituciones(\App\Models\InstitucionesEduc::query())
+        return $this->contextoService->filtrarInstituciones(InstitucionesEduc::query())
             ->where(function ($q) {
                 $q->whereNull('fechaFin')
                     ->orWhere('fechaFin', '>=', now()->toDateString());
@@ -109,10 +131,12 @@ class HorarioTrabajadorService
 
     /**
      * Regenerar el horario del docente y sus detalles basándose en su carga horaria.
+     *
+     * @param  array<int, int>  $turnosPorDia  nroDia → turno_id seleccionado por el usuario (opcional)
      */
-    public function regenerarDesdeCargas(int $trabajadorId, int $anio, int $ieId): ?ConasisHorariosTrabajador
+    public function regenerarDesdeCargas(int $trabajadorId, int $anio, int $ieId, array $turnosPorDia = []): ?ConasisHorariosTrabajador
     {
-        return DB::transaction(function () use ($trabajadorId, $anio, $ieId) {
+        return DB::transaction(function () use ($trabajadorId, $anio, $ieId, $turnosPorDia) {
             // 1. Obtener todas las cargas horarias activas para el trabajador, año e IE
             $cargas = ConasisCargaHoraria::query()
                 ->where('trabajador_id', $trabajadorId)
@@ -189,11 +213,13 @@ class HorarioTrabajadorService
                 $totalMinutos = $cursosDia->sum('minAcum');
                 $horasAcumuladas = $totalMinutos / 60.0;
 
-                // Usar el turno definido manualmente en el horario de curso.
-                // Si el usuario no lo definió, se calcula como fallback por hora de inicio.
-                if ($cursoIni->turno_id) {
-                    $turnoId    = $cursoIni->turno_id;
-                    $nombreTurno = $cursoIni->nombreTurno ?? match ($turnoId) {
+                // Usar el turno seleccionado por el usuario si fue enviado.
+                // Fallback: calcular por hora de inicio.
+                $turnoSeleccionado = $turnosPorDia[$nroDia] ?? null;
+
+                if ($turnoSeleccionado) {
+                    $turnoId = $turnoSeleccionado;
+                    $nombreTurno = match ($turnoId) {
                         1 => 'MAÑANA',
                         2 => 'TARDE',
                         3 => 'NOCHE',
@@ -202,13 +228,13 @@ class HorarioTrabajadorService
                 } else {
                     $inicioParse = Carbon::parse($minHoraInicio);
                     if ($inicioParse->hour < 13) {
-                        $turnoId    = 1;
+                        $turnoId = 1;
                         $nombreTurno = 'MAÑANA';
                     } elseif ($inicioParse->hour < 18) {
-                        $turnoId    = 2;
+                        $turnoId = 2;
                         $nombreTurno = 'TARDE';
                     } else {
-                        $turnoId    = 3;
+                        $turnoId = 3;
                         $nombreTurno = 'NOCHE';
                     }
                 }

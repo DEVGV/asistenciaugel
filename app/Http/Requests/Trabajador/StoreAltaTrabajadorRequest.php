@@ -4,13 +4,13 @@ namespace App\Http\Requests\Trabajador;
 
 use App\DTOs\Trabajador\CreateAltaTrabajadorDTO;
 use App\Models\Areas;
+use App\Models\Auth\Perfil;
 use App\Models\Cargos;
 use App\Models\CondicionesLaborales;
 use App\Models\InstitucionesEduc;
 use App\Models\Param\ParamRolTrabajador;
 use App\Models\Param\ParamSituacionLaboral;
 use App\Models\Param\ParamTipoContrato;
-use App\Models\Auth\Perfil;
 use App\Models\Trabajador;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -79,7 +79,7 @@ class StoreAltaTrabajadorRequest extends FormRequest
             'localInstEduc_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('conasis.t_localesInstEduc', 'id')
+                Rule::exists('t_localesInstEduc', 'id')
                     ->where('institucionEduc_id', $this->input('institucionEducativa_id')),
             ],
         ];

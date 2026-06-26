@@ -70,7 +70,13 @@ class PermisoService
                 $q->whereHas('justificaciones.altaTrabajador', fn (Builder $qq) => $qq->where('institucionEducativa_id', $institucion->id))
                     ->orWhereHas('exoneraciones.altaTrabajador', fn (Builder $qq) => $qq->where('institucionEducativa_id', $institucion->id));
             })
-            ->when($request->string('estado')->toString(), fn (Builder $q, string $codigo) => $q->where('estado_id', $this->estadoId(EstadoTramite::from($codigo))))
+            ->when($request->string('estado')->toString(), function (Builder $q, string $codigo) {
+                $id = $this->estadoIdOrNull(EstadoTramite::from($codigo));
+
+                if ($id !== null) {
+                    $q->where('estado_id', $id);
+                }
+            })
             ->when($request->string('search')->toString(), fn (Builder $q, string $search) => $q->whereHas('trabajador.persona', fn (Builder $qq) => $qq
                 ->where('paterno', 'ilike', "%{$search}%")
                 ->orWhere('materno', 'ilike', "%{$search}%")
@@ -99,11 +105,11 @@ class PermisoService
                 $apellidos = collect([$persona?->paterno, $persona?->materno])->filter()->implode(' ');
 
                 return [
-                    'id'            => $alta->id,
+                    'id' => $alta->id,
                     'trabajador_id' => $alta->trabajador_id,
-                    'label'         => trim(collect([$apellidos.',', $persona?->nombre])->filter()->implode(' '), ', '),
-                    'docIdentidad'  => $persona?->docIdentidad,
-                    'cargo'         => $alta->cargo?->nombre,
+                    'label' => trim(collect([$apellidos.',', $persona?->nombre])->filter()->implode(' '), ', '),
+                    'docIdentidad' => $persona?->docIdentidad,
+                    'cargo' => $alta->cargo?->nombre,
                 ];
             })
             ->sortBy('label')
@@ -120,13 +126,13 @@ class PermisoService
             $hoy = now()->toDateString();
 
             $expediente = ConasisExpediente::create([
-                'anio'          => now()->year,
+                'anio' => now()->year,
                 'trabajador_id' => $dto->trabajador_id,
-                'asunto'        => $dto->asunto,
-                'fecha'         => $hoy,
-                'observacion'   => $dto->observacion,
-                'estado_id'     => $this->estadoId(EstadoTramite::Pendiente),
-                'created_by'    => auth()->id(),
+                'asunto' => $dto->asunto,
+                'fecha' => $hoy,
+                'observacion' => $dto->observacion,
+                'estado_id' => $this->estadoId(EstadoTramite::Registrado),
+                'created_by' => auth()->id(),
             ]);
 
             $rutaDoc = $sustento->storeAs(
@@ -135,25 +141,25 @@ class PermisoService
             );
 
             ConasisDocumentosTram::create([
-                'expediente_id'   => $expediente->id,
-                'documento_id'    => $dto->documento_id,
-                'nroDoc'          => $dto->nroDoc,
-                'fechaDoc'        => $hoy,
+                'expediente_id' => $expediente->id,
+                'documento_id' => $dto->documento_id,
+                'nroDoc' => $dto->nroDoc,
+                'fechaDoc' => $hoy,
                 'trabajadorDoc_id' => $dto->trabajador_id,
-                'rutaDoc'         => $rutaDoc,
-                'observacion'     => 'Sustento de solicitud de permiso',
-                'created_by'      => auth()->id(),
+                'rutaDoc' => $rutaDoc,
+                'observacion' => 'Sustento de solicitud de permiso',
+                'created_by' => auth()->id(),
             ]);
 
             $detalle = [
-                'trabajador_id'     => $dto->trabajador_id,
+                'trabajador_id' => $dto->trabajador_id,
                 'altaTrabajador_id' => $dto->altaTrabajador_id,
-                'turno'             => $dto->turno,
-                'fechaInicio'       => $dto->fechaInicio,
-                'fechaFin'          => $dto->fechaFin,
-                'expediente_id'     => $expediente->id,
-                'observacion'       => $dto->observacion,
-                'created_by'        => auth()->id(),
+                'turno' => $dto->turno,
+                'fechaInicio' => $dto->fechaInicio,
+                'fechaFin' => $dto->fechaFin,
+                'expediente_id' => $expediente->id,
+                'observacion' => $dto->observacion,
+                'created_by' => auth()->id(),
             ];
 
             if (TipoPermiso::from($dto->tipo) === TipoPermiso::Exoneracion) {
@@ -172,13 +178,13 @@ class PermisoService
     public function validar(ConasisExpediente $expediente, ValidarPermisoDTO $dto): ConasisExpediente
     {
         abort_unless(
-            (int) $expediente->estado_id === $this->estadoId(EstadoTramite::Pendiente),
+            (int) $expediente->estado_id === $this->estadoId(EstadoTramite::Registrado),
             422,
             'Solo se pueden validar solicitudes pendientes.',
         );
 
         $expediente->update([
-            'estado_id'   => $this->estadoId(EstadoTramite::from($dto->estado)),
+            'estado_id' => $this->estadoId(EstadoTramite::from($dto->estado)),
             'observacion' => $dto->observacion ?: $expediente->observacion,
         ]);
 
@@ -191,7 +197,7 @@ class PermisoService
     public function anular(ConasisExpediente $expediente): void
     {
         abort_unless(
-            (int) $expediente->estado_id === $this->estadoId(EstadoTramite::Pendiente),
+            (int) $expediente->estado_id === $this->estadoId(EstadoTramite::Registrado),
             422,
             'Solo se pueden anular solicitudes pendientes.',
         );
@@ -221,28 +227,56 @@ class PermisoService
      */
     private function basePermisos(): Builder
     {
-        return ConasisExpediente::query()
+        $query = ConasisExpediente::query()
             ->with(self::RELACIONES)
             ->where(function (Builder $q) {
                 $q->whereHas('justificaciones')->orWhereHas('exoneraciones');
-            })
-            ->where('estado_id', '!=', $this->estadoId(EstadoTramite::Anulado));
+            });
+
+        $anuladoId = $this->estadoIdOrNull(EstadoTramite::Anulado);
+
+        if ($anuladoId !== null) {
+            $query->where('estado_id', '!=', $anuladoId);
+        }
+
+        return $query;
     }
 
     /**
      * Resuelve (con caché) el id del estado de trámite por su código.
+     * Aborta con 500 si no existe — usar solo en operaciones de escritura.
      */
     private function estadoId(EstadoTramite $estado): int
     {
-        return Cache::rememberForever(
-            "param.estados-tramite.{$estado->value}",
-            function () use ($estado) {
-                $id = ParamEstadosTram::query()->where('codigo', $estado->value)->value('id');
+        $id = $this->estadoIdOrNull($estado);
 
-                abort_unless($id !== null, 500, "Estado de trámite '{$estado->value}' no configurado. Ejecute el seeder ParamTramiteSeeder.");
+        abort_unless($id !== null, 500, "Estado de trámite '{$estado->value}' no configurado. Ejecute el seeder ParamTramiteSeeder.");
 
-                return (int) $id;
-            },
-        );
+        return $id;
+    }
+
+    /**
+     * Resuelve (con caché) el id del estado de trámite por su código.
+     * Retorna null si no existe — seguro para operaciones de lectura.
+     */
+    private function estadoIdOrNull(EstadoTramite $estado): ?int
+    {
+        $key = "param.estados-tramite.{$estado->value}";
+
+        $cached = Cache::get($key);
+
+        if ($cached !== null) {
+            return (int) $cached;
+        }
+
+        $id = ParamEstadosTram::query()->where('codigo', $estado->value)->value('id');
+
+        if ($id !== null) {
+            Cache::forever($key, (int) $id);
+
+            return (int) $id;
+        }
+
+        return null;
     }
 }

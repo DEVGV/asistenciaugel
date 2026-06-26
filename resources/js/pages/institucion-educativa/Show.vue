@@ -23,6 +23,7 @@ import {
     ClipboardCheck,
     Sparkles,
     Loader2,
+    FileSpreadsheet,
 } from 'lucide-vue-next';
 import { ref, watch, computed } from 'vue';
 import HorarioTrabajadorController from '@/actions/App/Http/Controllers/Horario/HorarioTrabajadorController';
@@ -36,6 +37,7 @@ import GradoIEController from '@/actions/App/Http/Controllers/InstitucionEducati
 import InstitucionEducativaController from '@/actions/App/Http/Controllers/InstitucionEducativa/InstitucionEducativaController';
 import SeccionIEController from '@/actions/App/Http/Controllers/InstitucionEducativa/SeccionIEController';
 import AltaMasivaGrid from '@/components/institucion-educativa/AltaMasivaGrid.vue';
+import CargarAsistenciaModal from '@/components/institucion-educativa/CargarAsistenciaModal.vue';
 import CursosMasivaGrid from '@/components/institucion-educativa/CursosMasivaGrid.vue';
 import GradosMasivaGrid from '@/components/institucion-educativa/GradosMasivaGrid.vue';
 import PermisosIETab from '@/components/institucion-educativa/PermisosIETab.vue';
@@ -100,7 +102,14 @@ const props = defineProps<{
 }>();
 
 const activeTab = ref<
-    'datos' | 'cursos' | 'grados' | 'locales' | 'relojes' | 'docentes' | 'diasNoLaborables' | 'permisos'
+    | 'datos'
+    | 'cursos'
+    | 'grados'
+    | 'locales'
+    | 'relojes'
+    | 'docentes'
+    | 'diasNoLaborables'
+    | 'permisos'
 >((props.activeTab as any) ?? 'datos');
 
 // ─── Sub-recurso Modal (compartido para cursos, grados, secciones) ───
@@ -583,6 +592,23 @@ function onRelojesMasivaSuccess(_count: number) {
     router.reload({ only: ['institucion'] });
 }
 
+// ─── Cargar Asistencia (Excel) ───────────────────────────────────────────────
+const showCargarAsistenciaModal = ref(false);
+const asistenciaRelojId = ref<number | null>(null);
+const asistenciaRelojNombre = ref<string>('');
+const asistenciaLocalNombre = ref<string>('');
+
+function openCargarAsistencia(
+    relojId: number,
+    relojNombre: string,
+    localNombre: string,
+) {
+    asistenciaRelojId.value = relojId;
+    asistenciaRelojNombre.value = relojNombre;
+    asistenciaLocalNombre.value = localNombre;
+    showCargarAsistenciaModal.value = true;
+}
+
 const tabs = [
     { key: 'datos', label: 'Datos Generales', icon: School },
     { key: 'cursos', label: 'Cursos', icon: BookOpen },
@@ -648,17 +674,25 @@ function openDiasEdit(dia: DiasNoLaborable) {
 function submitDias() {
     if (diasIsEditing.value && diasEditingId.value) {
         diasForm.put(
-            DiasNoLaborablesController.update({ diasNoLaborable: diasEditingId.value }).url,
-            { onSuccess: () => {
- showDiasModal.value = false; 
-} },
+            DiasNoLaborablesController.update({
+                diasNoLaborable: diasEditingId.value,
+            }).url,
+            {
+                onSuccess: () => {
+                    showDiasModal.value = false;
+                },
+            },
         );
     } else {
         diasForm.post(
-            DiasNoLaborablesController.store({ institucione: props.institucion.id }).url,
-            { onSuccess: () => {
- showDiasModal.value = false; 
-} },
+            DiasNoLaborablesController.store({
+                institucione: props.institucion.id,
+            }).url,
+            {
+                onSuccess: () => {
+                    showDiasModal.value = false;
+                },
+            },
         );
     }
 }
@@ -676,19 +710,22 @@ function confirmDeleteDias(dia: DiasNoLaborable) {
 
 function executeDeleteDias() {
     if (!deleteDiasId.value) {
-return;
-}
+        return;
+    }
 
     isDeletingDias.value = true;
     router.delete(
-        DiasNoLaborablesController.destroy({ diasNoLaborable: deleteDiasId.value }).url,
+        DiasNoLaborablesController.destroy({
+            diasNoLaborable: deleteDiasId.value,
+        }).url,
         {
             onSuccess: () => {
- showDeleteDias.value = false; deleteDiasId.value = null; 
-},
+                showDeleteDias.value = false;
+                deleteDiasId.value = null;
+            },
             onFinish: () => {
- isDeletingDias.value = false; 
-},
+                isDeletingDias.value = false;
+            },
         },
     );
 }
@@ -703,7 +740,10 @@ async function generarFeriados() {
             { query: { anio: diasGenerarAnio.value } },
         ).url;
         const res = await fetch(url, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                Accept: 'application/json',
+            },
         });
         const data = await res.json();
         diasGenerarMsg.value = data.message ?? '';
@@ -752,7 +792,7 @@ async function generarFeriados() {
                 @click="
                     tab.key === 'docentes'
                         ? switchToDocentes()
-                        : (activeTab = (tab.key as typeof activeTab.value))
+                        : (activeTab = tab.key as typeof activeTab.value)
                 "
                 :class="[
                     '-mb-px flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
@@ -1266,6 +1306,7 @@ async function generarFeriados() {
                             <Upload class="h-4 w-4" />
                             Carga Masiva
                         </Button>
+
                         <Button
                             size="sm"
                             variant="outline"
@@ -1326,6 +1367,22 @@ async function generarFeriados() {
                                                     class="h-4 w-4" /></Button
                                         ></DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
+                                            <DropdownMenuItem
+                                                @click="
+                                                    openCargarAsistencia(
+                                                        reloj.id,
+                                                        reloj.nombre ||
+                                                            'Sin nombre',
+                                                        lie.local?.nombre ||
+                                                            'Sin nombre',
+                                                    )
+                                                "
+                                            >
+                                                <FileSpreadsheet
+                                                    class="mr-2 h-4 w-4 text-emerald-600"
+                                                />
+                                                Cargar Asistencia
+                                            </DropdownMenuItem>
                                             <DropdownMenuItem
                                                 @click="openRelojEdit(reloj)"
                                                 ><Pencil class="mr-2 h-4 w-4" />
@@ -1638,8 +1695,12 @@ async function generarFeriados() {
                 <h2 class="text-lg font-semibold">Días No Laborables</h2>
                 <div class="flex items-center gap-2">
                     <!-- Generar feriados por defecto -->
-                    <div class="flex items-center gap-1.5 rounded-md border px-2 py-1">
-                        <label class="text-xs text-muted-foreground">Año:</label>
+                    <div
+                        class="flex items-center gap-1.5 rounded-md border px-2 py-1"
+                    >
+                        <label class="text-xs text-muted-foreground"
+                            >Año:</label
+                        >
                         <Input
                             v-model.number="diasGenerarAnio"
                             type="number"
@@ -1654,7 +1715,10 @@ async function generarFeriados() {
                             :disabled="diasIsGenerating"
                             @click="generarFeriados"
                         >
-                            <Loader2 v-if="diasIsGenerating" class="h-3.5 w-3.5 animate-spin" />
+                            <Loader2
+                                v-if="diasIsGenerating"
+                                class="h-3.5 w-3.5 animate-spin"
+                            />
                             <Sparkles v-else class="h-3.5 w-3.5" />
                             Generar Feriados
                         </Button>
@@ -1666,7 +1730,10 @@ async function generarFeriados() {
             </div>
 
             <!-- Mensaje de generación -->
-            <p v-if="diasGenerarMsg" class="text-sm text-muted-foreground italic">
+            <p
+                v-if="diasGenerarMsg"
+                class="text-sm text-muted-foreground italic"
+            >
                 {{ diasGenerarMsg }}
             </p>
 
@@ -1679,12 +1746,15 @@ async function generarFeriados() {
                             <TableHead>Descripción / Feriado</TableHead>
                             <TableHead class="w-[100px]">Ámbito</TableHead>
                             <TableHead class="w-[100px]">Recuperable</TableHead>
-                            <TableHead class="w-[100px] text-right">Acciones</TableHead>
+                            <TableHead class="w-[100px] text-right"
+                                >Acciones</TableHead
+                            >
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         <TableRow
-                            v-for="dia in props.institucion.dias_no_laborables || []"
+                            v-for="dia in props.institucion
+                                .dias_no_laborables || []"
                             :key="dia.id"
                         >
                             <TableCell class="font-mono text-sm font-medium">
@@ -1692,27 +1762,44 @@ async function generarFeriados() {
                             </TableCell>
                             <TableCell class="text-sm">
                                 <span v-if="dia.feriado">
-                                    <span class="font-medium">{{ dia.feriado.descripcion }}</span>
+                                    <span class="font-medium">{{
+                                        dia.feriado.descripcion
+                                    }}</span>
                                 </span>
-                                <span v-if="dia.observacion" class="block text-xs text-muted-foreground">
+                                <span
+                                    v-if="dia.observacion"
+                                    class="block text-xs text-muted-foreground"
+                                >
                                     {{ dia.observacion }}
                                 </span>
-                                <span v-if="!dia.feriado && !dia.observacion" class="text-muted-foreground">—</span>
+                                <span
+                                    v-if="!dia.feriado && !dia.observacion"
+                                    class="text-muted-foreground"
+                                    >—</span
+                                >
                             </TableCell>
                             <TableCell class="text-xs">
                                 <span
-                                    :class="dia.nacionalLocal === 'N'
-                                        ? 'inline-flex rounded bg-blue-50 px-1.5 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-700/10 dark:bg-blue-950/30 dark:text-blue-400 dark:ring-blue-400/20'
-                                        : 'inline-flex rounded bg-purple-50 px-1.5 py-0.5 text-xs font-semibold text-purple-700 ring-1 ring-purple-700/10 dark:bg-purple-950/30 dark:text-purple-400 dark:ring-purple-400/20'"
+                                    :class="
+                                        dia.nacionalLocal === 'N'
+                                            ? 'inline-flex rounded bg-blue-50 px-1.5 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-700/10 dark:bg-blue-950/30 dark:text-blue-400 dark:ring-blue-400/20'
+                                            : 'inline-flex rounded bg-purple-50 px-1.5 py-0.5 text-xs font-semibold text-purple-700 ring-1 ring-purple-700/10 dark:bg-purple-950/30 dark:text-purple-400 dark:ring-purple-400/20'
+                                    "
                                 >
-                                    {{ dia.nacionalLocal === 'N' ? 'Nacional' : 'Local' }}
+                                    {{
+                                        dia.nacionalLocal === 'N'
+                                            ? 'Nacional'
+                                            : 'Local'
+                                    }}
                                 </span>
                             </TableCell>
                             <TableCell class="text-xs">
                                 <span
-                                    :class="dia.recuperable === 'S'
-                                        ? 'inline-flex rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-700/10 dark:bg-emerald-950/30 dark:text-emerald-400 dark:ring-emerald-400/20'
-                                        : 'inline-flex rounded bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground ring-1 ring-muted-foreground/20'"
+                                    :class="
+                                        dia.recuperable === 'S'
+                                            ? 'inline-flex rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-700/10 dark:bg-emerald-950/30 dark:text-emerald-400 dark:ring-emerald-400/20'
+                                            : 'inline-flex rounded bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground ring-1 ring-muted-foreground/20'
+                                    "
                                 >
                                     {{ dia.recuperable === 'S' ? 'Sí' : 'No' }}
                                 </span>
@@ -1720,27 +1807,41 @@ async function generarFeriados() {
                             <TableCell class="text-right">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger as-child>
-                                        <Button variant="ghost" size="sm" class="h-7">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            class="h-7"
+                                        >
                                             <ChevronDown class="h-4 w-4" />
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        <DropdownMenuItem @click="openDiasEdit(dia)">
-                                            <Pencil class="mr-2 h-4 w-4" /> Editar
+                                        <DropdownMenuItem
+                                            @click="openDiasEdit(dia)"
+                                        >
+                                            <Pencil class="mr-2 h-4 w-4" />
+                                            Editar
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
                                             @click="confirmDeleteDias(dia)"
                                             class="text-destructive"
                                         >
-                                            <Trash2 class="mr-2 h-4 w-4" /> Eliminar
+                                            <Trash2 class="mr-2 h-4 w-4" />
+                                            Eliminar
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </TableCell>
                         </TableRow>
-                        <TableRow v-if="!props.institucion.dias_no_laborables?.length">
-                            <TableCell colspan="5" class="h-20 text-center text-muted-foreground">
-                                No hay días no laborables registrados para esta IE.
+                        <TableRow
+                            v-if="!props.institucion.dias_no_laborables?.length"
+                        >
+                            <TableCell
+                                colspan="5"
+                                class="h-20 text-center text-muted-foreground"
+                            >
+                                No hay días no laborables registrados para esta
+                                IE.
                             </TableCell>
                         </TableRow>
                     </TableBody>
@@ -1784,6 +1885,15 @@ async function generarFeriados() {
             :local-nombre="relojesMasivaLocalNombre"
             @close="relojesMasivaLocalId = null"
             @success="onRelojesMasivaSuccess"
+        />
+
+        <!-- Modal Cargar Asistencia (Excel) -->
+        <CargarAsistenciaModal
+            v-model:show="showCargarAsistenciaModal"
+            :local-nombre="asistenciaLocalNombre"
+            :reloj-nombre="asistenciaRelojNombre"
+            :reloj-id="asistenciaRelojId"
+            @close="showCargarAsistenciaModal = false"
         />
 
         <!-- Modal Sub-recurso (Curso/Grado/Sección) -->
@@ -2116,7 +2226,11 @@ async function generarFeriados() {
         <!-- Modal Crear / Editar Día No Laborable -->
         <FormModal
             v-model:show="showDiasModal"
-            :title="diasIsEditing ? 'Editar Día No Laborable' : 'Nuevo Día No Laborable'"
+            :title="
+                diasIsEditing
+                    ? 'Editar Día No Laborable'
+                    : 'Nuevo Día No Laborable'
+            "
             :processing="diasForm.processing"
             @submit="submitDias"
         >
@@ -2128,7 +2242,10 @@ async function generarFeriados() {
                         type="date"
                         :class="{ 'border-destructive': diasForm.errors.fecha }"
                     />
-                    <p v-if="diasForm.errors.fecha" class="text-sm text-destructive">
+                    <p
+                        v-if="diasForm.errors.fecha"
+                        class="text-sm text-destructive"
+                    >
                         {{ diasForm.errors.fecha }}
                     </p>
                 </div>
@@ -2137,9 +2254,14 @@ async function generarFeriados() {
                     <Input
                         v-model="diasForm.observacion"
                         placeholder="Ej: Aniversario de la IE, día cívico..."
-                        :class="{ 'border-destructive': diasForm.errors.observacion }"
+                        :class="{
+                            'border-destructive': diasForm.errors.observacion,
+                        }"
                     />
-                    <p v-if="diasForm.errors.observacion" class="text-sm text-destructive">
+                    <p
+                        v-if="diasForm.errors.observacion"
+                        class="text-sm text-destructive"
+                    >
                         {{ diasForm.errors.observacion }}
                     </p>
                 </div>
@@ -2148,7 +2270,7 @@ async function generarFeriados() {
                         <Label>Ámbito</Label>
                         <select
                             v-model="diasForm.nacionalLocal"
-                            class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
                         >
                             <option value="N">Nacional</option>
                             <option value="L">Local</option>
@@ -2158,7 +2280,7 @@ async function generarFeriados() {
                         <Label>Recuperable</Label>
                         <select
                             v-model="diasForm.recuperable"
-                            class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
                         >
                             <option value="N">No</option>
                             <option value="S">Sí</option>

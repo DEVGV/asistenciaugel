@@ -29,9 +29,9 @@ const props = defineProps<{
 
 const ESTADO_FILTROS = [
     { value: '', label: 'Todos' },
-    { value: 'PEN', label: 'Pendientes' },
-    { value: 'VAL', label: 'Validados' },
-    { value: 'REC', label: 'Rechazados' },
+    { value: '1', label: 'Registrados' },
+    { value: '2', label: 'Aprobados' },
+    { value: '3', label: 'Rechazados' },
 ] as const;
 
 const permisos = ref<ExpedientePermiso[]>([]);
@@ -132,7 +132,7 @@ function confirmarValidar() {
 
     router.post(
         `/permisos/${validarPermiso.value.id}/validar`,
-        { estado: 'VAL' },
+        { estado: '2' },
         {
             preserveScroll: true,
             preserveState: true,
@@ -152,7 +152,7 @@ const showRechazoModal = ref(false);
 const rechazoPermiso = ref<ExpedientePermiso | null>(null);
 
 const rechazoForm = useForm({
-    estado: 'REC',
+    estado: '3',
     observacion: '',
 });
 
