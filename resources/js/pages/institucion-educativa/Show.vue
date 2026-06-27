@@ -36,6 +36,7 @@ import DiasNoLaborablesController from '@/actions/App/Http/Controllers/Instituci
 import GradoIEController from '@/actions/App/Http/Controllers/InstitucionEducativa/GradoIEController';
 import InstitucionEducativaController from '@/actions/App/Http/Controllers/InstitucionEducativa/InstitucionEducativaController';
 import SeccionIEController from '@/actions/App/Http/Controllers/InstitucionEducativa/SeccionIEController';
+import AltaIEForm from '@/components/institucion-educativa/AltaIEForm.vue';
 import AltaMasivaGrid from '@/components/institucion-educativa/AltaMasivaGrid.vue';
 import DomiciliosIEList from '@/components/institucion-educativa/DomiciliosIEList.vue';
 import EmailsIEList from '@/components/institucion-educativa/EmailsIEList.vue';
@@ -568,6 +569,13 @@ function switchToDocentes() {
     if (!props.docentes) {
         cargarDocentes();
     }
+}
+
+// ─── Alta Individual (Docentes) ───────────────────────────────────────────────
+const showAltaIEModal = ref(false);
+
+function onAltaIESuccess() {
+    setTimeout(() => cargarDocentes(), 400);
 }
 
 // ─── Carga Masiva Grid (Altas) ────────────────────────────────────────────────
@@ -1359,6 +1367,9 @@ async function generarFeriados() {
                     >
                         <Upload class="mr-2 h-4 w-4" /> Carga Masiva
                     </Button>
+                    <Button size="sm" @click="showAltaIEModal = true">
+                        <Plus class="mr-2 h-4 w-4" /> Nueva Alta
+                    </Button>
                 </div>
             </div>
 
@@ -1779,6 +1790,13 @@ async function generarFeriados() {
         <div v-if="activeTab === 'permisos'">
             <PermisosIETab :institucion-id="props.institucion.id" />
         </div>
+
+        <!-- Modal Alta Individual (Docente / Personal) -->
+        <AltaIEForm
+            v-model:show="showAltaIEModal"
+            :institucion-id="props.institucion.id"
+            @success="onAltaIESuccess"
+        />
 
         <!-- Modal Carga Masiva Grid (Altas) -->
         <AltaMasivaGrid
