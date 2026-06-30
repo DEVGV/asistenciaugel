@@ -14,6 +14,7 @@ const props = defineProps<{
     placeholder?: string;
     error?: string;
     disabled?: boolean;
+    defaultCodigo?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -85,6 +86,15 @@ async function fetchData() {
             if (initialItem) {
                 emit('update:item', initialItem);
             }
+        } else if (props.defaultCodigo) {
+            const defaultItem = data.value.find(
+                (i) => i.codigo === props.defaultCodigo,
+            );
+
+            if (defaultItem) {
+                emit('update:modelValue', defaultItem.id);
+                emit('update:item', defaultItem);
+            }
         }
     } catch (e: any) {
         if (e?.name !== 'AbortError') {
@@ -112,6 +122,18 @@ watch(
     () => props.modelValue,
     (newVal) => {
         if (!newVal) {
+            if (props.defaultCodigo && data.value.length > 0) {
+                const defaultItem = data.value.find(
+                    (i) => i.codigo === props.defaultCodigo,
+                );
+
+                if (defaultItem) {
+                    emit('update:modelValue', defaultItem.id);
+                    emit('update:item', defaultItem);
+                    return;
+                }
+            }
+
             emit('update:item', null);
         } else if (data.value.length > 0) {
             const item = data.value.find(

@@ -88,7 +88,12 @@ class InstitucionEducativaService
 
     public function actualizar(InstitucionesEduc $ie, UpdateInstEducDTO $dto): bool
     {
-        return $ie->update($dto->toArray());
+        $data = $dto->toArray();
+
+        // Las fechas nunca se modifican desde el formulario de edición
+        unset($data['fechaInicio'], $data['fechaFin']);
+
+        return $ie->update($data);
     }
 
     public function eliminar(InstitucionesEduc $ie): bool

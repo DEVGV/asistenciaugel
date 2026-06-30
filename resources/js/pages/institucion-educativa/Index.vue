@@ -93,8 +93,6 @@ const form = useForm({
     tipoInstEduc_id: null as number | null,
     modalidadFormativa_id: null as number | null,
     nivelCiclo_id: null as number | null,
-    fechaInicio: '',
-    fechaFin: '',
 });
 
 watch(showModal, (val) => {
@@ -125,8 +123,6 @@ function openEditModal(ie: InstitucionEducativa) {
     form.tipoInstEduc_id = ie.tipoInstEduc_id;
     form.modalidadFormativa_id = ie.modalidadFormativa_id;
     form.nivelCiclo_id = ie.nivelCiclo_id;
-    form.fechaInicio = ie.fechaInicio || '';
-    form.fechaFin = ie.fechaFin || '';
     showModal.value = true;
 }
 
@@ -454,7 +450,7 @@ function onMasivoSuccess() {
                     :error="form.errors.entidadUgel_id"
                 />
                 <EntidadSelect
-                    tipoEntidadCodigo="IE"
+                    :tipo-entidad-codigos="['UGEL', 'IE']"
                     v-model="form.entidadAdmin_id"
                     label="Entidad Admin"
                     placeholder="Seleccionar Entidad Administradora..."
@@ -488,20 +484,6 @@ function onMasivoSuccess() {
                     placeholder="Seleccionar nivel..."
                     :error="form.errors.nivelCiclo_id"
                 />
-                <div class="grid gap-2">
-                    <Label>Fecha Inicio</Label>
-                    <Input v-model="form.fechaInicio" type="date" />
-                </div>
-                <div class="grid gap-2">
-                    <Label>Fecha Fin</Label>
-                    <Input v-model="form.fechaFin" type="date" />
-                    <p
-                        v-if="form.errors.fechaFin"
-                        class="text-sm text-destructive"
-                    >
-                        {{ form.errors.fechaFin }}
-                    </p>
-                </div>
             </div>
         </FormModal>
 

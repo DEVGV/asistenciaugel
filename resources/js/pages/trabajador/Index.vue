@@ -495,6 +495,7 @@ function onMasivoSuccess(count: number) {
                                     type="tipos-doc-identidad"
                                     label="Tipo Doc. *"
                                     :error="form.errors.tipoDocIdentidad_id"
+                                    default-codigo="01"
                                     @update:item="onDocTypeChange"
                                 />
                                 <div class="grid gap-2">
@@ -613,6 +614,7 @@ function onMasivoSuccess(count: number) {
                                     type="paises"
                                     label="País *"
                                     :error="form.errors.pais_id"
+                                    default-codigo="9589"
                                 />
                             </div>
 

@@ -14,6 +14,7 @@ interface EntidadSimple {
 const props = defineProps<{
     tipoEntidadId?: number;
     tipoEntidadCodigo?: string;
+    tipoEntidadCodigos?: string[];
     modelValue?: number | string | null;
     label?: string;
     placeholder?: string;
@@ -50,6 +51,10 @@ async function fetchData(query = '') {
                 'tipo_entidad_id',
                 String(props.tipoEntidadId),
             );
+        } else if (props.tipoEntidadCodigos && props.tipoEntidadCodigos.length > 0) {
+            props.tipoEntidadCodigos.forEach((codigo) => {
+                url.searchParams.append('tipo_entidad_codigos[]', codigo);
+            });
         } else if (props.tipoEntidadCodigo) {
             url.searchParams.append(
                 'tipo_entidad_codigo',
