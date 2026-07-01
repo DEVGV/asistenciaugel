@@ -14,6 +14,7 @@ import {
     Pencil,
 } from 'lucide-vue-next';
 import { ref, computed, watch } from 'vue';
+import { usePermisos } from '@/composables/usePermisos';
 import TrabajadorController from '@/actions/App/Http/Controllers/Trabajador/TrabajadorController';
 import DomiciliosList from '@/components/persona/DomiciliosList.vue';
 import EmailsList from '@/components/persona/EmailsList.vue';
@@ -42,6 +43,8 @@ defineOptions({
         ],
     },
 });
+
+const { can } = usePermisos();
 
 type TabKey = 'datos' | 'laboral' | 'horarios' | 'asistencia' | 'permisos';
 
@@ -166,6 +169,7 @@ function submitEditPersona() {
             </div>
             <div class="flex items-center gap-2">
                 <Button
+                    v-if="can('usuarios.gestionar')"
                     variant="outline"
                     size="sm"
                     @click="showUsuarioModal = true"
@@ -209,7 +213,7 @@ function submitEditPersona() {
                         <h2 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                             Datos Personales
                         </h2>
-                        <Button variant="outline" size="sm" @click="showEditPersonaModal = true">
+                        <Button v-if="can('trabajadores.editar')" variant="outline" size="sm" @click="showEditPersonaModal = true">
                             <Pencil class="mr-2 h-3.5 w-3.5" />
                             Editar
                         </Button>

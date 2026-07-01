@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import {
     LayoutGrid,
     UserCheck,
+    User,
     School,
     Building2,
     Settings,
@@ -36,7 +37,9 @@ import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import { computed } from 'vue';
 
-const { canAny } = usePermisos();
+const { canAny, esDocente } = usePermisos();
+const page = usePage();
+const authUser = computed(() => page.props.auth?.user);
 
 /**
  * Todos los items del sidebar con sus permisos requeridos.
@@ -114,8 +117,28 @@ const allNavItems: NavItem[] = [
  * Filtra items y sub-items según los permisos del usuario.
  * - Si un item no tiene `requiere`, siempre se muestra.
  * - Para items con sub-items, se filtran los hijos y si no queda ninguno, se oculta el padre.
+ *
+ * Para Docentes: el sidebar solo muestra un enlace con su nombre
+ * que lleva a su propia ficha de trabajador.
  */
 const mainNavItems = computed<NavItem[]>(() => {
+    // ── Docente: solo su nombre → su ficha ──
+    if (esDocente.value) {
+        const trabajador = authUser.value?.trabajador;
+        const persona = trabajador?.persona;
+        if (trabajador && persona) {
+            const primerNombre = (persona.nombre ?? '').split(' ')[0] || 'Mi Perfil';
+            const doc = persona.docIdentidad ? ` - ${persona.docIdentidad}` : '';
+            return [{
+                title: `${primerNombre}${doc}`,
+                href: TrabajadorController.show({ trabajador: trabajador.id }).url,
+                icon: User,
+            }];
+        }
+        return [];
+    }
+
+    // ── Otros perfiles: filtrado estándar ──
     return allNavItems.reduce<NavItem[]>((acc, item) => {
         // Verificar permiso del item padre
         if (item.requiere && item.requiere.length > 0 && !canAny(item.requiere)) {

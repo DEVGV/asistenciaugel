@@ -141,6 +141,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Verifica si el perfil activo del usuario para la IE dada es "Docente".
+     */
+    public function esDocente(?int $ieId): bool
+    {
+        return $this->perfilActivoParaIe($ieId) === 'Docente';
+    }
+
+    /**
      * Obtiene el email del usuario a través de su trabajador → persona → emails.
      */
     public function getEmailAttribute(): ?string

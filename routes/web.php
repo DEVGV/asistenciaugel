@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\ContextoController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Configuracion\AreaController;
 use App\Http\Controllers\Configuracion\CargoController;
 use App\Http\Controllers\Configuracion\CondicionLaboralController;
@@ -53,8 +54,9 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified', 'contexto'])->group(function () {
-    // ── Dashboard (acceso para todos los que tienen sesión) ───────────────────
-    Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+    // ── Dashboard ─────────────────────────────────────────────────────────────
+    // Docentes son redirigidos a su propia ficha de trabajador.
+    Route::get('dashboard', DashboardController::class)->name('dashboard');
 
     // ── Entidades ────────────────────────────────────────────────────────────
     Route::middleware('permiso:entidades.ver')->group(function () {

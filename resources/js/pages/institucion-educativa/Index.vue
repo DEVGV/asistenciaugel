@@ -11,6 +11,7 @@ import {
     Upload,
 } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
+import { usePermisos } from '@/composables/usePermisos';
 import InstitucionEducativaController from '@/actions/App/Http/Controllers/InstitucionEducativa/InstitucionEducativaController';
 import InstitucionMasivaGrid from '@/components/institucion-educativa/InstitucionMasivaGrid.vue';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
@@ -56,6 +57,8 @@ const props = defineProps<{
     instituciones: PaginatedResponse<InstitucionEducativa>;
     filters: { search?: string };
 }>();
+
+const { can } = usePermisos();
 
 // ─── Búsqueda en Vivo ───
 const search = ref(props.filters.search || '');
@@ -203,7 +206,7 @@ function onMasivoSuccess() {
                     secciones.
                 </p>
             </div>
-            <div class="flex items-center gap-2">
+            <div v-if="can('instituciones.crear')" class="flex items-center gap-2">
                 <Button variant="outline" @click="showMasivoModal = true">
                     <Upload class="mr-2 h-4 w-4" />
                     Carga Masiva
@@ -310,19 +313,22 @@ function onMasivoSuccess() {
                                         </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
+                                        v-if="can('instituciones.editar')"
                                         @click="openEditModal(ie)"
                                     >
                                         <Pencil class="mr-2 h-4 w-4" />
                                         <span>Editar</span>
                                     </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                        @click="confirmDelete(ie)"
-                                        class="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
-                                    >
-                                        <Trash2 class="mr-2 h-4 w-4" />
-                                        <span>Eliminar</span>
-                                    </DropdownMenuItem>
+                                    <template v-if="can('instituciones.eliminar')">
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            @click="confirmDelete(ie)"
+                                            class="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive"
+                                        >
+                                            <Trash2 class="mr-2 h-4 w-4" />
+                                            <span>Eliminar</span>
+                                        </DropdownMenuItem>
+                                    </template>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </TableCell>

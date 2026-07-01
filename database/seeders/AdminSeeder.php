@@ -171,9 +171,11 @@ class AdminSeeder extends Seeder
         }
 
         // Asignar permisos específicos a "Director IE"
+        // Un Director solo administra su IE: ver/editar trabajadores y su IE,
+        // NO puede crear trabajadores, IEs, ni entidades.
         $directorPermisos = [
-            'personas.ver', 'personas.crear', 'personas.editar',
-            'trabajadores.ver', 'trabajadores.crear', 'trabajadores.editar',
+            'personas.ver', 'personas.editar',
+            'trabajadores.ver', 'trabajadores.editar',
             'instituciones.ver', 'instituciones.editar',
             'horarios.ver', 'horarios.crear', 'horarios.editar',
             'infraestructura.ver',
@@ -190,11 +192,14 @@ class AdminSeeder extends Seeder
         }
 
         // Asignar permisos específicos a "Docente"
+        // Un Docente puede ver su ficha de trabajador (datos, horarios, asistencia, expedientes)
+        // y crear expedientes, pero NO puede crear altas ni editar datos.
         $docentePermisos = [
+            'personas.ver',
+            'trabajadores.ver',
             'asistencia.ver',
             'horarios.ver',
-            'tramites.ver',
-            'dashboard.ver',
+            'tramites.ver', 'tramites.crear',
         ];
         $docentePermisoIds = DB::table('auth.permisos')->whereIn('codigo', $docentePermisos)->pluck('id')->toArray();
         foreach ($docentePermisoIds as $pid) {

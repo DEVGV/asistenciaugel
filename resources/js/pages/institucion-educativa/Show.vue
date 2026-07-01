@@ -26,6 +26,7 @@ import {
     FileSpreadsheet,
 } from 'lucide-vue-next';
 import { ref, watch, computed } from 'vue';
+import { usePermisos } from '@/composables/usePermisos';
 import HorarioTrabajadorController from '@/actions/App/Http/Controllers/Horario/HorarioTrabajadorController';
 import LocalController from '@/actions/App/Http/Controllers/Infraestructura/LocalController';
 import LocalInstEducController from '@/actions/App/Http/Controllers/Infraestructura/LocalInstEducController';
@@ -104,6 +105,8 @@ const props = defineProps<{
     };
     activeTab?: string;
 }>();
+
+const { can } = usePermisos();
 
 type TabKey = 'datos' | 'cursos' | 'grados' | 'locales' | 'docentes' | 'diasNoLaborables' | 'permisos';
 
@@ -931,7 +934,7 @@ async function generarFeriados() {
         <div v-if="activeTab === 'cursos'" class="space-y-3">
             <div class="flex items-center justify-between">
                 <h2 class="text-lg font-semibold">Cursos</h2>
-                <div class="flex items-center gap-2">
+                <div v-if="can('instituciones.editar')" class="flex items-center gap-2">
                     <Button
                         variant="outline"
                         size="sm"
@@ -976,7 +979,7 @@ async function generarFeriados() {
                             <TableCell
                                 ><StatusBadge :active="curso.activo"
                             /></TableCell>
-                            <TableCell class="text-right">
+                            <TableCell v-if="can('instituciones.editar')" class="text-right">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger as-child
                                         ><Button
@@ -1024,7 +1027,7 @@ async function generarFeriados() {
         <div v-if="activeTab === 'grados'" class="space-y-4">
             <div class="flex items-center justify-between">
                 <h2 class="text-lg font-semibold">Grados y Secciones</h2>
-                <div class="flex items-center gap-2">
+                <div v-if="can('instituciones.editar')" class="flex items-center gap-2">
                     <Button
                         variant="outline"
                         size="sm"
@@ -1059,7 +1062,7 @@ async function generarFeriados() {
                         >
                         <StatusBadge :active="grado.activo" />
                     </div>
-                    <div class="flex items-center gap-1.5">
+                    <div v-if="can('instituciones.editar')" class="flex items-center gap-1.5">
                         <Button
                             variant="outline"
                             size="sm"
@@ -1154,6 +1157,7 @@ async function generarFeriados() {
                                 </Button>
 
                                 <Button
+                                    v-if="can('instituciones.editar')"
                                     variant="ghost"
                                     size="icon"
                                     class="h-8 w-8 text-amber-500 hover:bg-amber-50 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-950/20"
@@ -1164,6 +1168,7 @@ async function generarFeriados() {
                                 </Button>
 
                                 <Button
+                                    v-if="can('instituciones.editar')"
                                     variant="ghost"
                                     size="icon"
                                     class="h-8 w-8 text-rose-500 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400 dark:hover:bg-rose-950/20"
@@ -1201,7 +1206,7 @@ async function generarFeriados() {
         <div v-if="activeTab === 'locales'" class="space-y-4">
             <div class="flex items-center justify-between">
                 <h2 class="text-lg font-semibold">Locales y Relojes</h2>
-                <Button size="sm" @click="openLocalCreate()">
+                <Button v-if="can('infraestructura.crear')" size="sm" @click="openLocalCreate()">
                     <Plus class="mr-2 h-4 w-4" /> Asignar Local
                 </Button>
             </div>
@@ -1225,7 +1230,7 @@ async function generarFeriados() {
                             · Desde: {{ lie.fechaInicio }}
                         </span>
                     </div>
-                    <div class="flex gap-1">
+                    <div v-if="can('infraestructura.editar')" class="flex gap-1">
                         <Button variant="ghost" size="sm" class="h-7" @click="openLocalEdit(lie)">
                             <Pencil class="h-3.5 w-3.5" />
                         </Button>
@@ -1272,7 +1277,7 @@ async function generarFeriados() {
                             <p class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                                 Relojes Biométricos
                             </p>
-                            <div class="flex items-center gap-2">
+                            <div v-if="can('infraestructura.crear')" class="flex items-center gap-2">
                                 <Button
                                     size="sm"
                                     variant="outline"
@@ -1323,11 +1328,11 @@ async function generarFeriados() {
                                                         <FileSpreadsheet class="mr-2 h-4 w-4 text-emerald-600" />
                                                         Cargar Asistencia
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem @click="openRelojEdit(reloj)">
+                                                    <DropdownMenuItem v-if="can('infraestructura.editar')" @click="openRelojEdit(reloj)">
                                                         <Pencil class="mr-2 h-4 w-4" />
                                                         Editar
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem @click="confirmDeleteReloj(reloj)" class="text-destructive">
+                                                    <DropdownMenuItem v-if="can('infraestructura.editar')" @click="confirmDeleteReloj(reloj)" class="text-destructive">
                                                         <Trash2 class="mr-2 h-4 w-4" />
                                                         Desactivar
                                                     </DropdownMenuItem>
@@ -1359,7 +1364,7 @@ async function generarFeriados() {
         <div v-if="activeTab === 'docentes'" class="space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <h2 class="text-lg font-semibold">Docentes / Personal</h2>
-                <div class="flex items-center gap-2">
+                <div v-if="can('trabajadores.crear')" class="flex items-center gap-2">
                     <Button
                         size="sm"
                         variant="outline"
@@ -1529,7 +1534,7 @@ async function generarFeriados() {
                                         label-inactive="Baja"
                                     />
                                 </TableCell>
-                                <TableCell>
+                                <TableCell v-if="can('usuarios.gestionar')">
                                     <Button
                                         variant="ghost"
                                         size="sm"
@@ -1630,7 +1635,7 @@ async function generarFeriados() {
             <!-- Encabezado -->
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <h2 class="text-lg font-semibold">Días No Laborables</h2>
-                <div class="flex items-center gap-2">
+                <div v-if="can('instituciones.editar')" class="flex items-center gap-2">
                     <!-- Generar feriados por defecto -->
                     <div
                         class="flex items-center gap-1.5 rounded-md border px-2 py-1"
@@ -1741,7 +1746,7 @@ async function generarFeriados() {
                                     {{ dia.recuperable === 'S' ? 'Sí' : 'No' }}
                                 </span>
                             </TableCell>
-                            <TableCell class="text-right">
+                            <TableCell v-if="can('instituciones.editar')" class="text-right">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger as-child>
                                         <Button

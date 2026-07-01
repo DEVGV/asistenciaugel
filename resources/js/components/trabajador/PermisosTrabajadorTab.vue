@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { AlertCircle, ClipboardCheck, Eye, Plus, RefreshCw } from 'lucide-vue-next';
 import { onMounted, ref } from 'vue';
+import { usePermisos } from '@/composables/usePermisos';
 import ExpedienteDetailModal from '@/components/tramite/ExpedienteDetailModal.vue';
 import ExpedienteFormModal from '@/components/tramite/ExpedienteFormModal.vue';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,8 @@ import type { Trabajador } from '@/types/models/trabajador';
 const props = defineProps<{
     trabajador: Trabajador;
 }>();
+
+const { can } = usePermisos();
 
 const expedientes = ref<Expediente[]>([]);
 const loading = ref(false);
@@ -83,7 +86,7 @@ onMounted(() => loadExpedientes());
                 >
                     <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
                 </Button>
-                <Button size="sm" class="h-8 text-xs" @click="showModal = true">
+                <Button v-if="can('tramites.crear')" size="sm" class="h-8 text-xs" @click="showModal = true">
                     <Plus class="mr-1 h-3.5 w-3.5" />
                     Nuevo expediente
                 </Button>
@@ -132,7 +135,7 @@ onMounted(() => loadExpedientes());
         >
             <ClipboardCheck class="mb-3 h-10 w-10 text-muted-foreground/40" />
             <p class="text-sm font-medium text-muted-foreground">Sin expedientes registrados.</p>
-            <Button size="sm" variant="outline" class="mt-4" @click="showModal = true">
+            <Button v-if="can('tramites.crear')" size="sm" variant="outline" class="mt-4" @click="showModal = true">
                 <Plus class="mr-1.5 h-3.5 w-3.5" />
                 Nuevo expediente
             </Button>
