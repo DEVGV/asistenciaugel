@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Download, ExternalLink, FileText, Loader2, X } from 'lucide-vue-next';
+import { Download, FileText, Loader2, X } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import { TIPO_EXPEDIENTE_LABELS, type Expediente } from '@/types/models/tramite';
@@ -117,18 +117,6 @@ function close() {
                                 </span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <!-- Abrir en página completa -->
-                                <Button
-                                    v-if="expediente"
-                                    as="a"
-                                    :href="`/expedientes/${expediente.id}`"
-                                    target="_blank"
-                                    variant="ghost"
-                                    size="sm"
-                                    title="Abrir en página completa"
-                                >
-                                    <ExternalLink class="h-4 w-4" />
-                                </Button>
                                 <Button variant="ghost" size="icon" class="h-8 w-8" @click="close">
                                     <X class="h-4 w-4" />
                                 </Button>

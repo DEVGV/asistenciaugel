@@ -367,7 +367,7 @@ Route::middleware(['auth', 'verified', 'contexto'])->group(function () {
     // ── Trámites: Expedientes ────────────────────────────────────────────────
     Route::middleware('permiso:tramites.ver')->group(function () {
         Route::resource('expedientes', ExpedienteController::class)
-            ->only(['index', 'show']);
+            ->only(['index']);
 
         Route::get('documentos-tram/{documentoTram}/descargar', [ExpedienteController::class, 'descargarDocumento'])
             ->name('documentos-tram.descargar');
@@ -375,10 +375,6 @@ Route::middleware(['auth', 'verified', 'contexto'])->group(function () {
     Route::middleware('permiso:tramites.crear')->group(function () {
         Route::resource('expedientes', ExpedienteController::class)
             ->only(['create', 'store']);
-    });
-    Route::middleware('permiso:tramites.editar')->group(function () {
-        Route::resource('expedientes', ExpedienteController::class)
-            ->only(['edit', 'update']);
     });
     Route::middleware('permiso:tramites.anular')->group(function () {
         Route::post('expedientes/{expediente}/anular', [ExpedienteController::class, 'anular'])

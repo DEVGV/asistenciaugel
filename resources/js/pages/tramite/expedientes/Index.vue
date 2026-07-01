@@ -2,6 +2,7 @@
 import { Head, router } from '@inertiajs/vue3';
 import { Eye, FileX, Plus, Search } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
+import ExpedienteDetailModal from '@/components/tramite/ExpedienteDetailModal.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -29,6 +30,14 @@ const props = defineProps<{
 const search = ref(props.filters.search ?? '');
 const tipo   = ref(props.filters.tipo ?? '');
 const anio   = ref(props.filters.anio ?? '');
+
+const showDetailModal = ref(false);
+const selectedExpedienteId = ref<number | null>(null);
+
+function openDetail(exp: Expediente) {
+    selectedExpedienteId.value = exp.id;
+    showDetailModal.value = true;
+}
 
 const TIPOS: { value: string; label: string }[] = [
     { value: '', label: 'Todos los tipos' },
@@ -137,7 +146,7 @@ function nombreTrabajador(exp: Expediente): string {
                             </span>
                         </TableCell>
                         <TableCell>
-                            <Button as="a" :href="`/expedientes/${exp.id}`" variant="ghost" size="sm">
+                            <Button variant="ghost" size="sm" title="Ver detalle" @click="openDetail(exp)">
                                 <Eye class="h-4 w-4" />
                             </Button>
                         </TableCell>
@@ -160,4 +169,10 @@ function nombreTrabajador(exp: Expediente): string {
             />
         </div>
     </div>
+
+    <!-- Modal detalle expediente -->
+    <ExpedienteDetailModal
+        v-model:show="showDetailModal"
+        :expediente-id="selectedExpedienteId"
+    />
 </template>
