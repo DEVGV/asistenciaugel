@@ -23,7 +23,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { TIPO_EXPEDIENTE_LABELS, type Expediente } from '@/types/models/tramite';
+import { TIPO_EXPEDIENTE_LABELS, estadoLabel, type Expediente } from '@/types/models/tramite';
 
 const props = defineProps<{
     institucionId: number;
@@ -49,7 +49,7 @@ function openDetail(exp: Expediente) {
 
 const ESTADO_CLASES: Record<string, string> = {
     '1': 'bg-amber-100 text-amber-700 ring-1 ring-amber-200',
-    '2': 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200',
+    '2': 'bg-sky-100 text-sky-700 ring-1 ring-sky-200',
     '3': 'bg-red-100 text-red-700 ring-1 ring-red-200',
     '4': 'bg-blue-100 text-blue-700 ring-1 ring-blue-200',
     '5': 'bg-muted text-muted-foreground ring-1 ring-border',
@@ -223,7 +223,7 @@ watch(search, () => debouncedSearch());
                                     class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold"
                                     :class="ESTADO_CLASES[exp.estado?.codigo ?? ''] ?? ESTADO_CLASES['1']"
                                 >
-                                    {{ exp.estado?.nombre ?? 'Registrado' }}
+                                    {{ estadoLabel(exp) }}
                                 </span>
                             </TableCell>
                             <TableCell class="text-right">

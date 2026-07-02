@@ -11,6 +11,21 @@ export const TIPO_EXPEDIENTE_LABELS: Record<TipoExpediente, string> = {
     I: 'Incapacidad',
 };
 
+/** Nombres de estado para el frontend (overrides del nombre de BD) */
+export const ESTADO_LABELS: Record<string, string> = {
+    '1': 'Registrado',
+    '2': 'Por Autorizar',
+    '3': 'Rechazado',
+    '4': 'Autorizado',
+    '5': 'Anulado',
+};
+
+/** Devuelve el label de estado para mostrar en el frontend */
+export function estadoLabel(exp: Expediente): string {
+    const codigo = exp.estado?.codigo ?? '1';
+    return ESTADO_LABELS[codigo] ?? exp.estado?.nombre ?? 'Registrado';
+}
+
 // ── Modelos ──────────────────────────────────────────────────────────────────
 
 export interface DocumentoTram {
@@ -52,6 +67,29 @@ export interface Expediente {
         };
     };
     documentos?: DocumentoTram[];
+    // Relaciones CUD
+    suspension?: Record<string, unknown> | null;
+    justificacion?: Record<string, unknown> | null;
+    incapacidad?: Record<string, unknown> | null;
+    exoneracion?: Record<string, unknown> | null;
+    // Permisos de resolución (desde detalleJson)
+    puedeResolver?: boolean;
+    tieneDetalle?: boolean;
+}
+
+// ── Motivo de Suspensión Laboral ─────────────────────────────────────────────
+
+export interface MotivoSuspLab {
+    id: number;
+    codigo: string | null;
+    tipoSuspensionLaboral_id: number | null;
+    descripcion: string | null;
+    abreviatura: string | null;
+    conGoceHaber: boolean | null;
+    codigoProg: string | null;
+    resolvedBy: 'D' | 'U';
+    activo: boolean | null;
+    tipo_suspension_laboral?: { id: number; descripcion: string | null } | null;
 }
 
 // ── Formularios ──────────────────────────────────────────────────────────────
@@ -80,4 +118,38 @@ export interface ExpedienteForm {
     fecha: string;
     observacion: string;
     documentos: DocumentoTramForm[];
+}
+
+// ── Formularios CUD post-aprobación ─────────────────────────────────────────
+
+export interface SuspensionForm {
+    motivoSuspLab_id: number | null;
+    fechaHoraInicio: string;
+    fechaHoraFin: string;
+    totalDias: number | null;
+    totalHoras: number | null;
+    observacion: string;
+}
+
+export interface JustificacionForm {
+    turno: number | null;
+    fechaInicio: string;
+    fechaFin: string;
+    observacion: string;
+}
+
+export interface IncapacidadForm {
+    motivoSuspLab_id: number | null;
+    condicionSubsidio: string;
+    fechaInicio: string;
+    fechaFin: string;
+    nroDias: number | null;
+    nroCertificado: string;
+    observacion: string;
+}
+
+export interface ExoneracionForm {
+    fechaInicio: string;
+    fechaFin: string;
+    observacion: string;
 }

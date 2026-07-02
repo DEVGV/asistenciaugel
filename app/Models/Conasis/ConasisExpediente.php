@@ -10,6 +10,7 @@ use App\Traits\HasCodigo;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ConasisExpediente extends Model
 {
@@ -55,5 +56,25 @@ class ConasisExpediente extends Model
     public function documentos(): HasMany
     {
         return $this->hasMany(ConasisDocumentosTram::class, 'expediente_id');
+    }
+
+    public function suspension(): HasOne
+    {
+        return $this->hasOne(ConasisSuspLabTrabajador::class, 'expediente_id');
+    }
+
+    public function justificacion(): HasOne
+    {
+        return $this->hasOne(ConasisJustificaciones::class, 'expediente_id');
+    }
+
+    public function incapacidad(): HasOne
+    {
+        return $this->hasOne(ConasisIncapsTempTrab::class, 'expediente_id');
+    }
+
+    public function exoneracion(): HasOne
+    {
+        return $this->hasOne(ConasisExoneracionesMarcacion::class, 'expediente_id');
     }
 }

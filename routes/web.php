@@ -40,6 +40,7 @@ use App\Http\Controllers\Trabajador\MarcacionesTrabajadorController;
 use App\Http\Controllers\Trabajador\RegistroTrabajadorController;
 use App\Http\Controllers\Trabajador\TrabajadorController;
 use App\Http\Controllers\Tramite\ExpedienteController;
+use App\Http\Controllers\Tramite\MotivoSuspLabController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
@@ -379,6 +380,18 @@ Route::middleware(['auth', 'verified', 'contexto'])->group(function () {
     Route::middleware('permiso:tramites.anular')->group(function () {
         Route::post('expedientes/{expediente}/anular', [ExpedienteController::class, 'anular'])
             ->name('expedientes.anular');
+    });
+
+    // ── Mantenimiento: Motivos Suspensión Laboral ───────────────────────────
+    Route::middleware('permiso:tramites.ver')->group(function () {
+        Route::resource('motivos-susp-lab', MotivoSuspLabController::class)
+            ->only(['index'])
+            ->parameters(['motivos-susp-lab' => 'motivoSuspLab']);
+    });
+    Route::middleware('permiso:tramites.crear')->group(function () {
+        Route::resource('motivos-susp-lab', MotivoSuspLabController::class)
+            ->only(['update'])
+            ->parameters(['motivos-susp-lab' => 'motivoSuspLab']);
     });
 });
 

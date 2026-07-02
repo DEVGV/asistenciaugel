@@ -13,7 +13,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { TIPO_EXPEDIENTE_LABELS, type Expediente, type TipoExpediente } from '@/types/models/tramite';
+import { TIPO_EXPEDIENTE_LABELS, estadoLabel, type Expediente, type TipoExpediente } from '@/types/models/tramite';
 import type { PaginatedResponse } from '@/types/models/trabajador';
 
 defineOptions({
@@ -61,7 +61,7 @@ watch([search, tipo, anio], () => {
 
 const ESTADO_CLASES: Record<string, string> = {
     '1': 'bg-amber-100 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-300',
-    '2': 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300',
+    '2': 'bg-sky-100 text-sky-700 ring-1 ring-sky-200 dark:bg-sky-950/30 dark:text-sky-300',
     '3': 'bg-red-100 text-red-700 ring-1 ring-red-200 dark:bg-red-950/30 dark:text-red-300',
     '4': 'bg-blue-100 text-blue-700 ring-1 ring-blue-200 dark:bg-blue-950/30 dark:text-blue-300',
     '5': 'bg-muted text-muted-foreground ring-1 ring-border',
@@ -142,7 +142,7 @@ function nombreTrabajador(exp: Expediente): string {
                                 class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
                                 :class="estadoClase(exp)"
                             >
-                                {{ exp.estado?.nombre ?? 'Registrado' }}
+                                {{ estadoLabel(exp) }}
                             </span>
                         </TableCell>
                         <TableCell>
@@ -174,5 +174,6 @@ function nombreTrabajador(exp: Expediente): string {
     <ExpedienteDetailModal
         v-model:show="showDetailModal"
         :expediente-id="selectedExpedienteId"
+        @updated="router.reload({ only: ['expedientes'] })"
     />
 </template>

@@ -3,14 +3,27 @@
 namespace App\Services\Tramite;
 
 use App\DTOs\Tramite\CreateExpedienteDTO;
+use App\DTOs\Tramite\CreateSuspensionDTO;
+use App\DTOs\Tramite\CreateJustificacionDTO;
+use App\DTOs\Tramite\CreateIncapacidadDTO;
+use App\DTOs\Tramite\CreateExoneracionDTO;
 use App\DTOs\Tramite\UpdateExpedienteDTO;
 use App\Enums\EstadoTramite;
+use App\Enums\ResolvedBy;
+use App\Enums\TipoExpediente;
 use App\Models\AltasTrabajadores;
 use App\Models\Conasis\ConasisDocumentosTram;
+use App\Models\Conasis\ConasisExoneracionesMarcacion;
 use App\Models\Conasis\ConasisExpediente;
+use App\Models\Conasis\ConasisIncapsTempTrab;
+use App\Models\Conasis\ConasisJustificaciones;
+use App\Models\Conasis\ConasisSuspLabTrabajador;
 use App\Models\InstitucionesEduc;
 use App\Models\Param\ParamEstadosTram;
+use App\Models\Param\ParamMotivosSuspLab;
 use App\Models\Trabajador;
+use App\Models\User;
+use App\Services\Auth\ContextoService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
@@ -29,6 +42,10 @@ class ExpedienteService
         'estado',
         'trabajador.persona:id,paterno,materno,nombre,docIdentidad',
         'documentos.documento',
+        'suspension.motivoSuspLab',
+        'justificacion',
+        'incapacidad.motivoSuspLab',
+        'exoneracion',
     ];
 
     /**
@@ -245,6 +262,308 @@ class ExpedienteService
         );
 
         $expediente->update(['estado_id' => $this->estadoId(EstadoTramite::Anulado)]);
+    }
+
+    /**
+     * Aprueba un expediente (cambia estado a Aprobado).
+     * Solo permitido si el expediente está en estado Registrado.
+     */
+    /**
+     * Autoriza un expediente aprobado (Aprobado → Autorizado).
+     * Solo la autoridad competente (según resolvedBy) puede autorizar.
+     */
+    public function autorizar(ConasisExpediente $expediente): void
+    {
+        abort_unless(
+            (int) $expediente->estado_id === $this->estadoId(EstadoTramite::Aprobado),
+            422,
+            'Solo se pueden autorizar expedientes en estado Aprobado.',
+        );
+
+        $expediente->update(['estado_id' => $this->estadoId(EstadoTramite::Autorizado)]);
+    }
+
+    /**
+     * Rechaza un expediente aprobado (Aprobado → Rechazado).
+     * Solo la autoridad competente (según resolvedBy) puede rechazar.
+     */
+    public function rechazar(ConasisExpediente $expediente, ?string $motivoRechazo = null): void
+    {
+        abort_unless(
+            (int) $expediente->estado_id === $this->estadoId(EstadoTramite::Aprobado),
+            422,
+            'Solo se pueden rechazar expedientes en estado Aprobado.',
+        );
+
+        $datos = ['estado_id' => $this->estadoId(EstadoTramite::Rechazado)];
+
+        if ($motivoRechazo) {
+            $datos['observacion'] = $motivoRechazo;
+        }
+
+        $expediente->update($datos);
+    }
+
+    /**
+     * Verifica si el usuario puede resolver (aprobar/rechazar) un expediente.
+     *
+     * Admin UGEL → puede resolver TODOS los tipos de expediente.
+     * Director   → puede resolver Justificación y Exoneración siempre;
+     *              para Suspensión/Incapacidad solo si existen motivos
+     *              con resolvedBy='D' (es decir, hay al menos un motivo
+     *              que es competencia del Director).
+     */
+    public function puedeResolver(ConasisExpediente $expediente, User $user): bool
+    {
+        // Admin UGEL gestiona todo
+        if ($this->esAdminUgel($user)) {
+            return true;
+        }
+
+        $ieId = app(ContextoService::class)->ieId();
+
+        if (! $this->esDirector($user, $ieId)) {
+            return false;
+        }
+
+        // Director: Justificación y Exoneración siempre son su competencia
+        if (
+            $expediente->tipoExpediente === TipoExpediente::Justificacion
+            || $expediente->tipoExpediente === TipoExpediente::Exoneracion
+        ) {
+            return true;
+        }
+
+        // Director: Suspensión/Incapacidad → solo si existen motivos con resolvedBy='D'
+        $queryMotivos = ParamMotivosSuspLab::query()
+            ->where(function ($q) {
+                $q->where('activo', true)->orWhereNull('activo');
+            })
+            ->where('resolvedBy', ResolvedBy::Director->value);
+
+        if ($expediente->tipoExpediente === TipoExpediente::Incapacidad) {
+            $queryMotivos->where('codigoProg', 'ilike', '7_CITT');
+        } else {
+            $queryMotivos->where('codigoProg', 'ilike', 'SUSP');
+        }
+
+        return $queryMotivos->exists();
+    }
+
+    /**
+     * Determina la competencia de resolución que tiene el usuario:
+     * 'U' si es admin UGEL, 'D' si es director, null si ninguno.
+     */
+    public function competenciaResolucion(User $user): ?string
+    {
+        if ($this->esAdminUgel($user)) {
+            return ResolvedBy::Ugel->value;
+        }
+
+        $ieId = app(ContextoService::class)->ieId();
+
+        if ($this->esDirector($user, $ieId)) {
+            return ResolvedBy::Director->value;
+        }
+
+        return null;
+    }
+
+    /**
+     * Verifica si el usuario es Director de la IE indicada.
+     */
+    private function esDirector(User $user, ?int $ieId): bool
+    {
+        $perfil = $user->perfilActivoParaIe($ieId);
+
+        return $perfil === 'Director';
+    }
+
+    /**
+     * Verifica si el usuario es administrador de UGEL o global.
+     */
+    private function esAdminUgel(User $user): bool
+    {
+        return $user->perfilesIe()
+            ->where('activo', true)
+            ->where(function ($q) {
+                $q->where(fn ($w) => $w->whereNull('institucionEducativa_id')->whereNull('entidadUgel_id'))
+                  ->orWhere(fn ($w) => $w->whereNull('institucionEducativa_id')->whereNotNull('entidadUgel_id'));
+            })
+            ->exists();
+    }
+
+    // ── CUD post-aprobación ─────────────────────────────────────────────────
+
+    /**
+     * Registra la suspensión laboral vinculada al expediente.
+     * Cambia estado: Registrado → Aprobado (pendiente de autorización).
+     */
+    public function registrarSuspension(ConasisExpediente $expediente, CreateSuspensionDTO $dto): ConasisSuspLabTrabajador
+    {
+        $this->validarExpedienteRegistrado($expediente, TipoExpediente::Suspension);
+
+        return DB::transaction(function () use ($expediente, $dto) {
+            $registro = ConasisSuspLabTrabajador::create([
+                'trabajador_id'     => $expediente->trabajador_id,
+                'altaTrabajador_id' => $expediente->altaTrabajador_id,
+                'motivoSuspLab_id'  => $dto->motivoSuspLab_id,
+                'fechaHoraInicio'   => $dto->fechaHoraInicio,
+                'fechaHoraFin'      => $dto->fechaHoraFin,
+                'totalDias'         => $dto->totalDias,
+                'totalHoras'        => $dto->totalHoras,
+                'observacion'       => $dto->observacion,
+                'expediente_id'     => $expediente->id,
+                'created_by'        => auth()->id(),
+            ]);
+
+            $expediente->update(['estado_id' => $this->estadoId(EstadoTramite::Aprobado)]);
+
+            return $registro;
+        });
+    }
+
+    /**
+     * Registra la justificación vinculada al expediente.
+     * Cambia estado: Registrado → Aprobado.
+     */
+    public function registrarJustificacion(ConasisExpediente $expediente, CreateJustificacionDTO $dto): ConasisJustificaciones
+    {
+        $this->validarExpedienteRegistrado($expediente, TipoExpediente::Justificacion);
+
+        return DB::transaction(function () use ($expediente, $dto) {
+            $registro = ConasisJustificaciones::create([
+                'trabajador_id'     => $expediente->trabajador_id,
+                'altaTrabajador_id' => $expediente->altaTrabajador_id,
+                'turno'             => $dto->turno,
+                'fechaInicio'       => $dto->fechaInicio,
+                'fechaFin'          => $dto->fechaFin,
+                'observacion'       => $dto->observacion,
+                'expediente_id'     => $expediente->id,
+                'created_by'        => auth()->id(),
+            ]);
+
+            $expediente->update(['estado_id' => $this->estadoId(EstadoTramite::Aprobado)]);
+
+            return $registro;
+        });
+    }
+
+    /**
+     * Registra la incapacidad temporal vinculada al expediente.
+     * Cambia estado: Registrado → Aprobado.
+     */
+    public function registrarIncapacidad(ConasisExpediente $expediente, CreateIncapacidadDTO $dto): ConasisIncapsTempTrab
+    {
+        $this->validarExpedienteRegistrado($expediente, TipoExpediente::Incapacidad);
+
+        return DB::transaction(function () use ($expediente, $dto) {
+            $registro = ConasisIncapsTempTrab::create([
+                'trabajador_id'     => $expediente->trabajador_id,
+                'altaTrabajador_id' => $expediente->altaTrabajador_id,
+                'motivoSuspLab_id'  => $dto->motivoSuspLab_id,
+                'condicionSubsidio' => $dto->condicionSubsidio,
+                'fechaInicio'       => $dto->fechaInicio,
+                'fechaFin'          => $dto->fechaFin,
+                'nroDias'           => $dto->nroDias,
+                'nroCertificado'    => $dto->nroCertificado,
+                'observacion'       => $dto->observacion,
+                'expediente_id'     => $expediente->id,
+                'created_by'        => auth()->id(),
+            ]);
+
+            $expediente->update(['estado_id' => $this->estadoId(EstadoTramite::Aprobado)]);
+
+            return $registro;
+        });
+    }
+
+    /**
+     * Registra la exoneración de marcación vinculada al expediente.
+     * Cambia estado: Registrado → Aprobado.
+     */
+    public function registrarExoneracion(ConasisExpediente $expediente, CreateExoneracionDTO $dto): ConasisExoneracionesMarcacion
+    {
+        $this->validarExpedienteRegistrado($expediente, TipoExpediente::Exoneracion);
+
+        return DB::transaction(function () use ($expediente, $dto) {
+            $registro = ConasisExoneracionesMarcacion::create([
+                'trabajador_id'     => $expediente->trabajador_id,
+                'altaTrabajador_id' => $expediente->altaTrabajador_id,
+                'fechaInicio'       => $dto->fechaInicio,
+                'fechaFin'          => $dto->fechaFin,
+                'observacion'       => $dto->observacion,
+                'expediente_id'     => $expediente->id,
+                'created_by'        => auth()->id(),
+            ]);
+
+            $expediente->update(['estado_id' => $this->estadoId(EstadoTramite::Aprobado)]);
+
+            return $registro;
+        });
+    }
+
+    /**
+     * Obtiene los motivos de suspensión filtrados por codigoProg para el formulario.
+     *
+     * @return \Illuminate\Support\Collection<int, ParamMotivosSuspLab>
+     */
+    /**
+     * Motivos de suspensión (excluye incapacidad "7 sit").
+     * Director: solo ve motivos con resolvedBy='D'.
+     * Admin UGEL: ve todos.
+     */
+    public function motivosSuspensionFiltrados(?string $competencia = null): \Illuminate\Support\Collection
+    {
+        return ParamMotivosSuspLab::query()
+            ->where(function ($q) {
+                $q->where('activo', true)->orWhereNull('activo');
+            })
+            ->where('codigoProg', 'ilike', 'SUSP')
+            ->when(
+                $competencia === ResolvedBy::Director->value,
+                fn ($q) => $q->where('resolvedBy', ResolvedBy::Director->value)
+            )
+            ->orderBy('descripcion')
+            ->get();
+    }
+
+    /**
+     * Motivos de incapacidad temporal (codigoProg = '7 sit').
+     * Director: solo ve motivos con resolvedBy='D'.
+     * Admin UGEL: ve todos.
+     */
+    public function motivosIncapacidad(?string $competencia = null): \Illuminate\Support\Collection
+    {
+        return ParamMotivosSuspLab::query()
+            ->where(function ($q) {
+                $q->where('activo', true)->orWhereNull('activo');
+            })
+            ->where('codigoProg', 'ilike', '7_CITT')
+            ->when(
+                $competencia === ResolvedBy::Director->value,
+                fn ($q) => $q->where('resolvedBy', ResolvedBy::Director->value)
+            )
+            ->orderBy('descripcion')
+            ->get();
+    }
+
+    /**
+     * Valida que el expediente esté en estado Registrado (sin detalle aún) y sea del tipo correcto.
+     */
+    private function validarExpedienteRegistrado(ConasisExpediente $expediente, TipoExpediente $tipoEsperado): void
+    {
+        abort_unless(
+            (int) $expediente->estado_id === $this->estadoId(EstadoTramite::Registrado),
+            422,
+            'El expediente debe estar en estado Registrado para registrar el detalle.',
+        );
+
+        abort_unless(
+            $expediente->tipoExpediente === $tipoEsperado,
+            422,
+            "El expediente no es de tipo {$tipoEsperado->nombre()}.",
+        );
     }
 
     /**

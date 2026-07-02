@@ -85,6 +85,26 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
     Route::get('instituciones/{institucione}/personal-activo', [ExpedienteController::class, 'personalActivo'])
         ->name('api.instituciones.personal-activo');
 
+    // Trámite: Autorizar / Rechazar / CUD por tipo
+    Route::post('expedientes/{expediente}/autorizar', [ExpedienteController::class, 'autorizar'])
+        ->name('api.expedientes.autorizar');
+    Route::post('expedientes/{expediente}/rechazar', [ExpedienteController::class, 'rechazar'])
+        ->name('api.expedientes.rechazar');
+    Route::post('expedientes/{expediente}/suspension', [ExpedienteController::class, 'registrarSuspension'])
+        ->name('api.expedientes.suspension');
+    Route::post('expedientes/{expediente}/justificacion', [ExpedienteController::class, 'registrarJustificacion'])
+        ->name('api.expedientes.justificacion');
+    Route::post('expedientes/{expediente}/incapacidad', [ExpedienteController::class, 'registrarIncapacidad'])
+        ->name('api.expedientes.incapacidad');
+    Route::post('expedientes/{expediente}/exoneracion', [ExpedienteController::class, 'registrarExoneracion'])
+        ->name('api.expedientes.exoneracion');
+
+    // Motivos filtrados para formularios dinámicos
+    Route::get('motivos-suspension', [ExpedienteController::class, 'motivosSuspension'])
+        ->name('api.motivos-suspension');
+    Route::get('motivos-incapacidad', [ExpedienteController::class, 'motivosIncapacidad'])
+        ->name('api.motivos-incapacidad');
+
     Route::prefix('mobile')
         ->withoutMiddleware([ValidateCsrfToken::class, PreventRequestForgery::class])
         ->name('api.mobile.')
