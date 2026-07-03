@@ -14,9 +14,11 @@ RUN npm run build
 # ============================================
 FROM composer:latest AS composer
 
+RUN docker-php-ext-install bcmath
+
 WORKDIR /app
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --ignore-platform-req=ext-gd
 COPY . .
 RUN composer dump-autoload --optimize
 
