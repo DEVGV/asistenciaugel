@@ -1,0 +1,72 @@
+# ============================================
+# Stage 1: Build frontend assets
+# ============================================
+FROM node:20-alpine AS frontend
+
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# ============================================
+# Stage 2: Install PHP dependencies
+# ============================================
+FROM composer:latest AS composer
+
+WORKDIR /app
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+COPY . .
+RUN composer dump-autoload --optimize
+
+# ============================================
+# Stage 3: Final production image
+# ============================================
+FROM php:8.3-fpm
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    nginx \
+    supervisor \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libpq-dev \
+    zip \
+    unzip \
+    && docker-php-ext-install pdo pdo_pgsql pgsql mbstring exif pcntl bcmath gd \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Copy nginx config
+COPY docker/nginx.conf /etc/nginx/sites-available/default
+RUN rm -f /etc/nginx/sites-enabled/default \
+    && ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+
+# Copy supervisor config
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy PHP dependencies from composer stage
+COPY --from=composer /app/vendor ./vendor
+
+# Copy application code
+COPY . .
+
+# Copy built frontend assets from frontend stage
+COPY --from=frontend /app/public/build ./public/build
+
+# Remove dev files
+RUN rm -rf node_modules tests .git .env docker-compose*.yml Dockerfile*
+
+# Set permissions
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Expose port 80
+EXPOSE 80
+
+# Start supervisor (runs nginx + php-fpm + queue worker)
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
