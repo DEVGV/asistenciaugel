@@ -7,7 +7,6 @@ import {
     School,
     Building2,
     Settings,
-    CalendarCheck,
     FileText,
 } from 'lucide-vue-next';
 import AreaController from '@/actions/App/Http/Controllers/Configuracion/AreaController';
@@ -87,17 +86,6 @@ const allNavItems: NavItem[] = [
             { title: 'Zonas', href: ZonaController.index().url, requiere: ['configuracion.ver'] },
             { title: 'Usuarios', href: UsuarioController.index().url, requiere: ['usuarios.gestionar'] },
             { title: 'Perfiles', href: PerfilController.index().url, requiere: ['usuarios.gestionar'] },
-        ],
-    },
-    {
-        title: 'Asistencia',
-        href: '#',
-        icon: CalendarCheck,
-        requiere: ['asistencia.ver'],
-        items: [
-            { title: 'Marcaciones', href: '#', requiere: ['asistencia.ver'] },
-            { title: 'Mensual', href: '#', requiere: ['asistencia.ver'] },
-            { title: 'Consolidación', href: '#', requiere: ['asistencia.consolidar'] },
         ],
     },
     {

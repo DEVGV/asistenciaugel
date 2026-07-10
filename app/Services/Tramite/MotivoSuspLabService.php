@@ -16,6 +16,7 @@ class MotivoSuspLabService
     {
         return ParamMotivosSuspLab::query()
             ->with('tipoSuspensionLaboral')
+            ->where('codigoProg', 'SUSP')
             ->when($request->search, function ($query, $search) {
                 $query->where('descripcion', 'ilike', "%{$search}%")
                     ->orWhere('codigo', 'ilike', "%{$search}%");
