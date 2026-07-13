@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Tramite;
 
-use App\Enums\ResolvedBy;
+use App\Enums\AutorizadoPor;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Enum;
 
@@ -19,7 +19,7 @@ class UpdateMotivoSuspLabRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'resolvedBy' => ['required', new Enum(ResolvedBy::class)],
+            'autorizadoPor' => ['required', new Enum(AutorizadoPor::class)],
         ];
     }
 }

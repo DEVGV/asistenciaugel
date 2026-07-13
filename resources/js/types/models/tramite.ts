@@ -87,7 +87,7 @@ export interface MotivoSuspLab {
     abreviatura: string | null;
     conGoceHaber: boolean | null;
     codigoProg: string | null;
-    resolvedBy: 'D' | 'U';
+    autorizadoPor: 'D' | 'U';
     activo: boolean | null;
     tipo_suspension_laboral?: { id: number; descripcion: string | null } | null;
 }
@@ -132,6 +132,7 @@ export interface SuspensionForm {
 }
 
 export interface JustificacionForm {
+    motivoSuspLab_id: number | null;
     turno: number | null;
     fechaInicio: string;
     fechaFin: string;
@@ -149,6 +150,7 @@ export interface IncapacidadForm {
 }
 
 export interface ExoneracionForm {
+    motivoSuspLab_id: number | null;
     fechaInicio: string;
     fechaFin: string;
     observacion: string;

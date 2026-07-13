@@ -104,6 +104,10 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
         ->name('api.motivos-suspension');
     Route::get('motivos-incapacidad', [ExpedienteController::class, 'motivosIncapacidad'])
         ->name('api.motivos-incapacidad');
+    Route::get('motivos-justificacion', [ExpedienteController::class, 'motivosJustificacion'])
+        ->name('api.motivos-justificacion');
+    Route::get('motivos-exoneracion', [ExpedienteController::class, 'motivosExoneracion'])
+        ->name('api.motivos-exoneracion');
 
     Route::prefix('mobile')
         ->withoutMiddleware([ValidateCsrfToken::class, PreventRequestForgery::class])

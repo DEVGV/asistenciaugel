@@ -28,15 +28,22 @@ const processing = ref(false);
 const errors = ref<Record<string, string>>({});
 const successMsg = ref('');
 
-// ── Motivos (para Suspensión e Incapacidad) ──────────────────────────────────
+// ── Motivos (para todos los tipos) ──────────────────────────────────────────
 const motivos = ref<MotivoSuspLab[]>([]);
 const loadingMotivos = ref(false);
 
+const motivosEndpointMap: Record<TipoExpediente, string> = {
+    S: '/api/motivos-suspension',
+    I: '/api/motivos-incapacidad',
+    J: '/api/motivos-justificacion',
+    E: '/api/motivos-exoneracion',
+};
+
 async function cargarMotivos() {
-    if (tipo.value !== 'S' && tipo.value !== 'I') return;
+    if (!tipo.value) return;
     loadingMotivos.value = true;
     try {
-        const endpoint = tipo.value === 'S' ? '/api/motivos-suspension' : '/api/motivos-incapacidad';
+        const endpoint = motivosEndpointMap[tipo.value];
         const res = await fetch(endpoint, { headers: { Accept: 'application/json' } });
         if (!res.ok) throw new Error();
         const json = await res.json();
@@ -106,6 +113,7 @@ watch(
 );
 
 const justForm = ref<JustificacionForm>({
+    motivoSuspLab_id: null,
     turno: null,
     fechaInicio: '',
     fechaFin: '',
@@ -140,6 +148,7 @@ watch(
 );
 
 const exonForm = ref<ExoneracionForm>({
+    motivoSuspLab_id: null,
     fechaInicio: '',
     fechaFin: '',
     observacion: '',
@@ -271,6 +280,19 @@ function getCsrfToken(): string {
 
         <!-- ── Justificación ─────────────────────────────────────── -->
         <template v-else-if="tipo === 'J'">
+            <div class="grid gap-2">
+                <Label>Motivo</Label>
+                <SearchSelect
+                    :items="motivoItems"
+                    :model-value="justForm.motivoSuspLab_id"
+                    :loading="loadingMotivos"
+                    placeholder="Seleccione motivo…"
+                    clearable
+                    @update:model-value="justForm.motivoSuspLab_id = $event as number | null"
+                />
+                <p v-if="errors.motivoSuspLab_id" class="text-sm text-destructive">{{ errors.motivoSuspLab_id }}</p>
+            </div>
+
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div class="grid gap-2">
                     <Label>Fecha inicio *</Label>
@@ -359,6 +381,19 @@ function getCsrfToken(): string {
 
         <!-- ── Exoneración ───────────────────────────────────────── -->
         <template v-else-if="tipo === 'E'">
+            <div class="grid gap-2">
+                <Label>Motivo</Label>
+                <SearchSelect
+                    :items="motivoItems"
+                    :model-value="exonForm.motivoSuspLab_id"
+                    :loading="loadingMotivos"
+                    placeholder="Seleccione motivo…"
+                    clearable
+                    @update:model-value="exonForm.motivoSuspLab_id = $event as number | null"
+                />
+                <p v-if="errors.motivoSuspLab_id" class="text-sm text-destructive">{{ errors.motivoSuspLab_id }}</p>
+            </div>
+
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div class="grid gap-2">
                     <Label>Fecha inicio *</Label>

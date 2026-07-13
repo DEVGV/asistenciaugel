@@ -46,15 +46,15 @@ function onSearch() {
     }, 300);
 }
 
-// ── Edición inline de resolvedBy ────────────────────────────────────────────
+// ── Edición inline de autorizadoPor ────────────────────────────────────────────
 
 const updatingId = ref<number | null>(null);
 
-function updateResolvedBy(motivo: MotivoSuspLab, value: string) {
+function updateAutorizadoPor(motivo: MotivoSuspLab, value: string) {
     updatingId.value = motivo.id;
     router.put(
         `/motivos-susp-lab/${motivo.id}`,
-        { resolvedBy: value },
+        { autorizadoPor: value },
         {
             preserveScroll: true,
             onFinish: () => {
@@ -116,10 +116,10 @@ function updateResolvedBy(motivo: MotivoSuspLab, value: string) {
                         </TableCell>
                         <TableCell>
                             <select
-                                :value="motivo.resolvedBy"
+                                :value="motivo.autorizadoPor"
                                 :disabled="updatingId === motivo.id"
                                 class="flex h-8 w-28 rounded-md border border-input bg-background px-2 py-1 text-sm shadow-xs focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50"
-                                @change="updateResolvedBy(motivo, ($event.target as HTMLSelectElement).value)"
+                                @change="updateAutorizadoPor(motivo, ($event.target as HTMLSelectElement).value)"
                             >
                                 <option value="D">Director</option>
                                 <option value="U">UGEL</option>

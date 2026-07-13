@@ -163,6 +163,24 @@ class ExpedienteController extends Controller
         ]);
     }
 
+    public function motivosJustificacion(): JsonResponse
+    {
+        $competencia = $this->expedienteService->competenciaResolucion(auth()->user());
+
+        return response()->json([
+            'data' => $this->expedienteService->motivosJustificacion($competencia),
+        ]);
+    }
+
+    public function motivosExoneracion(): JsonResponse
+    {
+        $competencia = $this->expedienteService->competenciaResolucion(auth()->user());
+
+        return response()->json([
+            'data' => $this->expedienteService->motivosExoneracion($competencia),
+        ]);
+    }
+
     public function descargarDocumento(ConasisDocumentosTram $documentoTram): StreamedResponse
     {
         return $this->expedienteService->descargarDocumento($documentoTram);

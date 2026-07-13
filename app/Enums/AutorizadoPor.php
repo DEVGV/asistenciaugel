@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-enum ResolvedBy: string
+enum AutorizadoPor: string
 {
     case Director = 'D';
     case Ugel     = 'U';

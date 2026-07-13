@@ -335,6 +335,10 @@ function close() {
                                     <!-- Justificación -->
                                     <template v-if="expediente.justificacion">
                                         <div class="grid grid-cols-2 gap-3 text-sm">
+                                            <div v-if="(expediente.justificacion as any).motivo_susp_lab">
+                                                <p class="text-xs uppercase tracking-wide text-muted-foreground">Motivo</p>
+                                                <p class="font-medium">{{ (expediente.justificacion as any).motivo_susp_lab?.descripcion ?? '—' }}</p>
+                                            </div>
                                             <div>
                                                 <p class="text-xs uppercase tracking-wide text-muted-foreground">Período</p>
                                                 <p class="font-medium">{{ (expediente.justificacion as any).fechaInicio }} — {{ (expediente.justificacion as any).fechaFin }}</p>
@@ -367,6 +371,10 @@ function close() {
                                     <!-- Exoneración -->
                                     <template v-if="expediente.exoneracion">
                                         <div class="grid grid-cols-2 gap-3 text-sm">
+                                            <div v-if="(expediente.exoneracion as any).motivo_susp_lab">
+                                                <p class="text-xs uppercase tracking-wide text-muted-foreground">Motivo</p>
+                                                <p class="font-medium">{{ (expediente.exoneracion as any).motivo_susp_lab?.descripcion ?? '—' }}</p>
+                                            </div>
                                             <div>
                                                 <p class="text-xs uppercase tracking-wide text-muted-foreground">Período</p>
                                                 <p class="font-medium">{{ (expediente.exoneracion as any).fechaInicio }} — {{ (expediente.exoneracion as any).fechaFin }}</p>

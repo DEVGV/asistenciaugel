@@ -16,9 +16,10 @@ class StoreExoneracionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'fechaInicio' => ['required', 'date'],
-            'fechaFin'    => ['required', 'date', 'after_or_equal:fechaInicio'],
-            'observacion' => ['nullable', 'string', 'max:255'],
+            'motivoSuspLab_id' => ['nullable', 'integer', 'exists:param.t00_motivosSuspLab,id'],
+            'fechaInicio'      => ['required', 'date'],
+            'fechaFin'         => ['required', 'date', 'after_or_equal:fechaInicio'],
+            'observacion'      => ['nullable', 'string', 'max:255'],
         ];
     }
 
@@ -36,9 +37,10 @@ class StoreExoneracionRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'fechaInicio' => 'fecha de inicio',
-            'fechaFin'    => 'fecha de fin',
-            'observacion' => 'observación',
+            'motivoSuspLab_id' => 'motivo',
+            'fechaInicio'      => 'fecha de inicio',
+            'fechaFin'         => 'fecha de fin',
+            'observacion'      => 'observación',
         ];
     }
 

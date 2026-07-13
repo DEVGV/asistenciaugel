@@ -2,7 +2,7 @@
 
 namespace App\Services\Tramite;
 
-use App\Enums\ResolvedBy;
+use App\Enums\AutorizadoPor;
 use App\Models\Param\ParamMotivosSuspLab;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -25,8 +25,8 @@ class MotivoSuspLabService
             ->paginate(20);
     }
 
-    public function actualizarResolvedBy(ParamMotivosSuspLab $motivo, ResolvedBy $resolvedBy): bool
+    public function actualizarAutorizadoPor(ParamMotivosSuspLab $motivo, AutorizadoPor $autorizadoPor): bool
     {
-        return $motivo->update(['resolvedBy' => $resolvedBy->value]);
+        return $motivo->update(['autorizadoPor' => $autorizadoPor->value]);
     }
 }

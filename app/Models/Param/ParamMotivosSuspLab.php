@@ -20,7 +20,7 @@ class ParamMotivosSuspLab extends Model
         'asusfal',
         'diasMaxCiclo',
         'codigoProg',
-        'resolvedBy',
+        'autorizadoPor',
         'created_by',
         'activo',
     ];

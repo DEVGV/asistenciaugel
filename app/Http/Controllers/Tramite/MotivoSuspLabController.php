@@ -27,9 +27,9 @@ class MotivoSuspLabController extends Controller
 
     public function update(UpdateMotivoSuspLabRequest $request, ParamMotivosSuspLab $motivoSuspLab): RedirectResponse
     {
-        $this->motivoSuspLabService->actualizarResolvedBy(
+        $this->motivoSuspLabService->actualizarAutorizadoPor(
             $motivoSuspLab,
-            \App\Enums\ResolvedBy::from($request->validated('resolvedBy')),
+            \App\Enums\AutorizadoPor::from($request->validated('autorizadoPor')),
         );
 
         return redirect()->route('motivos-susp-lab.index')

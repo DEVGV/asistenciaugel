@@ -9,7 +9,7 @@ use App\DTOs\Tramite\CreateIncapacidadDTO;
 use App\DTOs\Tramite\CreateExoneracionDTO;
 use App\DTOs\Tramite\UpdateExpedienteDTO;
 use App\Enums\EstadoTramite;
-use App\Enums\ResolvedBy;
+use App\Enums\AutorizadoPor;
 use App\Enums\TipoExpediente;
 use App\Models\AltasTrabajadores;
 use App\Models\Conasis\ConasisDocumentosTram;
@@ -43,9 +43,9 @@ class ExpedienteService
         'trabajador.persona:id,paterno,materno,nombre,docIdentidad',
         'documentos.documento',
         'suspension.motivoSuspLab',
-        'justificacion',
+        'justificacion.motivoSuspLab',
         'incapacidad.motivoSuspLab',
-        'exoneracion',
+        'exoneracion.motivoSuspLab',
     ];
 
     /**
@@ -270,7 +270,7 @@ class ExpedienteService
      */
     /**
      * Autoriza un expediente aprobado (Aprobado → Autorizado).
-     * Solo la autoridad competente (según resolvedBy) puede autorizar.
+     * Solo la autoridad competente (según autorizadoPor) puede autorizar.
      */
     public function autorizar(ConasisExpediente $expediente): void
     {
@@ -285,7 +285,7 @@ class ExpedienteService
 
     /**
      * Rechaza un expediente aprobado (Aprobado → Rechazado).
-     * Solo la autoridad competente (según resolvedBy) puede rechazar.
+     * Solo la autoridad competente (según autorizadoPor) puede rechazar.
      */
     public function rechazar(ConasisExpediente $expediente, ?string $motivoRechazo = null): void
     {
@@ -310,7 +310,7 @@ class ExpedienteService
      * Admin UGEL → puede resolver TODOS los tipos de expediente.
      * Director   → puede resolver Justificación y Exoneración siempre;
      *              para Suspensión/Incapacidad solo si existen motivos
-     *              con resolvedBy='D' (es decir, hay al menos un motivo
+     *              con autorizadoPor='D' (es decir, hay al menos un motivo
      *              que es competencia del Director).
      */
     public function puedeResolver(ConasisExpediente $expediente, User $user): bool
@@ -334,12 +334,12 @@ class ExpedienteService
             return true;
         }
 
-        // Director: Suspensión/Incapacidad → solo si existen motivos con resolvedBy='D'
+        // Director: Suspensión/Incapacidad → solo si existen motivos con autorizadoPor='D'
         $queryMotivos = ParamMotivosSuspLab::query()
             ->where(function ($q) {
                 $q->where('activo', true)->orWhereNull('activo');
             })
-            ->where('resolvedBy', ResolvedBy::Director->value);
+            ->where('autorizadoPor', AutorizadoPor::Director->value);
 
         if ($expediente->tipoExpediente === TipoExpediente::Incapacidad) {
             $queryMotivos->where('codigoProg', 'ilike', '7_CITT');
@@ -357,13 +357,13 @@ class ExpedienteService
     public function competenciaResolucion(User $user): ?string
     {
         if ($this->esAdminUgel($user)) {
-            return ResolvedBy::Ugel->value;
+            return AutorizadoPor::Ugel->value;
         }
 
         $ieId = app(ContextoService::class)->ieId();
 
         if ($this->esDirector($user, $ieId)) {
-            return ResolvedBy::Director->value;
+            return AutorizadoPor::Director->value;
         }
 
         return null;
@@ -435,6 +435,7 @@ class ExpedienteService
             $registro = ConasisJustificaciones::create([
                 'trabajador_id'     => $expediente->trabajador_id,
                 'altaTrabajador_id' => $expediente->altaTrabajador_id,
+                'motivoSuspLab_id'  => $dto->motivoSuspLab_id,
                 'turno'             => $dto->turno,
                 'fechaInicio'       => $dto->fechaInicio,
                 'fechaFin'          => $dto->fechaFin,
@@ -490,6 +491,7 @@ class ExpedienteService
             $registro = ConasisExoneracionesMarcacion::create([
                 'trabajador_id'     => $expediente->trabajador_id,
                 'altaTrabajador_id' => $expediente->altaTrabajador_id,
+                'motivoSuspLab_id'  => $dto->motivoSuspLab_id,
                 'fechaInicio'       => $dto->fechaInicio,
                 'fechaFin'          => $dto->fechaFin,
                 'observacion'       => $dto->observacion,
@@ -510,7 +512,7 @@ class ExpedienteService
      */
     /**
      * Motivos de suspensión (excluye incapacidad "7 sit").
-     * Director: solo ve motivos con resolvedBy='D'.
+     * Director: solo ve motivos con autorizadoPor='D'.
      * Admin UGEL: ve todos.
      */
     public function motivosSuspensionFiltrados(?string $competencia = null): \Illuminate\Support\Collection
@@ -521,8 +523,8 @@ class ExpedienteService
             })
             ->where('codigoProg', 'ilike', 'SUSP')
             ->when(
-                $competencia === ResolvedBy::Director->value,
-                fn ($q) => $q->where('resolvedBy', ResolvedBy::Director->value)
+                $competencia === AutorizadoPor::Director->value,
+                fn ($q) => $q->where('autorizadoPor', AutorizadoPor::Director->value)
             )
             ->orderBy('descripcion')
             ->get();
@@ -530,7 +532,7 @@ class ExpedienteService
 
     /**
      * Motivos de incapacidad temporal (codigoProg = '7 sit').
-     * Director: solo ve motivos con resolvedBy='D'.
+     * Director: solo ve motivos con autorizadoPor='D'.
      * Admin UGEL: ve todos.
      */
     public function motivosIncapacidad(?string $competencia = null): \Illuminate\Support\Collection
@@ -541,8 +543,44 @@ class ExpedienteService
             })
             ->where('codigoProg', 'ilike', '7_CITT')
             ->when(
-                $competencia === ResolvedBy::Director->value,
-                fn ($q) => $q->where('resolvedBy', ResolvedBy::Director->value)
+                $competencia === AutorizadoPor::Director->value,
+                fn ($q) => $q->where('autorizadoPor', AutorizadoPor::Director->value)
+            )
+            ->orderBy('descripcion')
+            ->get();
+    }
+
+    /**
+     * Motivos de justificación (codigoProg = 'JUST').
+     */
+    public function motivosJustificacion(?string $competencia = null): \Illuminate\Support\Collection
+    {
+        return ParamMotivosSuspLab::query()
+            ->where(function ($q) {
+                $q->where('activo', true)->orWhereNull('activo');
+            })
+            ->where('codigoProg', 'ilike', 'JUST')
+            ->when(
+                $competencia === AutorizadoPor::Director->value,
+                fn ($q) => $q->where('autorizadoPor', AutorizadoPor::Director->value)
+            )
+            ->orderBy('descripcion')
+            ->get();
+    }
+
+    /**
+     * Motivos de exoneración (codigoProg = 'EXON').
+     */
+    public function motivosExoneracion(?string $competencia = null): \Illuminate\Support\Collection
+    {
+        return ParamMotivosSuspLab::query()
+            ->where(function ($q) {
+                $q->where('activo', true)->orWhereNull('activo');
+            })
+            ->where('codigoProg', 'ilike', 'EXON')
+            ->when(
+                $competencia === AutorizadoPor::Director->value,
+                fn ($q) => $q->where('autorizadoPor', AutorizadoPor::Director->value)
             )
             ->orderBy('descripcion')
             ->get();
