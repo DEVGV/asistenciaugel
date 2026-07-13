@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
 import { Eye, FileX, Plus, Search } from 'lucide-vue-next';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import ExpedienteDetailModal from '@/components/tramite/ExpedienteDetailModal.vue';
+import SearchSelect from '@/components/shared/SearchSelect.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -22,14 +23,31 @@ defineOptions({
     },
 });
 
+interface IeOption {
+    id: number;
+    nombreLegal: string | null;
+    codigoModular: string | null;
+}
+
 const props = defineProps<{
     expedientes: PaginatedResponse<Expediente>;
-    filters: { search?: string; tipo?: string; anio?: string };
+    filters: {
+        search?: string;
+        tipo?: string;
+        estado?: string;
+        fecha_desde?: string;
+        fecha_hasta?: string;
+        ie_id?: string;
+    };
+    ies: IeOption[];
 }>();
 
-const search = ref(props.filters.search ?? '');
-const tipo   = ref(props.filters.tipo ?? '');
-const anio   = ref(props.filters.anio ?? '');
+const search      = ref(props.filters.search ?? '');
+const tipo        = ref<string | null>(props.filters.tipo || null);
+const estado      = ref<string | null>(props.filters.estado || 'pendientes');
+const fechaDesde  = ref(props.filters.fecha_desde ?? '');
+const fechaHasta  = ref(props.filters.fecha_hasta ?? '');
+const ieId        = ref<number | string | null>(props.filters.ie_id ? Number(props.filters.ie_id) : null);
 
 const showDetailModal = ref(false);
 const selectedExpedienteId = ref<number | null>(null);
@@ -39,24 +57,54 @@ function openDetail(exp: Expediente) {
     showDetailModal.value = true;
 }
 
-const TIPOS: { value: string; label: string }[] = [
-    { value: '', label: 'Todos los tipos' },
-    ...( Object.keys(TIPO_EXPEDIENTE_LABELS) as TipoExpediente[] ).map((k) => ({
-        value: k,
+const tipoItems = computed(() =>
+    (Object.keys(TIPO_EXPEDIENTE_LABELS) as TipoExpediente[]).map((k) => ({
+        id: k,
         label: TIPO_EXPEDIENTE_LABELS[k],
     })),
+);
+
+const estadoItems = [
+    { id: 'pendientes', label: 'Pendientes' },
+    { id: 'todos', label: 'Todos' },
+    { id: '1', label: 'Registrado' },
+    { id: '2', label: 'Por Autorizar' },
+    { id: '3', label: 'Rechazado' },
+    { id: '4', label: 'Autorizado' },
+    { id: '5', label: 'Anulado' },
 ];
 
+const ieItems = computed(() =>
+    props.ies.map((ie) => ({
+        id: ie.id,
+        label: ie.nombreLegal ?? `IE #${ie.id}`,
+        sublabel: ie.codigoModular ?? undefined,
+    })),
+);
+
+function applyFilters() {
+    router.get(
+        '/expedientes',
+        {
+            search: search.value || undefined,
+            tipo: tipo.value ?? undefined,
+            estado: estado.value ?? undefined,
+            fecha_desde: fechaDesde.value || undefined,
+            fecha_hasta: fechaHasta.value || undefined,
+            ie_id: ieId.value != null ? String(ieId.value) : undefined,
+        },
+        { preserveState: true, replace: true },
+    );
+}
+
 let debounce: ReturnType<typeof setTimeout>;
-watch([search, tipo, anio], () => {
+watch([search], () => {
     clearTimeout(debounce);
-    debounce = setTimeout(() => {
-        router.get(
-            '/expedientes',
-            { search: search.value || undefined, tipo: tipo.value || undefined, anio: anio.value || undefined },
-            { preserveState: true, replace: true },
-        );
-    }, 300);
+    debounce = setTimeout(applyFilters, 300);
+});
+
+watch([tipo, estado, fechaDesde, fechaHasta, ieId], () => {
+    applyFilters();
 });
 
 const ESTADO_CLASES: Record<string, string> = {
@@ -76,6 +124,10 @@ function nombreTrabajador(exp: Expediente): string {
     if (!p) return `#${exp.trabajador_id}`;
     return [p.paterno, p.materno, p.nombre].filter(Boolean).join(' ');
 }
+
+function nombreIe(exp: Expediente): string {
+    return exp.alta?.institucionEducativa?.nombreLegal ?? '—';
+}
 </script>
 
 <template>
@@ -92,18 +144,36 @@ function nombreTrabajador(exp: Expediente): string {
         </div>
 
         <!-- Filtros -->
-        <div class="flex flex-wrap gap-3">
+        <div class="flex flex-wrap items-end gap-3">
             <div class="relative">
                 <Search class="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
                 <Input v-model="search" class="pl-8 w-64" placeholder="Buscar trabajador…" />
             </div>
-            <select
-                v-model="tipo"
-                class="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
-            >
-                <option v-for="t in TIPOS" :key="t.value" :value="t.value">{{ t.label }}</option>
-            </select>
-            <Input v-model="anio" type="number" class="w-24" placeholder="Año" />
+            <div class="w-44">
+                <SearchSelect
+                    v-model="tipo"
+                    :items="tipoItems"
+                    placeholder="Todos los tipos"
+                    clearable
+                />
+            </div>
+            <div class="w-44">
+                <SearchSelect
+                    v-model="estado"
+                    :items="estadoItems"
+                    placeholder="Estado"
+                />
+            </div>
+            <div class="w-56">
+                <SearchSelect
+                    v-model="ieId"
+                    :items="ieItems"
+                    placeholder="Todas las IEs"
+                    clearable
+                />
+            </div>
+            <Input v-model="fechaDesde" type="date" class="w-36" title="Fecha desde" />
+            <Input v-model="fechaHasta" type="date" class="w-36" title="Fecha hasta" />
         </div>
 
         <!-- Tabla -->
@@ -114,6 +184,7 @@ function nombreTrabajador(exp: Expediente): string {
                         <TableHead>Código</TableHead>
                         <TableHead>Tipo</TableHead>
                         <TableHead>Trabajador</TableHead>
+                        <TableHead>IE</TableHead>
                         <TableHead>Asunto</TableHead>
                         <TableHead>Fecha</TableHead>
                         <TableHead>Estado</TableHead>
@@ -122,7 +193,7 @@ function nombreTrabajador(exp: Expediente): string {
                 </TableHeader>
                 <TableBody>
                     <TableRow v-if="props.expedientes.data.length === 0">
-                        <TableCell colspan="7" class="py-12 text-center text-muted-foreground">
+                        <TableCell colspan="8" class="py-12 text-center text-muted-foreground">
                             <FileX class="mx-auto mb-2 h-8 w-8 opacity-40" />
                             No hay expedientes registrados.
                         </TableCell>
@@ -135,6 +206,9 @@ function nombreTrabajador(exp: Expediente): string {
                             {{ exp.tipoExpediente ? TIPO_EXPEDIENTE_LABELS[exp.tipoExpediente] : '—' }}
                         </TableCell>
                         <TableCell class="text-sm">{{ nombreTrabajador(exp) }}</TableCell>
+                        <TableCell class="max-w-xs truncate text-sm" :title="nombreIe(exp)">
+                            {{ nombreIe(exp) }}
+                        </TableCell>
                         <TableCell class="max-w-xs truncate text-sm">{{ exp.asunto }}</TableCell>
                         <TableCell class="text-sm">{{ exp.fecha }}</TableCell>
                         <TableCell>

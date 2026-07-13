@@ -41,6 +41,7 @@ class ExpedienteService
     private const RELACIONES = [
         'estado',
         'trabajador.persona:id,paterno,materno,nombre,docIdentidad',
+        'alta.institucionEducativa:id,nombreLegal,codigoModular',
         'documentos.documento',
         'suspension.motivoSuspLab',
         'justificacion.motivoSuspLab',
@@ -51,10 +52,19 @@ class ExpedienteService
     /**
      * Lista paginada de expedientes con filtros opcionales.
      *
+     * Defaults: estado "pendientes" (Registrado + Aprobado), mes actual.
+     *
      * @return LengthAwarePaginator<ConasisExpediente>
      */
     public function listarPaginado(Request $request): LengthAwarePaginator
     {
+        // Defaults: mes actual
+        $fechaDesde = $request->string('fecha_desde')->toString() ?: now()->startOfMonth()->toDateString();
+        $fechaHasta = $request->string('fecha_hasta')->toString() ?: now()->endOfMonth()->toDateString();
+
+        // Default estado: "pendientes" (Registrado + Aprobado = sin atender)
+        $estado = $request->string('estado')->toString() ?: 'pendientes';
+
         return ConasisExpediente::query()
             ->with(self::RELACIONES)
             ->when($request->string('tipo')->toString(), fn ($q, string $tipo) => $q->where('tipoExpediente', $tipo))
@@ -66,7 +76,24 @@ class ExpedienteService
                     ->orWhere('nombre', 'ilike', "%{$search}%")
                     ->orWhere('docIdentidad', 'ilike', "%{$search}%"),
             ))
-            ->when($request->string('anio')->toString(), fn ($q, string $anio) => $q->where('anio', (int) $anio))
+            // Filtro de estado
+            ->when($estado === 'pendientes', function ($q) {
+                $q->whereIn('estado_id', [
+                    $this->estadoId(EstadoTramite::Registrado),
+                    $this->estadoId(EstadoTramite::Aprobado),
+                ]);
+            })
+            ->when($estado !== 'pendientes' && $estado !== 'todos', function ($q) use ($estado) {
+                $q->where('estado_id', $this->estadoId(EstadoTramite::from($estado)));
+            })
+            // Filtro de fechas
+            ->when($fechaDesde, fn ($q) => $q->where('fecha', '>=', $fechaDesde))
+            ->when($fechaHasta, fn ($q) => $q->where('fecha', '<=', $fechaHasta))
+            // Filtro por IE (a través de la alta)
+            ->when($request->filled('ie_id'), fn ($q) => $q->whereHas(
+                'alta',
+                fn ($qq) => $qq->where('institucionEducativa_id', (int) $request->input('ie_id')),
+            ))
             ->orderByDesc('fecha')
             ->orderByDesc('id')
             ->paginate(15)

@@ -95,9 +95,6 @@ const allNavItems: NavItem[] = [
         requiere: ['tramites.ver'],
         items: [
             { title: 'Expedientes', href: ExpedienteController.index().url, requiere: ['tramites.ver'] },
-            { title: 'Justificaciones', href: '#', requiere: ['tramites.ver'] },
-            { title: 'Suspensiones', href: '#', requiere: ['tramites.ver'] },
-            { title: 'Motivos Suspensión', href: '/motivos-susp-lab', requiere: ['tramites.ver'] },
         ],
     },
 ];

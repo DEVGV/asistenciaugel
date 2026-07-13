@@ -12,6 +12,7 @@ use App\Models\Conasis\ConasisDocumentosTram;
 use App\Models\Conasis\ConasisExpediente;
 use App\Models\InstitucionesEduc;
 use App\Models\Trabajador;
+use App\Services\Auth\ContextoService;
 use App\Services\Tramite\ExpedienteService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -24,13 +25,29 @@ class ExpedienteController extends Controller
 {
     public function __construct(
         private ExpedienteService $expedienteService,
+        private ContextoService $contextoService,
     ) {}
 
     public function index(Request $request): Response
     {
+        $filters = $request->only(['search', 'tipo', 'estado', 'fecha_desde', 'fecha_hasta', 'ie_id']);
+
+        // Defaults para que el frontend muestre los valores activos
+        $filters['estado']      ??= 'pendientes';
+        $filters['fecha_desde'] ??= now()->startOfMonth()->toDateString();
+        $filters['fecha_hasta'] ??= now()->endOfMonth()->toDateString();
+
+        // IEs disponibles para el filtro (según contexto UGEL)
+        $ies = InstitucionesEduc::query()
+            ->select(['id', 'nombreLegal', 'codigoModular'])
+            ->tap(fn ($q) => $this->contextoService->filtrarInstituciones($q))
+            ->orderBy('nombreLegal')
+            ->get();
+
         return Inertia::render('tramite/expedientes/Index', [
             'expedientes' => $this->expedienteService->listarPaginado($request),
-            'filters'     => $request->only(['search', 'tipo', 'anio']),
+            'filters'     => $filters,
+            'ies'         => $ies,
         ]);
     }
 

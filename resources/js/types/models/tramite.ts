@@ -66,6 +66,14 @@ export interface Expediente {
             docIdentidad: string | null;
         };
     };
+    alta?: {
+        id: number;
+        institucionEducativa?: {
+            id: number;
+            nombreLegal: string | null;
+            codigoModular: string | null;
+        } | null;
+    } | null;
     documentos?: DocumentoTram[];
     // Relaciones CUD
     suspension?: Record<string, unknown> | null;
