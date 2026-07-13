@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
     Upload,
+    Download,
     FileSpreadsheet,
     CheckCircle2,
     Trash2,
@@ -43,7 +44,6 @@ const isSuccess = ref(false);
 
 // Form Options
 const overwriteExisting = ref(false);
-const biometricType = ref('zkteco');
 
 // Mock data to show upon successful "upload"
 const mockSummary = ref({
@@ -180,6 +180,149 @@ function resetState() {
     if (fileInput.value) {
         fileInput.value.value = '';
     }
+}
+
+function downloadTemplate() {
+    // Plantilla Excel alineada con conasis.t_marcaciones
+    // El usuario provee: DNI (→ trabajador_id vía persona.docIdentidad)
+    // y fechaMarcacion (timestamp completo).
+    // El sistema resuelve automáticamente: trabajador_id, altaTrabajador_id,
+    // localMarcacion_id, reloj_id, codigo, fechaRegistro, medioMarcacion, tipo, etc.
+    const xmlHeader = '<?xml version="1.0" encoding="UTF-8"?>\n<?mso-application progid="Excel.Sheet"?>';
+    const workbook = `
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <Styles>
+  <Style ss:ID="header">
+   <Font ss:Bold="1" ss:Size="11"/>
+   <Interior ss:Color="#D9E2F3" ss:Pattern="Solid"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="example">
+   <Font ss:Color="#808080" ss:Italic="1"/>
+  </Style>
+  <Style ss:ID="instruction">
+   <Font ss:Color="#C00000" ss:Bold="1" ss:Size="10"/>
+   <Interior ss:Color="#FFF2CC" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="auto">
+   <Font ss:Color="#2E75B6" ss:Italic="1" ss:Size="9"/>
+   <Interior ss:Color="#E2EFDA" ss:Pattern="Solid"/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="Marcaciones">
+  <Table>
+   <Column ss:Width="120"/>
+   <Column ss:Width="200"/>
+   <Row>
+    <Cell ss:StyleID="header"><Data ss:Type="String">DNI</Data></Cell>
+    <Cell ss:StyleID="header"><Data ss:Type="String">Fecha y Hora</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="example"><Data ss:Type="String">45892110</Data></Cell>
+    <Cell ss:StyleID="example"><Data ss:Type="String">2026-07-01 07:54:12</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="example"><Data ss:Type="String">45892110</Data></Cell>
+    <Cell ss:StyleID="example"><Data ss:Type="String">2026-07-01 13:00:00</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="example"><Data ss:Type="String">70213345</Data></Cell>
+    <Cell ss:StyleID="example"><Data ss:Type="String">2026-07-01 08:02:45</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="example"><Data ss:Type="String">70213345</Data></Cell>
+    <Cell ss:StyleID="example"><Data ss:Type="String">2026-07-01 13:05:00</Data></Cell>
+   </Row>
+  </Table>
+ </Worksheet>
+ <Worksheet ss:Name="Instrucciones">
+  <Table>
+   <Column ss:Width="180"/>
+   <Column ss:Width="160"/>
+   <Column ss:Width="350"/>
+   <Row>
+    <Cell ss:StyleID="header"><Data ss:Type="String">Columna Excel</Data></Cell>
+    <Cell ss:StyleID="header"><Data ss:Type="String">Campo en BD</Data></Cell>
+    <Cell ss:StyleID="header"><Data ss:Type="String">Descripción</Data></Cell>
+   </Row>
+   <Row>
+    <Cell><Data ss:Type="String">DNI</Data></Cell>
+    <Cell><Data ss:Type="String">trabajador_id</Data></Cell>
+    <Cell><Data ss:Type="String">Nro. de documento de identidad del trabajador (persona.docIdentidad). Se usa para resolver el trabajador_id. Obligatorio.</Data></Cell>
+   </Row>
+   <Row>
+    <Cell><Data ss:Type="String">Fecha y Hora</Data></Cell>
+    <Cell><Data ss:Type="String">fechaMarcacion</Data></Cell>
+    <Cell><Data ss:Type="String">Timestamp de la marcación en formato AAAA-MM-DD HH:MM:SS (ej: 2026-07-01 07:54:12). Obligatorio.</Data></Cell>
+   </Row>
+   <Row><Cell></Cell></Row>
+   <Row>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">CAMPOS AUTOMÁTICOS</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">Campo en BD</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">Cómo se genera</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">(automático)</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">altaTrabajador_id</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">Se resuelve desde el alta activa del trabajador en la IE.</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">(automático)</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">localMarcacion_id</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">Se asigna según el local desde donde se carga el reporte.</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">(automático)</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">reloj_id</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">Se asigna según el reloj biométrico seleccionado al cargar.</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">(automático)</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">codigo</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">Código único generado por el sistema (prefijo MAR).</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">(automático)</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">fechaRegistro</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">Fecha/hora del momento de la importación.</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">(automático)</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">medioMarcacion</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">Se establece como 'R' (Reloj biométrico) al importar desde Excel.</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">(automático)</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">procesado</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">Se establece como false (pendiente de consolidación).</Data></Cell>
+   </Row>
+   <Row>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">(automático)</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">tipo</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">E = Entrada, S = Salida. Se determina automáticamente según el horario del trabajador.</Data></Cell>
+   </Row>
+   <Row><Cell></Cell></Row>
+   <Row>
+    <Cell ss:StyleID="instruction"><Data ss:Type="String">IMPORTANTE</Data></Cell>
+    <Cell ss:StyleID="instruction"></Cell>
+    <Cell ss:StyleID="instruction"><Data ss:Type="String">Elimine las filas de ejemplo (en gris) antes de cargar. Solo llene las 2 columnas de la hoja Marcaciones (DNI y Fecha y Hora).</Data></Cell>
+   </Row>
+  </Table>
+ </Worksheet>
+</Workbook>`;
+
+    const blob = new Blob([xmlHeader + workbook], {
+        type: 'application/vnd.ms-excel',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'plantilla_marcaciones.xls';
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 // Simulates the upload process visually
@@ -499,28 +642,32 @@ function startMockUpload() {
                         </h4>
 
                         <div class="space-y-3 text-xs">
-                            <!-- Biometric Brand / Format (Visual dropdown) -->
+                            <!-- Download template -->
                             <div
                                 class="flex flex-col justify-between gap-2 sm:flex-row sm:items-center"
                             >
-                                <Label class="font-medium text-muted-foreground"
-                                    >Formato / Marca del Biométrico:</Label
+                                <div class="space-y-0.5">
+                                    <Label
+                                        class="font-medium text-muted-foreground"
+                                        >Plantilla de carga:</Label
+                                    >
+                                    <p
+                                        class="text-[10px] text-muted-foreground"
+                                    >
+                                        Descargue el formato con las columnas
+                                        requeridas y filas de ejemplo.
+                                    </p>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    class="gap-1.5 border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-950/20"
+                                    @click.stop="downloadTemplate"
                                 >
-                                <select
-                                    v-model="biometricType"
-                                    class="max-w-[200px] rounded-md border border-input bg-background px-2.5 py-1 text-xs shadow-xs focus:ring-1 focus:ring-emerald-500"
-                                >
-                                    <option value="zkteco">
-                                        ZKTeco Standard
-                                    </option>
-                                    <option value="hikvision">
-                                        Hikvision Report
-                                    </option>
-                                    <option value="anviz">Anviz Excel</option>
-                                    <option value="custom">
-                                        Formato Genérico
-                                    </option>
-                                </select>
+                                    <Download class="h-3.5 w-3.5" />
+                                    Descargar Plantilla
+                                </Button>
                             </div>
 
                             <!-- Overwrite toggle -->
@@ -558,12 +705,12 @@ function startMockUpload() {
                             </p>
                             <p>
                                 El Excel debe contener las columnas:
-                                <span class="font-semibold"
-                                    >DNI o Código de Marcación, Fecha y
-                                    Hora</span
-                                >. El sistema vinculará automáticamente las
-                                marcaciones a cada trabajador según su
-                                DNI/Código.
+                                <span class="font-semibold">DNI</span> y
+                                <span class="font-semibold">Fecha y Hora</span>
+                                (formato AAAA-MM-DD HH:MM:SS). El tipo de
+                                marcación, reloj, local y demás campos se
+                                asignan automáticamente. Descargue la plantilla
+                                como guía.
                             </p>
                         </div>
                     </div>
