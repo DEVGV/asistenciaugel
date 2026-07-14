@@ -321,6 +321,7 @@ class MobileController extends Controller
         $today = today();
 
         $horarios = ConasisHorariosTrabajador::query()
+            ->with(['altaTrabajador.institucionEducativa', 'institucionEduc'])
             ->where('trabajador_id', $trabajador->id)
             ->where('activo', true)
             ->whereDate('fechaInicio', '<=', $today)
@@ -328,7 +329,24 @@ class MobileController extends Controller
             ->orderBy('fechaInicio')
             ->get();
 
+        $localesPorAlta = [];
+        foreach ($horarios as $horario) {
+            if ($horario->altaTrabajador) {
+                $localesPorAlta[$horario->altaTrabajador->id] = $this->activeLocalMarcacion(
+                    $trabajador,
+                    $horario->altaTrabajador,
+                    $today
+                );
+            }
+        }
+
         $detalles = ConasisDetalleHorarios::query()
+            ->with([
+                'horarioTrabajador.altaTrabajador.institucionEducativa',
+                'horarioTrabajador.institucionEduc',
+                'horarioCursoIni.curso',
+                'horarioCursoIni.seccion.grado',
+            ])
             ->whereIn('horarioTrabajador_id', $horarios->pluck('id'))
             ->where('aplicar', true)
             ->orderBy('nroDia')
@@ -337,25 +355,35 @@ class MobileController extends Controller
 
         return response()->json([
             'data' => [
-                'horarios' => $horarios->map(fn (ConasisHorariosTrabajador $horario): array => [
+                'horarios' => $horarios->map(fn (ConasisHorariosTrabajador $horario): array => array_merge([
                     'id' => $horario->id,
                     'nombre' => $horario->nombre,
                     'tipo_horario' => $horario->tipoHorario,
                     'fecha_inicio' => $horario->fechaInicio,
                     'fecha_fin' => $horario->fechaFin,
-                ])->values(),
-                'detalles' => $detalles->map(fn (ConasisDetalleHorarios $detalle): array => [
-                    'id' => $detalle->id,
-                    'horario_trabajador_id' => $detalle->horarioTrabajador_id,
-                    'dia_semana' => $detalle->diaSemana,
-                    'nro_dia' => $detalle->nroDia,
-                    'entrada_inicio' => $detalle->entHoraInicio,
-                    'entrada_fin' => $detalle->entHoraFin,
-                    'entrada_tolerancia' => $detalle->entTolerancia,
-                    'salida_inicio' => $detalle->salHoraInicio,
-                    'salida_fin' => $detalle->salHoraFin,
-                    'salida_tolerancia' => $detalle->salTolerancia,
-                ])->values(),
+                ], $this->scheduleAssignmentPayload(
+                    $horario,
+                    $localesPorAlta[$horario->altaTrabajador_id] ?? null
+                )))->values(),
+                'detalles' => $detalles->map(function (ConasisDetalleHorarios $detalle) use ($localesPorAlta): array {
+                    $horario = $detalle->horarioTrabajador;
+
+                    return array_merge([
+                        'id' => $detalle->id,
+                        'horario_trabajador_id' => $detalle->horarioTrabajador_id,
+                        'dia_semana' => $detalle->diaSemana,
+                        'nro_dia' => $detalle->nroDia,
+                        'entrada_inicio' => $detalle->entHoraInicio,
+                        'entrada_fin' => $detalle->entHoraFin,
+                        'entrada_tolerancia' => $detalle->entTolerancia,
+                        'salida_inicio' => $detalle->salHoraInicio,
+                        'salida_fin' => $detalle->salHoraFin,
+                        'salida_tolerancia' => $detalle->salTolerancia,
+                    ], $this->scheduleAssignmentPayload(
+                        $horario,
+                        $horario ? ($localesPorAlta[$horario->altaTrabajador_id] ?? null) : null
+                    ), $this->scheduleCoursePayload($detalle));
+                })->values(),
             ],
         ]);
     }
@@ -639,6 +667,77 @@ class MobileController extends Controller
     {
         return $credential->face_status === MobileBiometricCredential::STATUS_APPROVED
             && filled($credential->face_embedding);
+    }
+
+    private function scheduleAssignmentPayload(
+        ?ConasisHorariosTrabajador $horario,
+        ?ConasisLocalesMarcacion $localMarcacion
+    ): array {
+        if (! $horario) {
+            return [
+                'alta_trabajador_id' => null,
+                'institucion_educativa_id' => null,
+                'institucion_nombre' => null,
+                'local_marcacion_id' => null,
+                'local_inst_educ_id' => null,
+                'local_id' => null,
+                'local_nombre' => null,
+                'local_marcacion' => null,
+            ];
+        }
+
+        $alta = $horario->altaTrabajador;
+        $institucion = $horario->institucionEduc ?? $alta?->institucionEducativa;
+        $local = $localMarcacion?->localInstEduc?->local;
+
+        return [
+            'alta_trabajador_id' => $horario->altaTrabajador_id,
+            'institucion_educativa_id' => $horario->institucionEduc_id ?? $alta?->institucionEducativa_id,
+            'institucion_nombre' => $institucion?->nombreLegal,
+            'local_marcacion_id' => $localMarcacion?->id,
+            'local_inst_educ_id' => $localMarcacion?->localInstEduc_id,
+            'local_id' => $local?->id,
+            'local_nombre' => $local?->nombre,
+            'local_marcacion' => $this->formatLocalMarcacion($localMarcacion),
+        ];
+    }
+
+    private function scheduleCoursePayload(ConasisDetalleHorarios $detalle): array
+    {
+        $horarioCurso = $detalle->horarioCursoIni;
+        $curso = $horarioCurso?->curso;
+        $seccion = $horarioCurso?->seccion;
+        $grado = $seccion?->grado;
+        $cursoNombre = $curso?->nombre ?? $detalle->nombreTurno;
+
+        return [
+            'horario_curso_id' => $horarioCurso?->id,
+            'curso_id' => $curso?->id,
+            'curso_nombre' => $cursoNombre,
+            'nombre_curso' => $cursoNombre,
+            'seccion_id' => $seccion?->id,
+            'seccion_nombre' => $seccion?->nombre,
+            'grado_id' => $grado?->id,
+            'grado_nombre' => $grado?->nombre,
+            'horario_curso' => $horarioCurso ? [
+                'id' => $horarioCurso->id,
+                'curso' => $curso ? [
+                    'id' => $curso->id,
+                    'nombre' => $curso->nombre,
+                    'sigla' => $curso->sigla,
+                ] : null,
+                'seccion' => $seccion ? [
+                    'id' => $seccion->id,
+                    'nombre' => $seccion->nombre,
+                    'sigla' => $seccion->sigla,
+                    'grado' => $grado ? [
+                        'id' => $grado->id,
+                        'nombre' => $grado->nombre,
+                        'sigla' => $grado->sigla,
+                    ] : null,
+                ] : null,
+            ] : null,
+        ];
     }
 
     private function formatLocalMarcacion(?ConasisLocalesMarcacion $localMarcacion): ?array
