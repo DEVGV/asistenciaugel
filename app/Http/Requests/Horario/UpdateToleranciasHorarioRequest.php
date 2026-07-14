@@ -45,4 +45,27 @@ class UpdateToleranciasHorarioRequest extends FormRequest
             'detalles.*.salTolerancia.max' => 'La tolerancia de salida no puede superar 120 minutos.',
         ];
     }
+
+    /**
+     * Validar que los rangos horarios sean coherentes (fin >= inicio).
+     */
+    public function withValidator(\Illuminate\Contracts\Validation\Validator $validator): void
+    {
+        $validator->after(function (\Illuminate\Contracts\Validation\Validator $v) {
+            $detalles = $this->input('detalles', []);
+            foreach ($detalles as $i => $det) {
+                $entDesde = $det['entHoraInicio'] ?? null;
+                $entHasta = $det['entHoraFin'] ?? null;
+                $salDesde = $det['salHoraInicio'] ?? null;
+                $salHasta = $det['salHoraFin'] ?? null;
+
+                if ($entDesde && $entHasta && $entHasta < $entDesde) {
+                    $v->errors()->add("detalles.{$i}.entHoraFin", 'Entrada Hasta debe ser igual o posterior a Entrada Desde.');
+                }
+                if ($salDesde && $salHasta && $salHasta < $salDesde) {
+                    $v->errors()->add("detalles.{$i}.salHoraFin", 'Salida Hasta debe ser igual o posterior a Salida Desde.');
+                }
+            }
+        });
+    }
 }

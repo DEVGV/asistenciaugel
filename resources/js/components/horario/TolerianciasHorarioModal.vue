@@ -76,6 +76,7 @@ watch(
 );
 
 const tieneCambios = computed(() => editable.value.length > 0);
+const rowErrors = ref<Record<number, string>>({});
 
 function applyAllTolerancia(field: 'entTolerancia' | 'salTolerancia', valor: number) {
     editable.value = editable.value.map((d) => ({ ...d, [field]: valor }));
@@ -84,6 +85,28 @@ function applyAllTolerancia(field: 'entTolerancia' | 'salTolerancia', valor: num
 async function guardar() {
     saving.value = true;
     error.value = null;
+    rowErrors.value = {};
+
+    // Validar rangos horarios: fin >= inicio para entrada y salida
+    let hasError = false;
+    for (const d of editable.value) {
+        const errors: string[] = [];
+        if (d.entHoraInicio && d.entHoraFin && d.entHoraFin < d.entHoraInicio) {
+            errors.push('Entrada Hasta debe ser ≥ Entrada Desde');
+        }
+        if (d.salHoraInicio && d.salHoraFin && d.salHoraFin < d.salHoraInicio) {
+            errors.push('Salida Hasta debe ser ≥ Salida Desde');
+        }
+        if (errors.length) {
+            rowErrors.value[d.id] = errors.join('. ');
+            hasError = true;
+        }
+    }
+    if (hasError) {
+        error.value = 'Corrija los rangos horarios marcados en rojo.';
+        saving.value = false;
+        return;
+    }
 
     try {
         const csrf = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '';
@@ -194,11 +217,15 @@ async function guardar() {
                     </thead>
                     <tbody>
                         <tr v-for="d in editable" :key="d.id"
-                            class="border-t hover:bg-muted/20">
+                            class="border-t hover:bg-muted/20"
+                            :class="rowErrors[d.id] ? 'bg-red-50/50 dark:bg-red-950/10' : ''">
                             <td class="p-2 font-medium">
                                 {{ DAYS[d.nroDia] ?? `Día ${d.nroDia}` }}
                                 <div v-if="d.nombreTurno" class="text-[10px] text-muted-foreground">
                                     {{ d.nombreTurno }}
+                                </div>
+                                <div v-if="rowErrors[d.id]" class="text-[10px] text-red-500 font-normal mt-0.5">
+                                    {{ rowErrors[d.id] }}
                                 </div>
                             </td>
                             <td class="p-2">
@@ -209,7 +236,9 @@ async function guardar() {
                             <td class="p-2">
                                 <input v-model="d.entHoraFin" type="time"
                                     class="w-24 rounded border px-2 py-1 font-mono text-xs"
-                                    aria-label="Entrada hasta" />
+                                    :class="rowErrors[d.id] && d.entHoraFin && d.entHoraInicio && d.entHoraFin < d.entHoraInicio ? 'border-red-500 ring-1 ring-red-500' : ''"
+                                    aria-label="Entrada hasta"
+                                    @input="delete rowErrors[d.id]" />
                             </td>
                             <td class="p-2 text-center">
                                 <input v-model.number="d.entTolerancia" type="number" min="0" max="120"
@@ -224,7 +253,9 @@ async function guardar() {
                             <td class="p-2">
                                 <input v-model="d.salHoraFin" type="time"
                                     class="w-24 rounded border px-2 py-1 font-mono text-xs"
-                                    aria-label="Salida hasta" />
+                                    :class="rowErrors[d.id] && d.salHoraFin && d.salHoraInicio && d.salHoraFin < d.salHoraInicio ? 'border-red-500 ring-1 ring-red-500' : ''"
+                                    aria-label="Salida hasta"
+                                    @input="delete rowErrors[d.id]" />
                             </td>
                             <td class="p-2 text-center">
                                 <input v-model.number="d.salTolerancia" type="number" min="0" max="120"

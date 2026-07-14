@@ -70,7 +70,7 @@ class HorarioTrabajadorService
             'detalles.horarioCursoIni.seccion.grado',
             'institucionEduc',
             'trabajador.persona',
-            'altaTrabajador',
+            'altaTrabajador.cargo',
         ]);
     }
 
@@ -127,6 +127,121 @@ class HorarioTrabajadorService
                 'horarioCurso.seccion.grado',
             ])
             ->get();
+    }
+
+    /**
+     * Crear o actualizar un horario manual (tipo A) para trabajadores
+     * que no tienen cursos asignados (directores, auxiliares, administrativos).
+     *
+     * @param  array<int, array<string, mixed>>  $detalles  Detalles por día
+     */
+    public function guardarHorarioManual(array $data, array $detalles): ConasisHorariosTrabajador
+    {
+        return DB::transaction(function () use ($data, $detalles) {
+            $trabajadorId = (int) $data['trabajador_id'];
+            $anio = (int) $data['anio'];
+            $ieId = (int) $data['institucionEduc_id'];
+
+            // Buscar la alta activa del trabajador en la IE
+            $alta = AltasTrabajadores::query()
+                ->where('trabajador_id', $trabajadorId)
+                ->where('institucionEducativa_id', $ieId)
+                ->whereNull('fechaBaja')
+                ->first();
+
+            // Si ya existe un horario, preservar su tipoHorario; si es nuevo, usar 'A'
+            $existente = ConasisHorariosTrabajador::query()
+                ->where('anio', $anio)
+                ->where('institucionEduc_id', $ieId)
+                ->where('trabajador_id', $trabajadorId)
+                ->first();
+
+            $horario = ConasisHorariosTrabajador::updateOrCreate(
+                [
+                    'anio' => $anio,
+                    'institucionEduc_id' => $ieId,
+                    'trabajador_id' => $trabajadorId,
+                ],
+                [
+                    'altaTrabajador_id' => $alta?->id ?? ($data['altaTrabajador_id'] ?? null),
+                    'nombre' => $data['nombre'] ?? $existente?->nombre ?? 'Horario Trabajador '.$anio,
+                    'tipoHorario' => $existente?->tipoHorario ?? 'A',
+                    'fechaInicio' => $data['fechaInicio'] ?? $existente?->fechaInicio ?? $alta?->fechaInicio ?? Carbon::create($anio, 1, 1)->toDateString(),
+                    'fechaFin' => $data['fechaFin'] ?? $existente?->fechaFin ?? $alta?->fechaFin,
+                    'archivado' => false,
+                    'activo' => true,
+                    'created_by' => auth()->id() ?? 1,
+                ]
+            );
+
+            // Sincronizar detalles: borrar los que no vienen y crear/actualizar
+            $incomingIds = collect($detalles)->pluck('id')->filter()->toArray();
+            ConasisDetalleHorarios::where('horarioTrabajador_id', $horario->id)
+                ->whereNotIn('id', $incomingIds)
+                ->delete();
+
+            foreach ($detalles as $d) {
+                $entHoraInicio = $d['entHoraInicio'] ?? null;
+                $salHoraInicio = $d['salHoraInicio'] ?? null;
+
+                // Usar turno enviado o calcular por hora de entrada como fallback
+                $turnoId = $d['turno_id'] ?? null;
+                $nombreTurno = $d['nombreTurno'] ?? null;
+                if (! $turnoId) {
+                    if ($entHoraInicio) {
+                        $hora = (int) explode(':', $entHoraInicio)[0];
+                        if ($hora < 13) {
+                            $turnoId = 1; $nombreTurno = 'MAÑANA';
+                        } elseif ($hora < 18) {
+                            $turnoId = 2; $nombreTurno = 'TARDE';
+                        } else {
+                            $turnoId = 3; $nombreTurno = 'NOCHE';
+                        }
+                    } else {
+                        $turnoId = 1; $nombreTurno = 'MAÑANA';
+                    }
+                }
+
+                // Calcular horas acumuladas
+                $horasAcum = 0;
+                if ($entHoraInicio && $salHoraInicio) {
+                    [$h1, $m1] = array_map('intval', explode(':', $entHoraInicio));
+                    [$h2, $m2] = array_map('intval', explode(':', $salHoraInicio));
+                    $horasAcum = (($h2 * 60 + $m2) - ($h1 * 60 + $m1)) / 60.0;
+                }
+
+                ConasisDetalleHorarios::updateOrCreate(
+                    [
+                        'id' => $d['id'] ?? null,
+                        'horarioTrabajador_id' => $horario->id,
+                    ],
+                    [
+                        'turno_id' => $turnoId,
+                        'nombreTurno' => $nombreTurno,
+                        'nroTurno' => $turnoId,
+                        'diaSemana' => 'S',
+                        'nroDia' => $d['nroDia'],
+                        'horarioCursoIni_id' => null,
+                        'entDiaInicio' => 0,
+                        'entDiaFin' => 0,
+                        'entHoraInicio' => $entHoraInicio,
+                        'entHoraFin' => $d['entHoraFin'] ?? $entHoraInicio,
+                        'entTolerancia' => $d['entTolerancia'] ?? 15,
+                        'horarioCursoFin_id' => null,
+                        'salDiaInicio' => 0,
+                        'salDiaFin' => 0,
+                        'salHoraInicio' => $salHoraInicio,
+                        'salHoraFin' => $d['salHoraFin'] ?? $salHoraInicio,
+                        'salTolerancia' => $d['salTolerancia'] ?? 15,
+                        'horaAcumula' => $d['horaAcumula'] ?? $horasAcum,
+                        'aplicar' => $d['aplicar'] ?? true,
+                        'created_by' => auth()->id() ?? 1,
+                    ]
+                );
+            }
+
+            return $horario->load(['detalles', 'institucionEduc', 'trabajador.persona', 'altaTrabajador.cargo']);
+        });
     }
 
     /**

@@ -53,6 +53,23 @@ class StoreHorarioMasivoRequest extends FormRequest
         ];
     }
 
+    /**
+     * Validar que horaFin sea posterior a horaInicio en cada fila.
+     */
+    public function withValidator(\Illuminate\Contracts\Validation\Validator $validator): void
+    {
+        $validator->after(function (\Illuminate\Contracts\Validation\Validator $v) {
+            $filas = $this->input('filas', []);
+            foreach ($filas as $i => $fila) {
+                $inicio = $fila['horaInicio'] ?? null;
+                $fin = $fila['horaFin'] ?? null;
+                if ($inicio && $fin && $fin <= $inicio) {
+                    $v->errors()->add("filas.{$i}.horaFin", 'La hora de fin debe ser posterior a la hora de inicio.');
+                }
+            }
+        });
+    }
+
     /** @return array<int, array<string, mixed>> Filas validadas listas para el Service */
     public function filas(): array
     {

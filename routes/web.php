@@ -373,6 +373,11 @@ Route::middleware(['auth', 'verified', 'contexto'])->group(function () {
             ->shallow()
             ->parameters(['horarios-cursos' => 'horarioCurso', 'cargas' => 'cargaHoraria']);
 
+        // Crear / actualizar horario manual (administrativo) para trabajadores sin cursos
+        Route::post('horarios-trabajador/manual', [
+            HorarioTrabajadorController::class, 'storeManual',
+        ])->name('horarios-trabajador.manual.store');
+
         // Actualizar tolerancias/rangos horarios de un horario de trabajador
         Route::patch('horarios-trabajador/{horarioTrabajador}/tolerancias', [
             HorarioTrabajadorController::class, 'updateTolerancias',
