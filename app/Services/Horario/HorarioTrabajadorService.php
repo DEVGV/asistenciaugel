@@ -191,7 +191,20 @@ class HorarioTrabajadorService
                 ]
             );
 
-            // 4. Limpiar los detalles de horario previos
+            // 4. Preservar tolerancias configuradas antes de eliminar (por nroDia)
+            $toleranciasPrevias = ConasisDetalleHorarios::where('horarioTrabajador_id', $horarioTrabajador->id)
+                ->get()
+                ->keyBy('nroDia')
+                ->map(fn ($d) => [
+                    'entTolerancia' => (int) ($d->entTolerancia ?? 15),
+                    'salTolerancia' => (int) ($d->salTolerancia ?? 15),
+                    'entHoraInicio' => $d->entHoraInicio,
+                    'entHoraFin'    => $d->entHoraFin,
+                    'salHoraInicio' => $d->salHoraInicio,
+                    'salHoraFin'    => $d->salHoraFin,
+                ])
+                ->toArray();
+
             ConasisDetalleHorarios::where('horarioTrabajador_id', $horarioTrabajador->id)->delete();
 
             // 5. Agrupar las cargas por día (nroDia)
@@ -241,6 +254,18 @@ class HorarioTrabajadorService
                     }
                 }
 
+                // Si el usuario había personalizado tolerancias/horas previamente,
+                // se respetan; si es la primera vez se usan defaults amplios
+                // (±15 min a cada lado) para que el SP no marque FALTA por
+                // segundos de diferencia.
+                $previa = $toleranciasPrevias[$nroDia] ?? null;
+                $entTolerancia = $previa['entTolerancia'] ?? 15;
+                $salTolerancia = $previa['salTolerancia'] ?? 15;
+                $entHoraInicioFinal = $previa['entHoraInicio'] ?? $minHoraInicio;
+                $entHoraFinFinal    = $previa['entHoraFin']    ?? $minHoraInicio;
+                $salHoraInicioFinal = $previa['salHoraInicio'] ?? $maxHoraFin;
+                $salHoraFinFinal    = $previa['salHoraFin']    ?? $maxHoraFin;
+
                 ConasisDetalleHorarios::create([
                     'horarioTrabajador_id' => $horarioTrabajador->id,
                     'turno_id' => $turnoId,
@@ -251,15 +276,15 @@ class HorarioTrabajadorService
                     'horarioCursoIni_id' => $cursoIni->id,
                     'entDiaInicio' => 0,
                     'entDiaFin' => 0,
-                    'entHoraInicio' => $minHoraInicio,
-                    'entHoraFin' => $minHoraInicio,
-                    'entTolerancia' => 10, // 10 minutos de tolerancia por defecto
+                    'entHoraInicio' => $entHoraInicioFinal,
+                    'entHoraFin' => $entHoraFinFinal,
+                    'entTolerancia' => $entTolerancia,
                     'horarioCursoFin_id' => $cursoFin->id,
                     'salDiaInicio' => 0,
                     'salDiaFin' => 0,
-                    'salHoraInicio' => $maxHoraFin,
-                    'salHoraFin' => $maxHoraFin,
-                    'salTolerancia' => 0,
+                    'salHoraInicio' => $salHoraInicioFinal,
+                    'salHoraFin' => $salHoraFinFinal,
+                    'salTolerancia' => $salTolerancia,
                     'horaAcumula' => $horasAcumuladas,
                     'aplicar' => true,
                     'created_by' => auth()->id() ?? 1,

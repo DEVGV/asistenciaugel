@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Asistencia;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Asistencia\ProcesarConsolidadoRequest;
+use App\Http\Requests\Asistencia\ReprocesarTrabajadorRequest;
 use App\Models\InstitucionesEduc;
 use App\Services\Asistencia\ConsolidadoAsistenciaService;
 use Illuminate\Http\JsonResponse;
@@ -38,6 +39,29 @@ class ConsolidadoAsistenciaController extends Controller
             'sin_horario' => $resultado['sin_horario'],
             'errores'     => $resultado['errores'],
         ]);
+    }
+
+    /**
+     * Reprocesa la asistencia de UN solo trabajador.
+     * POST /instituciones/{institucione}/consolidado-asistencia/reprocesar-trabajador
+     */
+    public function reprocesarTrabajador(
+        ReprocesarTrabajadorRequest $request,
+        InstitucionesEduc $institucione,
+    ): JsonResponse {
+        $params = $request->toProcesarParams();
+
+        $resultado = $this->consolidadoService->reprocesarTrabajador(
+            institucion: $institucione,
+            trabajadorId: $params['trabajador_id'],
+            anio: $params['anio'],
+            mes: $params['mes'],
+            fechaDesde: $params['fechaDesde'],
+            fechaHasta: $params['fechaHasta'],
+            userId: auth()->id() ?? 1,
+        );
+
+        return response()->json($resultado, $resultado['ok'] ? 200 : 422);
     }
 
     /**

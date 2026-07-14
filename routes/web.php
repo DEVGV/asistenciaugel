@@ -227,6 +227,8 @@ Route::middleware(['auth', 'verified', 'contexto'])->group(function () {
         // Consolidado de Asistencia
         Route::post('instituciones/{institucione}/consolidado-asistencia/procesar', [ConsolidadoAsistenciaController::class, 'procesar'])
             ->name('instituciones.consolidado-asistencia.procesar');
+        Route::post('instituciones/{institucione}/consolidado-asistencia/reprocesar-trabajador', [ConsolidadoAsistenciaController::class, 'reprocesarTrabajador'])
+            ->name('instituciones.consolidado-asistencia.reprocesar-trabajador');
         Route::get('instituciones/{institucione}/consolidado-asistencia/consultar', [ConsolidadoAsistenciaController::class, 'consultar'])
             ->name('instituciones.consolidado-asistencia.consultar');
         Route::get('consolidado-asistencia/{asistencia}/detalle', [ConsolidadoAsistenciaController::class, 'detalle'])
@@ -370,6 +372,11 @@ Route::middleware(['auth', 'verified', 'contexto'])->group(function () {
             ->only(['store', 'update', 'destroy'])
             ->shallow()
             ->parameters(['horarios-cursos' => 'horarioCurso', 'cargas' => 'cargaHoraria']);
+
+        // Actualizar tolerancias/rangos horarios de un horario de trabajador
+        Route::patch('horarios-trabajador/{horarioTrabajador}/tolerancias', [
+            HorarioTrabajadorController::class, 'updateTolerancias',
+        ])->name('horarios-trabajador.tolerancias.update');
     });
     Route::middleware('permiso:horarios.eliminar')->group(function () {
         Route::resource('horarios-cursos', HorarioCursoController::class)

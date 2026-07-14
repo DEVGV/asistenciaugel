@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Horario;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Horario\UpdateToleranciasHorarioRequest;
+use App\Models\Conasis\ConasisHorariosTrabajador;
 use App\Models\Trabajador;
+use App\Services\Horario\DetalleHorarioService;
 use App\Services\Horario\HorarioTrabajadorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,6 +17,7 @@ class HorarioTrabajadorController extends Controller
 {
     public function __construct(
         private HorarioTrabajadorService $horarioTrabajadorService,
+        private DetalleHorarioService $detalleHorarioService,
     ) {}
 
     public function index(): Response
@@ -43,6 +47,26 @@ class HorarioTrabajadorController extends Controller
         return Inertia::render('horario/Show', [
             'horario' => $this->horarioTrabajadorService->obtenerConDetalles($horario),
             'cargas'  => $this->horarioTrabajadorService->listarCargasParaShow($horario),
+        ]);
+    }
+
+    /**
+     * Actualiza tolerancias y rangos horarios de cada día del horario.
+     * PATCH /horarios-trabajador/{id}/tolerancias
+     */
+    public function updateTolerancias(
+        UpdateToleranciasHorarioRequest $request,
+        ConasisHorariosTrabajador $horarioTrabajador,
+    ): JsonResponse {
+        $actualizados = $this->detalleHorarioService->actualizarTolerancias(
+            $horarioTrabajador,
+            $request->validated('detalles'),
+        );
+
+        return response()->json([
+            'ok'           => true,
+            'actualizados' => $actualizados,
+            'mensaje'      => "Se actualizaron {$actualizados} detalle(s) de horario.",
         ]);
     }
 }
