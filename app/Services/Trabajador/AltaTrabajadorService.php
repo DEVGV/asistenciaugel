@@ -38,6 +38,7 @@ class AltaTrabajadorService
                 'area',
                 'cargo',
                 'motivoBaja',
+                'localMarcacion.localInstEduc.local',
             ])
             ->where('trabajador_id', $trabajador->id)
             ->orderByDesc('fechaInicio')

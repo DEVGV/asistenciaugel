@@ -9,6 +9,7 @@ import {
     Info,
     Calendar,
     ArrowRight,
+    AlertTriangle,
 } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ defineProps<{
 const emit = defineEmits<{
     (e: 'update:show', value: boolean): void;
     (e: 'close'): void;
+    (e: 'success', count: number): void;
 }>();
 
 // State variables
@@ -39,53 +41,35 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const selectedFile = ref<File | null>(null);
 const isDragOver = ref(false);
 const isUploading = ref(false);
-const uploadProgress = ref(0);
 const isSuccess = ref(false);
+const errorGeneral = ref('');
 
 // Form Options
 const overwriteExisting = ref(false);
 
-// Mock data to show upon successful "upload"
-const mockSummary = ref({
-    totalRows: 154,
-    matchedEmployees: 24,
-    unmatchedEmployees: 0,
-    minDate: '2026-06-01',
-    maxDate: '2026-06-24',
-});
+// Resultado real del servidor
+const resultado = ref<{
+    message: string;
+    insertados: number;
+    duplicados: number;
+    errores: Record<number, string>;
+    preview: Array<{ dni: string; nombre: string; fecha: string; tipo: string }>;
+    resumen: {
+        totalFilas: number;
+        trabajadoresAsociados: number;
+        sinCoincidencia: number;
+        fechaMin: string | null;
+        fechaMax: string | null;
+    };
+} | null>(null);
 
-const mockRows = ref([
-    {
-        dni: '45892110',
-        nombre: 'Juan Perez Gomez',
-        fecha: '2026-06-24 07:54:12',
-        tipo: 'Entrada',
-    },
-    {
-        dni: '70213345',
-        nombre: 'Maria Ruiz Diaz',
-        fecha: '2026-06-24 08:02:45',
-        tipo: 'Entrada',
-    },
-    {
-        dni: '43998811',
-        nombre: 'Carlos Soto Peralta',
-        fecha: '2026-06-24 08:05:00',
-        tipo: 'Entrada',
-    },
-    {
-        dni: '45892110',
-        nombre: 'Juan Perez Gomez',
-        fecha: '2026-06-24 13:02:18',
-        tipo: 'Salida',
-    },
-    {
-        dni: '70213345',
-        nombre: 'Maria Ruiz Diaz',
-        fecha: '2026-06-24 13:05:00',
-        tipo: 'Salida',
-    },
-]);
+const erroresArray = computed(() => {
+    if (!resultado.value?.errores) return [];
+    return Object.entries(resultado.value.errores).map(([fila, msg]) => ({
+        fila: Number(fila),
+        mensaje: msg as string,
+    }));
+});
 
 const formattedFileSize = computed(() => {
     if (!selectedFile.value) {
@@ -174,8 +158,9 @@ function removeFile() {
 function resetState() {
     selectedFile.value = null;
     isUploading.value = false;
-    uploadProgress.value = 0;
     isSuccess.value = false;
+    errorGeneral.value = '';
+    resultado.value = null;
 
     if (fileInput.value) {
         fileInput.value.value = '';
@@ -183,11 +168,6 @@ function resetState() {
 }
 
 function downloadTemplate() {
-    // Plantilla Excel alineada con conasis.t_marcaciones
-    // El usuario provee: DNI (→ trabajador_id vía persona.docIdentidad)
-    // y fechaMarcacion (timestamp completo).
-    // El sistema resuelve automáticamente: trabajador_id, altaTrabajador_id,
-    // localMarcacion_id, reloj_id, codigo, fechaRegistro, medioMarcacion, tipo, etc.
     const xmlHeader = '<?xml version="1.0" encoding="UTF-8"?>\n<?mso-application progid="Excel.Sheet"?>';
     const workbook = `
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
@@ -246,7 +226,7 @@ function downloadTemplate() {
    <Row>
     <Cell ss:StyleID="header"><Data ss:Type="String">Columna Excel</Data></Cell>
     <Cell ss:StyleID="header"><Data ss:Type="String">Campo en BD</Data></Cell>
-    <Cell ss:StyleID="header"><Data ss:Type="String">Descripción</Data></Cell>
+    <Cell ss:StyleID="header"><Data ss:Type="String">Descripcion</Data></Cell>
    </Row>
    <Row>
     <Cell><Data ss:Type="String">DNI</Data></Cell>
@@ -256,53 +236,53 @@ function downloadTemplate() {
    <Row>
     <Cell><Data ss:Type="String">Fecha y Hora</Data></Cell>
     <Cell><Data ss:Type="String">fechaMarcacion</Data></Cell>
-    <Cell><Data ss:Type="String">Timestamp de la marcación en formato AAAA-MM-DD HH:MM:SS (ej: 2026-07-01 07:54:12). Obligatorio.</Data></Cell>
+    <Cell><Data ss:Type="String">Timestamp de la marcacion en formato AAAA-MM-DD HH:MM:SS (ej: 2026-07-01 07:54:12). Obligatorio.</Data></Cell>
    </Row>
    <Row><Cell></Cell></Row>
    <Row>
-    <Cell ss:StyleID="auto"><Data ss:Type="String">CAMPOS AUTOMÁTICOS</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">CAMPOS AUTOMATICOS</Data></Cell>
     <Cell ss:StyleID="auto"><Data ss:Type="String">Campo en BD</Data></Cell>
-    <Cell ss:StyleID="auto"><Data ss:Type="String">Cómo se genera</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">Como se genera</Data></Cell>
    </Row>
    <Row>
-    <Cell ss:StyleID="auto"><Data ss:Type="String">(automático)</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">(automatico)</Data></Cell>
     <Cell ss:StyleID="auto"><Data ss:Type="String">altaTrabajador_id</Data></Cell>
     <Cell ss:StyleID="auto"><Data ss:Type="String">Se resuelve desde el alta activa del trabajador en la IE.</Data></Cell>
    </Row>
    <Row>
-    <Cell ss:StyleID="auto"><Data ss:Type="String">(automático)</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">(automatico)</Data></Cell>
     <Cell ss:StyleID="auto"><Data ss:Type="String">localMarcacion_id</Data></Cell>
-    <Cell ss:StyleID="auto"><Data ss:Type="String">Se asigna según el local desde donde se carga el reporte.</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">Se asigna segun el local desde donde se carga el reporte.</Data></Cell>
    </Row>
    <Row>
-    <Cell ss:StyleID="auto"><Data ss:Type="String">(automático)</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">(automatico)</Data></Cell>
     <Cell ss:StyleID="auto"><Data ss:Type="String">reloj_id</Data></Cell>
-    <Cell ss:StyleID="auto"><Data ss:Type="String">Se asigna según el reloj biométrico seleccionado al cargar.</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">Se asigna segun el reloj biometrico seleccionado al cargar.</Data></Cell>
    </Row>
    <Row>
-    <Cell ss:StyleID="auto"><Data ss:Type="String">(automático)</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">(automatico)</Data></Cell>
     <Cell ss:StyleID="auto"><Data ss:Type="String">codigo</Data></Cell>
-    <Cell ss:StyleID="auto"><Data ss:Type="String">Código único generado por el sistema (prefijo MAR).</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">Codigo unico generado por el sistema (prefijo MAR).</Data></Cell>
    </Row>
    <Row>
-    <Cell ss:StyleID="auto"><Data ss:Type="String">(automático)</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">(automatico)</Data></Cell>
     <Cell ss:StyleID="auto"><Data ss:Type="String">fechaRegistro</Data></Cell>
-    <Cell ss:StyleID="auto"><Data ss:Type="String">Fecha/hora del momento de la importación.</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">Fecha/hora del momento de la importacion.</Data></Cell>
    </Row>
    <Row>
-    <Cell ss:StyleID="auto"><Data ss:Type="String">(automático)</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">(automatico)</Data></Cell>
     <Cell ss:StyleID="auto"><Data ss:Type="String">medioMarcacion</Data></Cell>
-    <Cell ss:StyleID="auto"><Data ss:Type="String">Se establece como 'R' (Reloj biométrico) al importar desde Excel.</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">Se establece como 'R' (Reloj biometrico) al importar desde Excel.</Data></Cell>
    </Row>
    <Row>
-    <Cell ss:StyleID="auto"><Data ss:Type="String">(automático)</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">(automatico)</Data></Cell>
     <Cell ss:StyleID="auto"><Data ss:Type="String">procesado</Data></Cell>
-    <Cell ss:StyleID="auto"><Data ss:Type="String">Se establece como false (pendiente de consolidación).</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">Se establece como false (pendiente de consolidacion).</Data></Cell>
    </Row>
    <Row>
-    <Cell ss:StyleID="auto"><Data ss:Type="String">(automático)</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">(automatico)</Data></Cell>
     <Cell ss:StyleID="auto"><Data ss:Type="String">tipo</Data></Cell>
-    <Cell ss:StyleID="auto"><Data ss:Type="String">E = Entrada, S = Salida. Se determina automáticamente según el horario del trabajador.</Data></Cell>
+    <Cell ss:StyleID="auto"><Data ss:Type="String">E = Entrada, S = Salida. Se determina automaticamente segun orden cronologico.</Data></Cell>
    </Row>
    <Row><Cell></Cell></Row>
    <Row>
@@ -325,26 +305,64 @@ function downloadTemplate() {
     URL.revokeObjectURL(url);
 }
 
-// Simulates the upload process visually
-function startMockUpload() {
-    if (!selectedFile.value) {
+async function startUpload(relojId: number | null) {
+    if (!selectedFile.value || !relojId) {
         return;
     }
 
     isUploading.value = true;
-    uploadProgress.value = 0;
+    errorGeneral.value = '';
+    resultado.value = null;
 
-    const interval = setInterval(() => {
-        uploadProgress.value += 5;
+    const formData = new FormData();
+    formData.append('archivo', selectedFile.value);
+    formData.append('reloj_id', String(relojId));
+    formData.append('overwrite', overwriteExisting.value ? '1' : '0');
 
-        if (uploadProgress.value >= 100) {
-            clearInterval(interval);
-            setTimeout(() => {
-                isUploading.value = false;
-                isSuccess.value = true;
-            }, 300);
+    try {
+        const res = await fetch('/marcaciones/cargar-excel', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN':
+                    (
+                        document.querySelector(
+                            'meta[name="csrf-token"]',
+                        ) as HTMLMetaElement
+                    )?.content ?? '',
+                Accept: 'application/json',
+            },
+            body: formData,
+        });
+
+        const data = await res.json();
+
+        resultado.value = data;
+
+        if (res.ok && data.insertados > 0) {
+            isSuccess.value = true;
+            emit('success', data.insertados);
+        } else if (!res.ok) {
+            // Errores de validación de Laravel (422 sin filas válidas)
+            if (data.errors) {
+                // Errores de FormRequest (campo inválido)
+                const msgs = Object.values(data.errors).flat();
+                errorGeneral.value = (msgs as string[]).join('. ');
+            } else {
+                errorGeneral.value = data.message ?? 'Error al procesar el archivo.';
+                // Mostrar resultado parcial si hay errores por fila
+                if (data.errores && Object.keys(data.errores).length > 0) {
+                    isSuccess.value = true; // mostrar la vista de resultado (con errores)
+                }
+            }
+        } else {
+            // res.ok pero 0 insertados — mostrar resultado
+            isSuccess.value = true;
         }
-    }, 80); // takes about 1.6 seconds
+    } catch {
+        errorGeneral.value = 'Error de conexión al procesar el archivo.';
+    } finally {
+        isUploading.value = false;
+    }
 }
 </script>
 
@@ -389,22 +407,13 @@ function startMockUpload() {
                             trabajadores
                         </p>
                     </div>
-                    <div
-                        class="h-2.5 w-full max-w-xs overflow-hidden rounded-full bg-muted"
-                    >
-                        <div
-                            class="h-2.5 rounded-full bg-emerald-600 transition-all duration-100"
-                            :style="{ width: uploadProgress + '%' }"
-                        ></div>
-                    </div>
-                    <span class="text-xs font-semibold text-emerald-600"
-                        >{{ uploadProgress }}%</span
-                    >
                 </div>
 
-                <!-- State 2: Success Visuals -->
-                <div v-else-if="isSuccess" class="space-y-5">
+                <!-- State 2: Success / Result -->
+                <div v-else-if="isSuccess && resultado" class="space-y-5">
+                    <!-- Success banner -->
                     <div
+                        v-if="resultado.insertados > 0"
                         class="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/20"
                     >
                         <CheckCircle2
@@ -414,14 +423,36 @@ function startMockUpload() {
                             <h4
                                 class="font-semibold text-emerald-900 dark:text-emerald-400"
                             >
-                                ¡Carga procesada correctamente! (Simulación)
+                                {{ resultado.message }}
                             </h4>
                             <p
+                                v-if="resultado.duplicados > 0"
                                 class="mt-0.5 text-xs text-emerald-700 dark:text-emerald-500"
                             >
-                                El reporte ha sido validado con éxito. A nivel
-                                funcional, esta acción registrará las
-                                marcaciones correspondientes.
+                                {{ resultado.duplicados }} marcaciones
+                                duplicadas omitidas.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- No insertions banner -->
+                    <div
+                        v-else
+                        class="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/50 dark:bg-amber-950/20"
+                    >
+                        <AlertTriangle
+                            class="h-8 w-8 shrink-0 text-amber-600"
+                        />
+                        <div>
+                            <h4
+                                class="font-semibold text-amber-900 dark:text-amber-400"
+                            >
+                                No se insertaron marcaciones
+                            </h4>
+                            <p
+                                class="mt-0.5 text-xs text-amber-700 dark:text-amber-500"
+                            >
+                                {{ resultado.message }}
                             </p>
                         </div>
                     </div>
@@ -434,7 +465,7 @@ function startMockUpload() {
                                 >Filas Procesadas</span
                             >
                             <span class="text-lg font-bold text-foreground">{{
-                                mockSummary.totalRows
+                                resultado.resumen.totalFilas
                             }}</span>
                         </div>
                         <div class="rounded-lg border bg-card p-3 text-center">
@@ -443,7 +474,7 @@ function startMockUpload() {
                                 >Trabajadores Asoc.</span
                             >
                             <span class="text-lg font-bold text-foreground">{{
-                                mockSummary.matchedEmployees
+                                resultado.resumen.trabajadoresAsociados
                             }}</span>
                         </div>
                         <div class="rounded-lg border bg-card p-3 text-center">
@@ -452,14 +483,23 @@ function startMockUpload() {
                                 >Sin Coincidencias</span
                             >
                             <span
-                                class="text-lg font-bold font-semibold text-emerald-600"
-                                >{{ mockSummary.unmatchedEmployees }}</span
+                                class="text-lg font-bold"
+                                :class="
+                                    resultado.resumen.sinCoincidencia > 0
+                                        ? 'text-amber-600'
+                                        : 'text-emerald-600'
+                                "
+                                >{{ resultado.resumen.sinCoincidencia }}</span
                             >
                         </div>
                     </div>
 
                     <!-- Date range info -->
                     <div
+                        v-if="
+                            resultado.resumen.fechaMin &&
+                            resultado.resumen.fechaMax
+                        "
                         class="flex items-center justify-between rounded-lg border bg-muted/20 p-3 text-xs"
                     >
                         <span
@@ -473,19 +513,22 @@ function startMockUpload() {
                         <span
                             class="flex items-center gap-1 font-semibold text-foreground"
                         >
-                            {{ mockSummary.minDate }}
+                            {{ resultado.resumen.fechaMin }}
                             <ArrowRight
                                 class="inline h-3 w-3 text-muted-foreground"
                             />
-                            {{ mockSummary.maxDate }}
+                            {{ resultado.resumen.fechaMax }}
                         </span>
                     </div>
 
                     <!-- Preview Table -->
-                    <div class="space-y-2">
+                    <div
+                        v-if="resultado.preview.length > 0"
+                        class="space-y-2"
+                    >
                         <span
                             class="block text-xs font-semibold text-muted-foreground"
-                            >Vista previa de registros (primeras filas):</span
+                            >Vista previa de registros:</span
                         >
                         <div class="overflow-x-auto rounded-md border bg-card">
                             <table
@@ -494,7 +537,7 @@ function startMockUpload() {
                                 <thead>
                                     <tr class="border-b bg-muted/40">
                                         <th class="p-2 font-semibold">
-                                            DNI/Cód.
+                                            DNI/Cod.
                                         </th>
                                         <th class="p-2 font-semibold">
                                             Trabajador
@@ -511,7 +554,7 @@ function startMockUpload() {
                                 </thead>
                                 <tbody>
                                     <tr
-                                        v-for="(row, idx) in mockRows"
+                                        v-for="(row, idx) in resultado.preview"
                                         :key="idx"
                                         class="border-b last:border-0 hover:bg-muted/20"
                                     >
@@ -530,12 +573,7 @@ function startMockUpload() {
                                         </td>
                                         <td class="p-2 text-right">
                                             <span
-                                                :class="[
-                                                    'inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold',
-                                                    row.tipo === 'Entrada'
-                                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400'
-                                                        : 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400',
-                                                ]"
+                                                class="inline-block rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400"
                                                 >{{ row.tipo }}</span
                                             >
                                         </td>
@@ -544,10 +582,45 @@ function startMockUpload() {
                             </table>
                         </div>
                     </div>
+
+                    <!-- Errores por fila -->
+                    <div
+                        v-if="erroresArray.length > 0"
+                        class="space-y-2"
+                    >
+                        <span
+                            class="block text-xs font-semibold text-destructive"
+                            >Errores encontrados ({{ erroresArray.length }}):</span
+                        >
+                        <div
+                            class="max-h-40 overflow-y-auto rounded-md border border-destructive/20 bg-destructive/5 p-3"
+                        >
+                            <ul class="space-y-1 text-xs text-destructive">
+                                <li
+                                    v-for="err in erroresArray"
+                                    :key="err.fila"
+                                >
+                                    <span class="font-semibold"
+                                        >Fila {{ err.fila }}:</span
+                                    >
+                                    {{ err.mensaje }}
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- State 3: Upload and Selection Screen -->
                 <div v-else class="space-y-4">
+                    <!-- Error general -->
+                    <div
+                        v-if="errorGeneral"
+                        class="flex gap-2.5 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-destructive"
+                    >
+                        <AlertTriangle class="mt-0.5 h-4 w-4 shrink-0" />
+                        <p class="text-xs font-medium">{{ errorGeneral }}</p>
+                    </div>
+
                     <!-- File Drag and Drop Zone -->
                     <div
                         @dragover="handleDragOver"
@@ -584,13 +657,13 @@ function startMockUpload() {
                                     Seleccionar reporte de reloj
                                 </p>
                                 <p class="mt-1 text-xs text-muted-foreground">
-                                    Arrastre el archivo Excel aquí, o haga clic
+                                    Arrastre el archivo Excel aqui, o haga clic
                                     para buscar
                                 </p>
                             </div>
                             <span
                                 class="rounded bg-muted px-2 py-0.5 text-[10px] tracking-wider text-muted-foreground uppercase"
-                                >Formato: .xlsx, .xls (máx 10 MB)</span
+                                >Formato: .xlsx, .xls (max 10 MB)</span
                             >
                         </div>
 
@@ -638,7 +711,7 @@ function startMockUpload() {
                         <h4
                             class="text-xs font-semibold tracking-wider text-foreground uppercase"
                         >
-                            Opciones de Importación
+                            Opciones de Importacion
                         </h4>
 
                         <div class="space-y-3 text-xs">
@@ -682,7 +755,7 @@ function startMockUpload() {
                                         class="text-[10px] text-muted-foreground"
                                     >
                                         Si ya existen marcaciones en las mismas
-                                        fechas y horas, se actualizarán.
+                                        fechas y horas, se actualizaran.
                                     </p>
                                 </div>
                                 <input
@@ -708,9 +781,9 @@ function startMockUpload() {
                                 <span class="font-semibold">DNI</span> y
                                 <span class="font-semibold">Fecha y Hora</span>
                                 (formato AAAA-MM-DD HH:MM:SS). El tipo de
-                                marcación, reloj, local y demás campos se
-                                asignan automáticamente. Descargue la plantilla
-                                como guía.
+                                marcacion, reloj, local y demas campos se
+                                asignan automaticamente. Descargue la plantilla
+                                como guia.
                             </p>
                         </div>
                     </div>
@@ -743,7 +816,7 @@ function startMockUpload() {
                         type="button"
                         class="bg-emerald-600 text-white hover:bg-emerald-700"
                         :disabled="!selectedFile || isUploading"
-                        @click="startMockUpload"
+                        @click="startUpload(relojId)"
                     >
                         <Upload class="mr-2 h-4 w-4" />
                         Cargar Reporte

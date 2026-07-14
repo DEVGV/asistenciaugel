@@ -16,6 +16,7 @@ use App\Http\Controllers\Horario\HorarioMasivoController;
 use App\Http\Controllers\Horario\HorarioTrabajadorController;
 use App\Http\Controllers\Infraestructura\DispositivoMarcaController;
 use App\Http\Controllers\Infraestructura\LocalController;
+use App\Http\Controllers\Marcacion\CargaMarcacionesController;
 use App\Http\Controllers\Infraestructura\LocalInstEducController;
 use App\Http\Controllers\Infraestructura\LocalMarcacionController;
 use App\Http\Controllers\Infraestructura\RelojController;
@@ -329,6 +330,9 @@ Route::middleware(['auth', 'verified', 'contexto'])->group(function () {
 
         Route::post('locales-ie/{localesIe}/relojes-masivos', [RelojesMasivaController::class, 'store'])
             ->name('locales-ie.relojes-masivos.store');
+
+        Route::post('marcaciones/cargar-excel', [CargaMarcacionesController::class, 'store'])
+            ->name('marcaciones.cargar-excel');
 
         Route::resource('locales-ie.marcaciones-local', LocalMarcacionController::class)
             ->only(['store', 'destroy'])

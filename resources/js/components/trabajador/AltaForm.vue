@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import AltaTrabajadorController from '@/actions/App/Http/Controllers/Trabajador/AltaTrabajadorController';
 import FormModal from '@/components/shared/FormModal.vue';
 import LocalMarcacionSelect from '@/components/shared/LocalMarcacionSelect.vue';
@@ -59,9 +59,17 @@ watch(
             form.perfil_id = props.alta.perfil_ie
                 ? (props.alta.perfil_ie.perfil_id ?? null)
                 : null;
+            const lm = props.alta.localMarcacion ?? props.alta.local_marcacion;
+            form.localInstEduc_id = lm?.localInstEduc_id ?? lm?.local_inst_educ_id ?? null;
+
+            // Mostrar el nombre de la IE en el input de búsqueda (sin disparar búsqueda)
+            const ie = props.alta.institucionEducativa ?? props.alta.institucion_educativa;
+            ieSkipNextSearch = true;
+            ieQuery.value = ie?.nombreLegal ?? ie?.codigoInstitucion ?? '';
         } else if (visible && !props.isEditing) {
             form.reset();
             form.trabajador_id = props.trabajadorId;
+            ieQuery.value = '';
         }
 
         if (!visible) {
@@ -75,9 +83,14 @@ const ieQuery = ref('');
 const ieOptions = ref<{ id: number; nombre: string }[]>([]);
 const ieLoading = ref(false);
 let ieTimeout: ReturnType<typeof setTimeout>;
+let ieSkipNextSearch = false;
 
 watch(ieQuery, (q) => {
     clearTimeout(ieTimeout);
+    if (ieSkipNextSearch) {
+        ieSkipNextSearch = false;
+        return;
+    }
     ieTimeout = setTimeout(async () => {
         if (!q && !props.isEditing) {
             return;
@@ -100,6 +113,13 @@ watch(ieQuery, (q) => {
             ieLoading.value = false;
         }
     }, 300);
+});
+
+const currentLocalName = computed(() => {
+    const lm = props.alta?.localMarcacion ?? (props.alta as any)?.local_marcacion;
+    if (!lm) return undefined;
+    const lie = lm.localInstEduc ?? lm.local_inst_educ;
+    return lie?.local?.nombre ?? lie?.local?.domicilio ?? undefined;
 });
 
 function submit() {
@@ -196,6 +216,7 @@ function submit() {
                     placeholder="Sin local de marcación"
                     :institucion-id="form.institucionEducativa_id"
                     v-model="form.localInstEduc_id"
+                    :current-name="currentLocalName"
                     :error="form.errors.localInstEduc_id"
                 />
                 <p class="text-xs text-muted-foreground">

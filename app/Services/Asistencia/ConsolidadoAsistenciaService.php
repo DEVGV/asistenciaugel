@@ -50,7 +50,7 @@ class ConsolidadoAsistenciaService
 
             try {
                 $resultado = DB::selectOne(
-                    'SELECT conasis.f_procesa_asismes_v1(?, ?, ?::smallint, ?::smallint, ?::date, ?::date, ?) AS resultado',
+                    'SELECT conasis.f_procesa_asismes_v1(?::bigint, ?::bigint, ?::smallint, ?::smallint, ?::date, ?::date, ?::bigint) AS resultado',
                     [
                         $institucion->id,
                         $alta->trabajador_id,
@@ -134,11 +134,21 @@ class ConsolidadoAsistenciaService
      */
     public function obtenerResumenConsolidado(int $asistenciaId)
     {
-        return ConasisConsolAsistMesTrab::query()
-            ->with('motivoSuspLab')
-            ->where('asistencia_id', $asistenciaId)
-            ->where('ndias', '>', 0)
-            ->orderBy('sigla')
+        return DB::table('conasis.t_consolAsistMesTrab as c')
+            ->leftJoin('param.t00_motivosSuspLab as m', 'c.motivoSuspLab_id', '=', 'm.id')
+            ->where('c.asistencia_id', $asistenciaId)
+            ->groupBy('c.sigla', 'c.siglaPers', 'c.motivoSuspLab_id', 'c.remunerado', 'm.descripcion', 'm.abreviaturaPers')
+            ->havingRaw('SUM(c.ndias) > 0')
+            ->orderBy('c.sigla')
+            ->select([
+                'c.sigla',
+                'c.siglaPers',
+                'c.motivoSuspLab_id',
+                'c.remunerado',
+                DB::raw('SUM(c.ndias) as ndias'),
+                'm.descripcion as motivo_descripcion',
+                'm.abreviaturaPers as motivo_abreviatura_pers',
+            ])
             ->get();
     }
 }

@@ -163,11 +163,22 @@ async function toggleDetalle(asistenciaId: number) {
 
 function condicionColor(condicion: string): string {
     const map: Record<string, string> = {
+        // Siglas base
         'A': 'bg-emerald-50 text-emerald-700 ring-emerald-700/10 dark:bg-emerald-950/30 dark:text-emerald-400',
         'T': 'bg-amber-50 text-amber-700 ring-amber-700/10 dark:bg-amber-950/30 dark:text-amber-400',
         'F': 'bg-red-50 text-red-700 ring-red-700/10 dark:bg-red-950/30 dark:text-red-400',
+        'I': 'bg-red-50 text-red-700 ring-red-700/10 dark:bg-red-950/30 dark:text-red-400',
         'E': 'bg-orange-50 text-orange-700 ring-orange-700/10 dark:bg-orange-950/30 dark:text-orange-400',
         'DL': 'bg-gray-50 text-gray-600 ring-gray-600/10 dark:bg-gray-950/30 dark:text-gray-400',
+        '3T': 'bg-red-50 text-red-700 ring-red-700/10 dark:bg-red-950/30 dark:text-red-400',
+        '3E': 'bg-red-50 text-red-700 ring-red-700/10 dark:bg-red-950/30 dark:text-red-400',
+        // Suspensiones / justificaciones
+        'FER': 'bg-purple-50 text-purple-700 ring-purple-700/10 dark:bg-purple-950/30 dark:text-purple-400',
+        'O': 'bg-pink-50 text-pink-700 ring-pink-700/10 dark:bg-pink-950/30 dark:text-pink-400',
+        'J': 'bg-sky-50 text-sky-700 ring-sky-700/10 dark:bg-sky-950/30 dark:text-sky-400',
+        'V': 'bg-teal-50 text-teal-700 ring-teal-700/10 dark:bg-teal-950/30 dark:text-teal-400',
+        'L': 'bg-indigo-50 text-indigo-700 ring-indigo-700/10 dark:bg-indigo-950/30 dark:text-indigo-400',
+        'P': 'bg-cyan-50 text-cyan-700 ring-cyan-700/10 dark:bg-cyan-950/30 dark:text-cyan-400',
     };
     return map[condicion] ?? 'bg-blue-50 text-blue-700 ring-blue-700/10 dark:bg-blue-950/30 dark:text-blue-400';
 }
@@ -338,11 +349,11 @@ consultarConsolidado();
                                         :key="r.sigla"
                                         :class="[
                                             'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-semibold ring-1',
-                                            condicionColor(r.sigla),
+                                            condicionColor(r.sigla_pers || r.sigla),
                                         ]"
-                                        :title="r.motivo"
+                                        :title="`${r.sigla_pers || r.sigla} - ${r.motivo}`"
                                     >
-                                        {{ r.sigla_pers || r.sigla }}: {{ r.ndias }}
+                                        {{ r.motivo }}: {{ r.ndias }}
                                     </span>
                                 </div>
                             </TableCell>

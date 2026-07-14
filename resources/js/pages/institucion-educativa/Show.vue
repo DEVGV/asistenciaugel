@@ -1851,6 +1851,7 @@ async function generarFeriados() {
             :reloj-nombre="asistenciaRelojNombre"
             :reloj-id="asistenciaRelojId"
             @close="showCargarAsistenciaModal = false"
+            @success="() => router.reload({ only: ['institucion'] })"
         />
 
         <!-- Modal Sub-recurso (Curso/Grado/Sección) -->

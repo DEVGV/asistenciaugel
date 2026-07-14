@@ -75,10 +75,10 @@ class ConsolidadoAsistenciaController extends Controller
                 'fechaHasta'  => $asistencia->fechaHasta,
                 'resumen'     => $resumen->map(fn ($r) => [
                     'sigla' => $r->sigla,
-                    'sigla_pers' => $r->siglaPers,
-                    'ndias' => $r->ndias,
+                    'sigla_pers' => $r->siglaPers ?? $r->motivo_abreviatura_pers ?? $r->sigla,
+                    'ndias' => (float) $r->ndias,
                     'remunerado' => $r->remunerado,
-                    'motivo' => $r->motivoSuspLab?->nombre ?? $r->sigla,
+                    'motivo' => $r->motivo_descripcion ?? $r->sigla,
                 ]),
             ];
         });

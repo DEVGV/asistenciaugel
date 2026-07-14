@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Conasis\ConasisLocalesMarcacion;
 use App\Models\Param\ParamMotivoDeBajas;
 use App\Models\Param\ParamRolTrabajador;
 use App\Models\Param\ParamSituacionLaboral;
 use App\Models\Param\ParamTipoContrato;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class AltasTrabajadores extends Model
 {
@@ -77,6 +79,14 @@ class AltasTrabajadores extends Model
     public function trabajador(): BelongsTo
     {
         return $this->belongsTo(Trabajador::class, 'trabajador_id');
+    }
+
+    /**
+     * Local de marcación vigente asociado a esta alta (el más reciente).
+     */
+    public function localMarcacion(): HasOne
+    {
+        return $this->hasOne(ConasisLocalesMarcacion::class, 'altaTrabajador_id')->latestOfMany('id');
     }
 
     /**

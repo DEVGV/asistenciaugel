@@ -78,6 +78,7 @@ class TrabajadorService
             'altas.area',
             'altas.cargo',
             'altas.motivoBaja',
+            'altas.localMarcacion',
         ]);
     }
 

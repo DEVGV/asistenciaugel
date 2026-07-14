@@ -22,6 +22,8 @@ interface LocalItem {
 const props = defineProps<{
     institucionId?: number | null;
     modelValue?: number | null;
+    /** Nombre del local actualmente asignado (fallback si no está en los datos cargados) */
+    currentName?: string;
     label?: string;
     placeholder?: string;
     error?: string;
@@ -57,6 +59,10 @@ async function fetchData() {
         data.value = [];
         loading.value = false;
 
+        if (props.modelValue) {
+            emit('update:modelValue', null);
+        }
+
         return;
     }
 
@@ -68,7 +74,6 @@ async function fetchData() {
     const signal = abortController.signal;
 
     loading.value = true;
-    data.value = [];
 
     try {
         const response = await fetch(
@@ -82,6 +87,11 @@ async function fetchData() {
 
         const json = await response.json();
         data.value = json.data ?? [];
+
+        // Limpiar selección solo si el valor actual no existe en los nuevos datos
+        if (props.modelValue && !data.value.some((i) => i.id === props.modelValue)) {
+            emit('update:modelValue', null);
+        }
     } catch (e: any) {
         if (e?.name !== 'AbortError') {
             console.error('Error loading locales de marcación', e);
@@ -91,15 +101,11 @@ async function fetchData() {
     }
 }
 
-// Recarga al cambiar la IE; si la IE cambia, el local previo deja de ser válido.
+// Recarga al cambiar la IE; fetchData valida si la selección sigue siendo válida.
 watch(
     () => props.institucionId,
     (newVal, oldVal) => {
         if (newVal !== oldVal) {
-            if (oldVal != null && props.modelValue) {
-                emit('update:modelValue', null);
-            }
-
             fetchData();
         }
     },
@@ -124,7 +130,11 @@ const selectedItemName = computed(() => {
         return '';
     }
 
-    return data.value.find((i) => i.id === props.modelValue)?.nombre ?? '';
+    return (
+        data.value.find((i) => i.id === props.modelValue)?.nombre
+        ?? props.currentName
+        ?? ''
+    );
 });
 
 const isDisabled = computed(

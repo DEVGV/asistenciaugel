@@ -183,6 +183,8 @@ class HorarioTrabajadorService
                     'altaTrabajador_id' => $alta?->id ?? $cargas->first()->altaTrabajador_id,
                     'nombre' => 'Horario del Docente '.$anio,
                     'tipoHorario' => '1', // Horario Regular
+                    'fechaInicio' => $alta?->fechaInicio ?? Carbon::create($anio, 1, 1)->toDateString(),
+                    'fechaFin' => $alta?->fechaFin,
                     'archivado' => false,
                     'activo' => true,
                     'created_by' => auth()->id() ?? 1,
@@ -244,7 +246,7 @@ class HorarioTrabajadorService
                     'turno_id' => $turnoId,
                     'nombreTurno' => $nombreTurno,
                     'nroTurno' => $turnoId,
-                    'diaSemana' => $cursoIni->diaSemana,
+                    'diaSemana' => 'S', // S=semanal, para que la función use día-de-la-semana (DOW)
                     'nroDia' => $nroDia,
                     'horarioCursoIni_id' => $cursoIni->id,
                     'entDiaInicio' => 0,
