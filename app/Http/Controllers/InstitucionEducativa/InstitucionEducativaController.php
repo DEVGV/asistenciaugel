@@ -54,7 +54,10 @@ class InstitucionEducativaController extends Controller
     public function showTab(InstitucionesEduc $institucione, string $tab): Response
     {
         // 'no-laborables' en URL → 'diasNoLaborables' como clave de tab en el frontend
-        $tabMap = ['no-laborables' => 'diasNoLaborables'];
+        $tabMap = [
+            'no-laborables' => 'diasNoLaborables',
+            'consolidado-asistencia' => 'consolidadoAsistencia',
+        ];
 
         return Inertia::render('institucion-educativa/Show', [
             'institucion' => $this->ieService->obtenerConRelaciones($institucione),

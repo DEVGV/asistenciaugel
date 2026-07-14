@@ -43,6 +43,7 @@ import DomiciliosIEList from '@/components/institucion-educativa/DomiciliosIELis
 import EmailsIEList from '@/components/institucion-educativa/EmailsIEList.vue';
 import TelefonosIEList from '@/components/institucion-educativa/TelefonosIEList.vue';
 import CargarAsistenciaModal from '@/components/institucion-educativa/CargarAsistenciaModal.vue';
+import ConsolidadoAsistenciaTab from '@/components/institucion-educativa/ConsolidadoAsistenciaTab.vue';
 import CursosMasivaGrid from '@/components/institucion-educativa/CursosMasivaGrid.vue';
 import GradosMasivaGrid from '@/components/institucion-educativa/GradosMasivaGrid.vue';
 import PermisosIETab from '@/components/institucion-educativa/PermisosIETab.vue';
@@ -108,7 +109,7 @@ const props = defineProps<{
 
 const { can } = usePermisos();
 
-type TabKey = 'datos' | 'cursos' | 'grados' | 'locales' | 'docentes' | 'diasNoLaborables' | 'permisos';
+type TabKey = 'datos' | 'cursos' | 'grados' | 'locales' | 'docentes' | 'diasNoLaborables' | 'permisos' | 'consolidadoAsistencia';
 
 function resolveInitialTab(): TabKey {
     return (props.activeTab as TabKey) ?? 'datos';
@@ -123,6 +124,7 @@ const tabSegments: Partial<Record<TabKey, string>> = {
     locales: 'locales',
     diasNoLaborables: 'no-laborables',
     permisos: 'permisos',
+    consolidadoAsistencia: 'consolidado-asistencia',
 };
 
 function tabUrl(key: TabKey): string {
@@ -655,6 +657,7 @@ const tabs = [
     { key: 'docentes', label: 'Docentes / Personal', icon: Users },
     { key: 'diasNoLaborables', label: 'Días No Laborables', icon: CalendarOff },
     { key: 'permisos', label: 'Expedientes', icon: ClipboardCheck },
+    { key: 'consolidadoAsistencia', label: 'Consolidado Asistencia', icon: FileSpreadsheet },
 ] as const;
 
 // ─── Días No Laborables ────────────────────────────────────────────────────────
@@ -1794,6 +1797,11 @@ async function generarFeriados() {
         <!-- TAB Permisos -->
         <div v-if="activeTab === 'permisos'">
             <PermisosIETab :institucion-id="props.institucion.id" />
+        </div>
+
+        <!-- TAB Consolidado Asistencia -->
+        <div v-if="activeTab === 'consolidadoAsistencia'">
+            <ConsolidadoAsistenciaTab :institucion-id="props.institucion.id" />
         </div>
 
         <!-- Modal Alta Individual (Docente / Personal) -->

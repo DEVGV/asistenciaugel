@@ -39,6 +39,7 @@ use App\Http\Controllers\Trabajador\AltaTrabajadorController;
 use App\Http\Controllers\Trabajador\MarcacionesTrabajadorController;
 use App\Http\Controllers\Trabajador\RegistroTrabajadorController;
 use App\Http\Controllers\Trabajador\TrabajadorController;
+use App\Http\Controllers\Asistencia\ConsolidadoAsistenciaController;
 use App\Http\Controllers\Tramite\ExpedienteController;
 use Illuminate\Support\Facades\Route;
 
@@ -216,11 +217,19 @@ Route::middleware(['auth', 'verified', 'contexto'])->group(function () {
             ->parameters(['instituciones' => 'institucione']);
 
         Route::get('instituciones/{institucione}/{tab}', [InstitucionEducativaController::class, 'showTab'])
-            ->where('tab', 'cursos|grados|locales|permisos|no-laborables')
+            ->where('tab', 'cursos|grados|locales|permisos|no-laborables|consolidado-asistencia')
             ->name('instituciones.show-tab');
 
         Route::get('instituciones/{institucione}/docentes', [InstitucionEducativaController::class, 'docentes'])
             ->name('instituciones.docentes');
+
+        // Consolidado de Asistencia
+        Route::post('instituciones/{institucione}/consolidado-asistencia/procesar', [ConsolidadoAsistenciaController::class, 'procesar'])
+            ->name('instituciones.consolidado-asistencia.procesar');
+        Route::get('instituciones/{institucione}/consolidado-asistencia/consultar', [ConsolidadoAsistenciaController::class, 'consultar'])
+            ->name('instituciones.consolidado-asistencia.consultar');
+        Route::get('consolidado-asistencia/{asistencia}/detalle', [ConsolidadoAsistenciaController::class, 'detalle'])
+            ->name('consolidado-asistencia.detalle');
     });
     Route::middleware('permiso:instituciones.crear')->group(function () {
         Route::resource('instituciones', InstitucionEducativaController::class)

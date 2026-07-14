@@ -36,7 +36,7 @@ import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import { computed } from 'vue';
 
-const { canAny, esDocente } = usePermisos();
+const { canAny, esAdmin, esDirector } = usePermisos();
 const page = usePage();
 const authUser = computed(() => page.props.auth?.user);
 
@@ -104,12 +104,13 @@ const allNavItems: NavItem[] = [
  * - Si un item no tiene `requiere`, siempre se muestra.
  * - Para items con sub-items, se filtran los hijos y si no queda ninguno, se oculta el padre.
  *
- * Para Docentes: el sidebar solo muestra un enlace con su nombre
+ * Para trabajadores normales (ni Admin UGEL ni Director IE):
+ * el sidebar solo muestra un enlace con su nombre
  * que lleva a su propia ficha de trabajador.
  */
 const mainNavItems = computed<NavItem[]>(() => {
-    // ── Docente: solo su nombre → su ficha ──
-    if (esDocente.value) {
+    // ── Trabajador normal: solo su nombre → su ficha ──
+    if (!esAdmin.value && !esDirector.value) {
         const trabajador = authUser.value?.trabajador;
         const persona = trabajador?.persona;
         if (trabajador && persona) {

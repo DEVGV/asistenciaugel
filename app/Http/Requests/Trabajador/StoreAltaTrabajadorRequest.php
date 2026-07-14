@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Trabajador;
 
 use App\DTOs\Trabajador\CreateAltaTrabajadorDTO;
+use App\Models\AltasTrabajadores;
 use App\Models\Areas;
 use App\Models\Auth\Perfil;
 use App\Models\Cargos;
@@ -104,6 +105,31 @@ class StoreAltaTrabajadorRequest extends FormRequest
             'fechaFin.after_or_equal' => 'La fecha de fin debe ser igual o posterior a la fecha de inicio.',
             'localInstEduc_id.exists' => 'El local de marcación seleccionado no pertenece a la institución educativa.',
         ];
+    }
+
+    /**
+     * Validación adicional: no permitir altas solapadas en la misma IE.
+     */
+    public function withValidator(\Illuminate\Validation\Validator $validator): void
+    {
+        $validator->after(function (\Illuminate\Validation\Validator $v) {
+            if ($v->errors()->isNotEmpty()) {
+                return; // no validar solapamiento si hay errores básicos
+            }
+
+            $trabajadorId = (int) $this->input('trabajador_id');
+            $ieId         = (int) $this->input('institucionEducativa_id');
+            $fechaInicio  = $this->input('fechaInicio');
+            $fechaFin     = $this->input('fechaFin');
+            $excluirId    = $this->route('alta')?->id; // null en creación, id en edición
+
+            if (AltasTrabajadores::tieneAltaSolapada($trabajadorId, $ieId, $fechaInicio, $fechaFin, $excluirId)) {
+                $v->errors()->add(
+                    'fechaInicio',
+                    'El trabajador ya tiene un alta activa en esta institución que se solapa con el período indicado.'
+                );
+            }
+        });
     }
 
     public function toDTO(): CreateAltaTrabajadorDTO
