@@ -21,6 +21,10 @@ use Illuminate\Validation\Rule;
 
 class MobileController extends Controller
 {
+    private const MARKING_DISTANCE_THRESHOLD_METERS = 20.0;
+    private const MARKING_START_GRACE_MINUTES = 10;
+    private const MARKING_END_GRACE_MINUTES = 15;
+
     public function login(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -205,8 +209,17 @@ class MobileController extends Controller
 
         if (! $context['allowed']) {
             return response()->json([
-                'message' => 'La marcacion movil no esta habilitada para este trabajador.',
+                'message' => $this->markingDeniedMessage($context['checks']),
                 'checks' => $context['checks'],
+                'schedule' => $context['schedule'],
+            ], 422);
+        }
+
+        $location = $this->markingLocationValidation($context['localMarcacion'], $validated);
+        if (! $location['allowed']) {
+            return response()->json([
+                'message' => $location['message'],
+                'location' => $location,
             ], 422);
         }
 
@@ -295,6 +308,8 @@ class MobileController extends Controller
             'data' => [
                 'mark' => $this->formatMark($mark),
                 'biometric' => $this->formatCredential($credential->refresh()),
+                'location' => $location,
+                'schedule' => $context['schedule'],
             ],
         ], 201);
     }
@@ -471,6 +486,7 @@ class MobileController extends Controller
             'trabajador_activo' => true,
             'alta_vigente' => filled($alta),
             'asignado_marcacion_movil' => filled($localMarcacion),
+            'horario_marcacion' => (bool) ($schedule['can_mark_now'] ?? false),
             'biometria_facial_aprobada' => $this->faceCredentialReady($credential),
             'metodo_biometrico_habilitado' => $this->faceCredentialReady($credential) || $credential->local_biometric_enabled,
             'biometria_no_bloqueada' => ! ($credential->blocked_until && $credential->blocked_until->isFuture()),
@@ -480,6 +496,7 @@ class MobileController extends Controller
             'allowed' => $checks['trabajador_activo']
                 && $checks['alta_vigente']
                 && $checks['asignado_marcacion_movil']
+                && $checks['horario_marcacion']
                 && $checks['metodo_biometrico_habilitado']
                 && $checks['biometria_no_bloqueada'],
             'checks' => $checks,
@@ -492,10 +509,16 @@ class MobileController extends Controller
     private function scheduleSnapshot(Trabajador $trabajador, ?AltasTrabajadores $alta): array
     {
         if (! $alta) {
-            return ['has_active_schedule' => false, 'today_windows' => []];
+            return [
+                'has_active_schedule' => false,
+                'has_today_schedule' => false,
+                'can_mark_now' => false,
+                'today_windows' => [],
+            ];
         }
 
         $today = today();
+        $now = now();
         $currentDay = (int) $today->dayOfWeekIso;
 
         $horarios = ConasisHorariosTrabajador::query()
@@ -511,17 +534,128 @@ class MobileController extends Controller
             ->where('aplicar', true)
             ->where('nroDia', $currentDay)
             ->get()
-            ->map(fn (ConasisDetalleHorarios $detalle): array => [
-                'entrada_inicio' => $detalle->entHoraInicio,
-                'entrada_fin' => $detalle->entHoraFin,
-                'salida_inicio' => $detalle->salHoraInicio,
-                'salida_fin' => $detalle->salHoraFin,
-            ])
+            ->map(function (ConasisDetalleHorarios $detalle) use ($now): array {
+                $classStart = $now->copy()->setTimeFromTimeString($detalle->entHoraInicio);
+                $markStart = $classStart->copy()->subMinutes(self::MARKING_START_GRACE_MINUTES);
+                $markEnd = $classStart->copy()->addMinutes(self::MARKING_END_GRACE_MINUTES);
+
+                return [
+                    'entrada_inicio' => $detalle->entHoraInicio,
+                    'entrada_fin' => $detalle->entHoraFin,
+                    'salida_inicio' => $detalle->salHoraInicio,
+                    'salida_fin' => $detalle->salHoraFin,
+                    'marcacion_inicio' => $markStart->format('H:i:s'),
+                    'marcacion_fin' => $markEnd->format('H:i:s'),
+                    'can_mark_now' => $now->betweenIncluded($markStart, $markEnd),
+                ];
+            })
             ->values();
 
         return [
             'has_active_schedule' => $horarios->isNotEmpty(),
+            'has_today_schedule' => $windows->isNotEmpty(),
+            'can_mark_now' => $windows->contains(fn (array $window): bool => (bool) $window['can_mark_now']),
+            'start_grace_minutes' => self::MARKING_START_GRACE_MINUTES,
+            'end_grace_minutes' => self::MARKING_END_GRACE_MINUTES,
             'today_windows' => $windows,
+        ];
+    }
+
+    private function markingDeniedMessage(array $checks): string
+    {
+        if (! ($checks['alta_vigente'] ?? false)) {
+            return 'No existe alta vigente para la institucion seleccionada.';
+        }
+        if (! ($checks['asignado_marcacion_movil'] ?? false)) {
+            return 'No existe local de marcacion movil vigente para esta asignacion.';
+        }
+        if (! ($checks['horario_marcacion'] ?? false)) {
+            return sprintf(
+                'La marcacion solo esta permitida desde %d minutos antes hasta %d minutos despues del inicio de clase.',
+                self::MARKING_START_GRACE_MINUTES,
+                self::MARKING_END_GRACE_MINUTES
+            );
+        }
+        if (! ($checks['metodo_biometrico_habilitado'] ?? false)) {
+            return 'El docente no tiene un metodo biometrico habilitado para marcacion movil.';
+        }
+        if (! ($checks['biometria_no_bloqueada'] ?? false)) {
+            return 'La validacion biometrica se encuentra bloqueada temporalmente.';
+        }
+
+        return 'La marcacion movil no esta habilitada para este trabajador.';
+    }
+
+    private function markingLocationValidation(?ConasisLocalesMarcacion $localMarcacion, array $data): array
+    {
+        $local = $localMarcacion?->localInstEduc?->local;
+        if (! $local) {
+            return [
+                'allowed' => false,
+                'message' => 'No existe local de marcacion con coordenadas para validar ubicacion.',
+            ];
+        }
+
+        foreach (['utm_huso', 'utm_base', 'utm_x_este', 'utm_y_norte'] as $field) {
+            if (! filled($data[$field] ?? null)) {
+                return [
+                    'allowed' => false,
+                    'message' => 'Debe activar el GPS y permitir la ubicacion antes de marcar.',
+                ];
+            }
+        }
+
+        if (! filled($local->utm_huso) || ! filled($local->utm_banda)
+            || ! filled($local->utm_x_este) || ! filled($local->utm_y_norte)) {
+            return [
+                'allowed' => false,
+                'message' => 'El local de marcacion no tiene coordenadas UTM completas.',
+            ];
+        }
+
+        $mobileZone = (int) $data['utm_huso'];
+        $localZone = (int) $local->utm_huso;
+        $mobileBand = strtoupper(trim((string) $data['utm_base']));
+        $localBand = strtoupper(trim((string) $local->utm_banda));
+
+        if ($mobileZone !== $localZone || $mobileBand !== $localBand) {
+            return [
+                'allowed' => false,
+                'message' => 'La ubicacion enviada no corresponde a la zona UTM del local.',
+                'mobile_zone' => $mobileZone,
+                'mobile_band' => $mobileBand,
+                'local_zone' => $localZone,
+                'local_band' => $localBand,
+            ];
+        }
+
+        $dx = (float) $data['utm_x_este'] - (float) $local->utm_x_este;
+        $dy = (float) $data['utm_y_norte'] - (float) $local->utm_y_norte;
+        $distance = round(sqrt(($dx * $dx) + ($dy * $dy)), 2);
+
+        return [
+            'allowed' => $distance <= self::MARKING_DISTANCE_THRESHOLD_METERS,
+            'message' => $distance <= self::MARKING_DISTANCE_THRESHOLD_METERS
+                ? 'Ubicacion validada dentro del local.'
+                : sprintf(
+                    'Estas a %.2f metros del local. El maximo permitido es %.0f metros.',
+                    $distance,
+                    self::MARKING_DISTANCE_THRESHOLD_METERS
+                ),
+            'distance_meters' => $distance,
+            'threshold_meters' => self::MARKING_DISTANCE_THRESHOLD_METERS,
+            'mobile_utm' => [
+                'huso' => $mobileZone,
+                'base' => $mobileBand,
+                'x_este' => round((float) $data['utm_x_este'], 2),
+                'y_norte' => round((float) $data['utm_y_norte'], 2),
+            ],
+            'local_utm' => [
+                'huso' => $localZone,
+                'base' => $localBand,
+                'x_este' => round((float) $local->utm_x_este, 2),
+                'y_norte' => round((float) $local->utm_y_norte, 2),
+            ],
         ];
     }
 
