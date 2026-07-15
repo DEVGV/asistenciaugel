@@ -1,0 +1,221 @@
+CREATE OR REPLACE FUNCTION conasis.f_procesa_asismes_v1(p_ve_1 bigint, p_ve_2 bigint, p_ve_3 smallint, p_ve_4 smallint, p_ve_5 date, p_ve_6 date, p_ve_7 bigint)
+ RETURNS character varying
+ LANGUAGE plpgsql
+AS $function$
+	DECLARE
+       vi_01 DATE;
+			 vi_02 DATE;
+			 vi_03 DATE;
+			 vi_04 DATE;
+			 vi_05 DATE;
+			 vi_06 INTEGER;
+			 vi_07 INTEGER;
+			 vi_08 INTEGER;
+			 vi_09 TEXT;
+			 vi_10 VARCHAR(1);
+			 vi_11 INTEGER;
+			 vi_12 INTEGER;
+			 vi_13 INTEGER;
+			 vi_14 INTEGER;
+			 vi_15 INTEGER;
+			 vi_16 VARCHAR(2);
+			 vi_17 VARCHAR(50);			 
+			 vi_18 INTEGER;
+			 vi_19 INTEGER;
+			 vi_20 INTEGER;			 
+			 vi_21 VARCHAR(30);
+			 vi_22 VARCHAR(30);
+			 vi_23 VARCHAR(30);
+			 vi_24 INTEGER;
+			 vi_25 INTEGER;			 
+			 vi_26 TEXT;
+			 vi_27 TEXT;
+			 vi_28 TEXT;			 
+			 vi_29 INTEGER;
+			 vi_30 VARCHAR(2);
+			 vi_31 INTEGER;
+			 vi_32 VARCHAR(5);
+			 vi_33 VARCHAR(5);
+			 vi_34 BOOLEAN;
+			 vi_35 VARCHAR(1);
+			 vi_36 VARCHAR(30);
+			 vi_37 VARCHAR(30);
+			 vi_38 TEXT;				
+			 vi_39 TIME;
+			 vi_40 TIME;
+			 vi_41 TIME;
+			 vi_42 TIME;
+			 vi_43 VARCHAR(10);
+			 vi_44 VARCHAR(10);
+			 vi_45 INTEGER;
+			 vi_46 INTEGER=0;
+			 vi_47 INTEGER=0;			 
+BEGIN
+DROP TABLE IF EXISTS "tb_temp_group1";
+CREATE TEMPORARY TABLE "tb_temp_group1" ON COMMIT DROP AS select ROW_NUMBER() OVER (ORDER BY tmp1."nroTurno",tmp1.fechaini) AS n,(select string_agg(dh2."nroDia"::text, ',') from conasis."t_detalleHorarios" as dh2 where dh2."horarioTrabajador_id"=tmp1.id and dh2.turno_id=tmp1.turno_id and dh2."nroTurno"=tmp1."nroTurno") as seriedia,* from (select distinct ht1.id,(case when ht1."fechaInicio"<=p_ve_5 then p_ve_5 else ht1."fechaInicio" end) as fechaini,(case when (ht1."fechaFin" is null or ht1."fechaFin">=p_ve_6) then p_ve_6 else ht1."fechaFin" end) as fechafin,ht1."altaTrabajador_id",dh1.turno_id,dh1."nroTurno",dh1."diaSemana" from conasis."t_horariosTrabajador" as ht1,conasis."t_detalleHorarios" as dh1 where dh1."horarioTrabajador_id"=ht1.id and ht1."institucionEduc_id"=p_ve_1 and ht1.trabajador_id=p_ve_2 and ht1."fechaInicio"<=p_ve_6 and (ht1."fechaFin" is null or ht1."fechaFin">=p_ve_5) ) as tmp1 ORDER BY tmp1."nroTurno",tmp1.fechaini;
+select count(*) into vi_12 from tb_temp_group1;
+IF vi_12>0 THEN
+select li.id into vi_19 from conasis."t_localesMarcacion" as lm,conasis."t_localesInstEduc" as li where lm."localInstEduc_id"=li.id and lm.trabajador_id=p_ve_2 and li."institucionEduc_id"=p_ve_1 and lm."fechaInicio"<=p_ve_6 and (lm."fechaFin" is null or lm."fechaFin">=p_ve_5) ORDER BY lm."fechaInicio" desc limit 1;
+select "altaTrabajador_id" into vi_08 from tb_temp_group1 where n=1;
+if not EXISTS(select * from conasis.t_asistencia where trabajador_id=p_ve_2 and "institucionEduc_id"=p_ve_1 and anio=p_ve_3 and mes=p_ve_4 and ((p_ve_6>="fechaDesde" and p_ve_6<="fechaHasta") or (p_ve_5>="fechaDesde" and p_ve_5<="fechaHasta") or (p_ve_5<"fechaDesde" and "fechaHasta"<p_ve_6))) THEN
+insert into conasis.t_asistencia ("institucionEduc_id",trabajador_id,"altaTrabajador_id",anio,mes,"estadoUltim_id",created_at,created_by,"fechaDesde","fechaHasta") values (p_ve_1,p_ve_2,vi_08,p_ve_3,p_ve_4,1,CURRENT_TIMESTAMP,p_ve_7,p_ve_5,p_ve_6);
+end if;
+select asi.id into vi_18 from conasis.t_asistencia as asi where asi."institucionEduc_id"=p_ve_1 and asi.trabajador_id=p_ve_2 and asi."fechaDesde"=p_ve_5 and asi."fechaHasta"=p_ve_6;
+delete from conasis."t_asistenciaMesTrabajador" where asistencia_id=vi_18;
+delete from conasis."t_consolAsistMesTrab" where asistencia_id=vi_18;
+select pest.id into vi_45 from param."t00_estadosAsis" as pest where pest.codigo='1' and pest.activo='t';
+INSERT into conasis."t_estadosAsistencia" (asistencia_id,"estadoAsis_id",observacion,created_at,created_by) VALUES (vi_18,vi_45,'Planilla de asistencia creada',CURRENT_TIMESTAMP,p_ve_7);
+select cest.id into vi_45 from conasis."t_estadosAsistencia" cest where cest.asistencia_id=vi_18 and cest."estadoAsis_id"=vi_45 ORDER BY cest.id desc limit 1;
+UPDATE conasis."t_asistencia" set "estadoUltim_id"=vi_45 where id=vi_18;
+FOR i IN 1..vi_12 LOOP
+select fechaini,fechafin,"altaTrabajador_id",turno_id,"nroTurno",id,seriedia,"diaSemana" into vi_01,vi_02,vi_08,vi_07,vi_06,vi_11,vi_09,vi_10 from tb_temp_group1 where n=i;
+if not EXISTS(select * from conasis."t_asistenciaMesTrabajador" as amt where amt.asistencia_id=vi_18 and amt.turno_id=vi_07 and amt."nroTurno"=vi_06) THEN
+insert into conasis."t_asistenciaMesTrabajador" (asistencia_id,"localInstEduc_id",turno_id,"nroTurno",created_at,created_by) values (vi_18,vi_19,vi_07,vi_06,CURRENT_TIMESTAMP,p_ve_7);
+end if;
+select amtt.id into vi_20 from conasis."t_asistenciaMesTrabajador" as amtt where amtt.asistencia_id=vi_18 and amtt.turno_id=vi_07 and amtt."nroTurno"=vi_06;
+DROP TABLE IF EXISTS "tb_temp_group2";
+CREATE TEMPORARY TABLE "tb_temp_group2" ON COMMIT DROP AS	
+select DISTINCT tmp2.trabajador_id,tmp2."nroTurno",tmp2."tipoHorario",tmp2."horaAcumula",tmp2."diasal",tmp2.h_entrada_hor,tmp2.h_salida_hor,tmp2.fechamarca,tmp2."diaSemana",tmp2.c_entrada,tmp2.c_salida,tmp2.h_entrada,tmp2.h_salida from (select *,(FIRST_VALUE(tmp.condicion_entrada) OVER ( PARTITION BY tmp.trabajador_id,tmp.fechamarca,tmp."nroTurno" ORDER BY tmp.condicion_entrada,tmp."fechaMarcacion") ) AS c_entrada,(FIRST_VALUE(tmp.condicion_salida) OVER ( PARTITION BY tmp.trabajador_id,tmp.fechamarca,tmp."nroTurno" ORDER BY tmp.condicion_salida asc,tmp."fechaMarcacion" desc) ) AS c_salida,(FIRST_VALUE(tmp.hora_entrada) OVER ( PARTITION BY tmp.trabajador_id,tmp.fechamarca,tmp."nroTurno" ORDER BY tmp.condicion_entrada,tmp."fechaMarcacion") ) AS h_entrada,(FIRST_VALUE(tmp.hora_salida) OVER ( PARTITION BY tmp.trabajador_id,tmp.fechamarca,tmp."nroTurno" ORDER BY tmp.condicion_salida asc,tmp."fechaMarcacion" desc) ) AS h_salida from (select ROW_NUMBER() OVER (ORDER BY ht."fechaInicio") AS n,ht.trabajador_id,ma."fechaMarcacion",date(ma."fechaMarcacion") as fechamarca,dh."nroTurno",ht."tipoHorario",(dh."salDiaFin" - dh."entDiaInicio") as diasal,dh."entHoraFin" as h_entrada_hor,dh."salHoraInicio" as h_salida_hor,dh."diaSemana",dh."horaAcumula",(case when dh."entDiaInicio"=dh."salDiaFin" then (case when "time"(ma."fechaMarcacion")<=(dh."entHoraFin" + interval '1 MINUTE' * (dh."entTolerancia" + 1)) then "time"(ma."fechaMarcacion") when "time"(ma."fechaMarcacion")<dh."salHoraInicio" and "time"(ma."fechaMarcacion")>(dh."entHoraFin" + interval '1 MINUTE' * (dh."entTolerancia" + 1)) then "time"(ma."fechaMarcacion") else NULL end) else NULL END) as hora_entrada,(case when dh."entDiaInicio"=dh."salDiaFin" then (case when "time"(ma."fechaMarcacion")<=(dh."entHoraFin" + interval '1 MINUTE' * (dh."entTolerancia" + 1)) then 'A' when "time"(ma."fechaMarcacion")<dh."salHoraInicio" and "time"(ma."fechaMarcacion")>(dh."entHoraFin" + interval '1 MINUTE' * (dh."entTolerancia" + 1)) then 'T' else 'X' end) else 'X' END) as condicion_entrada,(case when dh."entDiaInicio"=dh."salDiaFin" then (case when "time"(ma."fechaMarcacion")>dh."salHoraInicio" and ("time"(ma."fechaMarcacion")<=(dh."salHoraFin" + interval '0 MINUTE')) then "time"(ma."fechaMarcacion") when "time"(ma."fechaMarcacion")<=dh."salHoraInicio" and "time"(ma."fechaMarcacion")>(dh."entHoraFin" + interval '1 MINUTE' * (dh."entTolerancia" + 1)) then "time"(ma."fechaMarcacion") else NULL end) else null end) as hora_salida,(case when dh."entDiaInicio"=dh."salDiaFin" then (case when "time"(ma."fechaMarcacion")>dh."salHoraInicio" and ("time"(ma."fechaMarcacion")<=(dh."salHoraFin" + interval '0 MINUTE')) then 'A' when "time"(ma."fechaMarcacion")<=dh."salHoraInicio" and "time"(ma."fechaMarcacion")>(dh."entHoraFin" + interval '1 MINUTE' * (dh."entTolerancia" + 1)) then 'E' else 'X' end) else 'X' end) as condicion_salida from conasis.t_marcaciones as ma,conasis."t_localesMarcacion" as lm,conasis."t_localesInstEduc" as lie,conasis."t_horariosTrabajador" as ht,conasis."t_detalleHorarios" as dh where dh.turno_id=vi_07 and dh."nroTurno"=vi_06 and dh."horarioTrabajador_id"=ht.id and ht."institucionEduc_id"=p_ve_1 and ht.trabajador_id=p_ve_2 and lie."institucionEduc_id"=p_ve_1 and lm.trabajador_id=p_ve_2 and ma.trabajador_id=p_ve_2 and lm."localInstEduc_id"=lie.id and lm.trabajador_id=ma.trabajador_id  and ma."localMarcacion_id"=lm.id  and ma.tipo='A' and date(ma."fechaMarcacion")>=vi_01 and date(ma."fechaMarcacion")<=vi_02 and dh.aplicar='t' and (dh."diaSemana"='S' and (date_part('dow',ma."fechaMarcacion")=dh."nroDia") or (dh."diaSemana"='D' and EXTRACT(DAY from ma."fechaMarcacion")=dh."nroDia")) and (("time"(ma."fechaMarcacion")>=dh."entHoraInicio" and "time"(ma."fechaMarcacion")<=(dh."salHoraFin" + interval '0 MINUTE') and dh."entDiaInicio"=dh."salDiaFin")) ORDER BY ma."fechaMarcacion" ) as tmp) as tmp2 ORDER BY tmp2.trabajador_id,tmp2."nroTurno",tmp2.fechamarca;
+vi_14=(vi_02 - vi_01) + 1;
+vi_05=vi_01;
+select count(*) into vi_13 from tb_temp_group2;
+IF vi_13>=0 THEN
+FOR x IN 1..vi_14 LOOP
+vi_24=EXTRACT(DAY from vi_05);
+if vi_10='S' THEN
+vi_25=EXTRACT(DOW FROM vi_05);
+ELSE
+vi_25=vi_24;
+end if;
+if STRPOS(vi_09, vi_25::text)>0 THEN
+select h_entrada_hor,h_salida_hor,h_entrada,h_salida,c_entrada,c_salida into vi_39,vi_40,vi_41,vi_42,vi_43,vi_44 from tb_temp_group2 where fechamarca=vi_05;
+if not vi_41 is null THEN
+vi_21=concat(vi_41::TEXT,' (',vi_43,')',' I',vi_06::TEXT);
+ELSE
+vi_21='SinMarca (F)';
+end if;
+if not vi_42 is null THEN
+vi_22=concat(vi_42::TEXT,' (',vi_44,')',' S',vi_06::TEXT);
+ELSE
+vi_22='SinMarca (F)';
+end if;
+if vi_43='A' and vi_44='A' THEN
+vi_23='A';
+elsif vi_43='T' and vi_44='A' THEN
+vi_23='T';
+elsif vi_43='A' and vi_44='E' THEN
+vi_23='E';
+ELSE
+vi_23='F';
+end if;
+ELSE
+vi_21='';
+vi_22='';
+vi_23='DL';
+end if;
+vi_26=concat('e',vi_24::TEXT);
+vi_27=concat('s',vi_24::TEXT);
+vi_28=concat('c',vi_24::TEXT);							
+execute format('UPDATE conasis."t_asistenciaMesTrabajador" SET %I = %L, %I = %L, %I = %L WHERE id = %s;',vi_26,vi_21,vi_27,vi_22,vi_28,vi_23,vi_20);
+vi_05=vi_05 + INTERVAL '1 DAY';
+END LOOP;
+end if;
+DROP TABLE IF EXISTS "tb_temp_group2";
+DROP TABLE IF EXISTS "tb_temp_group3";
+CREATE TEMPORARY TABLE "tb_temp_group3" ON COMMIT DROP AS select ROW_NUMBER() OVER (ORDER BY tmpz.s_fechaini) AS n,* from (select sl.trabajador_id,'SuspLaboral' as tiposusp,(case when date(sl."fechaHoraInicio")<p_ve_5 then p_ve_5 else date(sl."fechaHoraInicio") end) as s_fechaini,(case when sl."fechaHoraFin" is null or date(sl."fechaHoraFin")>p_ve_6 then p_ve_6 else date(sl."fechaHoraFin") end) as s_fechafin,sl.turno,sl."marcaApli",msl.id as motivosusp_id,msl.abreviatura as codsusp,msl."conGoceHaber" as congoce,msl.asusfal,msl."abreviaturaPers" as codsusppers from conasis."t_suspLabTrabajador" as sl,param."t00_motivosSuspLab" as msl,public."t_altasTrabajadores" as ats where sl."altaTrabajador_id"=ats.id and sl."motivoSuspLab_id"=msl.id and sl.trabajador_id=p_ve_2 and ats."institucionEducativa_id"=p_ve_1 and date(sl."fechaHoraInicio")<=p_ve_6 and (sl."fechaHoraFin" is null or date(sl."fechaHoraFin")>=p_ve_5) and sl.turno=vi_06 UNION select inc.trabajador_id,'SuspLabCITT' as tiposusp,(case when date(inc."fechaInicio")<p_ve_5 then p_ve_5 else date(inc."fechaInicio") end) as s_fechaini,(case when inc."fechaFin" is null or date(inc."fechaFin")>p_ve_6 then p_ve_6 else date(inc."fechaFin") end) as s_fechafin,inc.turno,inc."marcaApli",msl.id as motivosusp_id,msl.abreviatura as codsusp,msl."conGoceHaber" as congoce,msl.asusfal,msl."abreviaturaPers" as codsusppers from conasis."t_incapsTempTrab" as inc,param."t00_motivosSuspLab" as msl,public."t_altasTrabajadores" as ats where inc."altaTrabajador_id"=ats.id and inc."motivoSuspLab_id"=msl.id and inc.trabajador_id=p_ve_2 and ats."institucionEducativa_id"=p_ve_1 and date(inc."fechaInicio")<=p_ve_6 and (inc."fechaFin" is null or date(inc."fechaFin")>=p_ve_5) and inc.turno=vi_06 UNION select jus.trabajador_id,'Justificado' as tiposusp,(case when date(jus."fechaInicio")<p_ve_5 then p_ve_5 else date(jus."fechaInicio") end) as s_fechaini,(case when jus."fechaFin" is null or date(jus."fechaFin")>p_ve_6 then p_ve_6 else date(jus."fechaFin") end) as s_fechafin,jus.turno,jus."marcaApli",msl.id as motivosusp_id,msl.abreviatura as codsusp,msl."conGoceHaber" as congoce,msl.asusfal,msl."abreviaturaPers" as codsusppers from conasis.t_justificaciones as jus,param."t00_motivosSuspLab" as msl,public."t_altasTrabajadores" as ats where jus."altaTrabajador_id"=ats.id and jus."motivoSuspLab_id"=msl.id and jus.trabajador_id=p_ve_2 and ats."institucionEducativa_id"=p_ve_1 and date(jus."fechaInicio")<=p_ve_6 and (jus."fechaFin" is null or date(jus."fechaFin")>=p_ve_5) and jus.turno=vi_06 UNION select exo.trabajador_id,'Exonerado' as tiposusp,(case when date(exo."fechaInicio")<p_ve_5 then p_ve_5 else date(exo."fechaInicio") end) as s_fechaini,(case when exo."fechaFin" is null or date(exo."fechaFin")>p_ve_6 then p_ve_6 else date(exo."fechaFin") end) as s_fechafin,exo.turno,exo."marcaApli",msl.id as motivosusp_id,msl.abreviatura as codsusp,msl."conGoceHaber" as congoce,msl.asusfal,msl."abreviaturaPers" as codsusppers from conasis."t_exoneracionesMarcacion" as exo,param."t00_motivosSuspLab" as msl,public."t_altasTrabajadores" as ats where exo."altaTrabajador_id"=ats.id and exo."motivoSuspLab_id"=msl.id and exo.trabajador_id=p_ve_2 and ats."institucionEducativa_id"=p_ve_1 and date(exo."fechaInicio")<=p_ve_6 and (exo."fechaFin" is null or date(exo."fechaFin")>=p_ve_5) and exo.turno=vi_06 UNION select ats.trabajador_id,'Feriado' as tiposusp,dnl.fecha as s_fechaini, dnl.fecha as s_fechafin,0 as turno,'ES' as "marcaApli",(select msl.id from param."t00_motivosSuspLab" as msl where msl.abreviatura='FER' and msl.activo='t' ORDER BY msl.id desc limit 1) as motivosusp_id,'FER' as codsusp,'t' as congoce,'A' as asusfal,(select msl."abreviaturaPers" from param."t00_motivosSuspLab" as msl where msl.abreviatura='FER' and msl.activo='t' ORDER BY msl.id desc limit 1) as codsusppers from public."t_altasTrabajadores" as ats,conasis."t_diasNoLaborables" as dnl where dnl."institucionEduc_id"=ats."institucionEducativa_id" and ats.trabajador_id=p_ve_2 and ats."institucionEducativa_id"=p_ve_1 and dnl.fecha<=p_ve_6 and dnl.fecha>=p_ve_5 and not EXISTS (select * from conasis."t_feriadoLabTrabajador" as fl where fl.trabajador_id=ats.trabajador_id and fl."altaTrabajador_id"=ats.id and fl."diaNoLaborable_id"=dnl.id) UNION select ats.trabajador_id,'Onomastico' as tiposusp,p."fechaNac" as s_fechaini, p."fechaNac" as s_fechafin,0 as turno,'ES' as "marcaApli",(select msl.id from param."t00_motivosSuspLab" as msl where msl.abreviatura='O' and msl.activo='t' ORDER BY msl.id desc limit 1) as motivosusp_id,'O' as codsusp,'t' as congoce,'A' as asusfal,(select msl."abreviaturaPers" from param."t00_motivosSuspLab" as msl where msl.abreviatura='O' and msl.activo='t' ORDER BY msl.id desc limit 1) as codsusppers from public."t_altasTrabajadores" as ats,public.t_trabajador as t, public.t_personas as p where ats.trabajador_id=p_ve_2 and ats."institucionEducativa_id"=p_ve_1 and ats.trabajador_id=t.id and t.persona_id=p.id and p."fechaNac" IS NOT NULL and concat(trim(to_char(extract(MONTH from p."fechaNac"),'00')),trim(to_char(extract(DAY from p."fechaNac"),'00')))::NUMERIC<=concat(trim(to_char(extract(MONTH from p_ve_6),'00')),trim(to_char(extract(DAY from p_ve_6),'00')))::NUMERIC and concat(trim(to_char(extract(MONTH from p."fechaNac"),'00')),trim(to_char(extract(DAY from p."fechaNac"),'00')))::NUMERIC>=concat(trim(to_char(extract(MONTH from p_ve_5),'00')),trim(to_char(extract(DAY from p_ve_5),'00')))::NUMERIC ORDER BY s_fechaini) as tmpz ORDER BY tmpz.s_fechaini;
+select count(*) into vi_13 from tb_temp_group3;
+if vi_13>0 THEN
+FOR z IN 1..vi_13 LOOP
+select tiposusp,s_fechaini,s_fechafin,turno,"marcaApli",motivosusp_id,codsusp,codsusppers,congoce,asusfal into vi_36,vi_03,vi_04,vi_29,vi_30,vi_31,vi_32,vi_33,vi_34,vi_35 from tb_temp_group3 where n=z;	
+vi_15=(vi_04 - vi_03) + 1;
+vi_05=vi_03;
+vi_24=EXTRACT(DAY from vi_05);
+FOR y IN 1..vi_15 LOOP
+if vi_30='E' THEN
+vi_26=concat('e',vi_24::TEXT);
+vi_27=concat('s',vi_24::TEXT);					
+vi_28=concat('c',vi_24::TEXT);
+vi_21=concat(vi_36,' (',vi_32,')',' I',vi_29::TEXT);
+execute format('select %I from conasis."t_asistenciaMesTrabajador" where id=%L limit 1;',vi_27,vi_20) into vi_38;
+if vi_38 is null THEN
+vi_23='F';
+elseif STRPOS(vi_38,'%(F)%')>0	THEN
+vi_23='F';							
+elseif STRPOS(vi_38,'%(E)%')>0	THEN
+vi_23='E';
+ELSE
+vi_23=vi_32;
+end if;
+execute format('UPDATE conasis."t_asistenciaMesTrabajador" SET %I = %L, %I = %L WHERE id = %s;',vi_26,vi_21,vi_28,vi_23,vi_20);
+elseif vi_30='S' THEN
+vi_26=concat('e',vi_24::TEXT);
+vi_27=concat('s',vi_24::TEXT);					
+vi_28=concat('c',vi_24::TEXT);
+vi_22=concat(vi_36,' (',vi_32,')',' S',vi_29::TEXT);
+execute format('select %I from conasis."t_asistenciaMesTrabajador" where id=%L limit 1;',vi_26,vi_20) into vi_38;
+if vi_38 is null THEN
+vi_23='F';
+elseif STRPOS(vi_38,'%(F)%')>0	THEN
+vi_23='F';							
+elseif STRPOS(vi_38,'%(T)%')>0	THEN
+vi_23='T';
+ELSE
+vi_23=vi_32;
+end if;
+execute format('UPDATE conasis."t_asistenciaMesTrabajador" SET %I = %L, %I = %L WHERE id = %s;',vi_27,vi_22,vi_28,vi_23,vi_20);
+elseif vi_30='ES' THEN
+vi_26=concat('e',vi_24::TEXT);
+vi_27=concat('s',vi_24::TEXT);
+vi_28=concat('c',vi_24::TEXT);
+vi_21=concat(vi_36,' (',vi_32,')',' I',vi_29::TEXT);
+vi_22=concat(vi_36,' (',vi_32,')',' S',vi_29::TEXT);
+vi_23=vi_32;
+execute format('UPDATE conasis."t_asistenciaMesTrabajador" SET %I = %L, %I = %L, %I = %L WHERE id = %s;',vi_26,vi_21,vi_27,vi_22,vi_28,vi_23,vi_20);
+end if;			
+vi_24=vi_24 + 1;
+END LOOP;
+if not EXISTS(select * from conasis."t_consolAsistMesTrab" as camt where camt.asistencia_id=vi_18 and camt.turno_id=vi_07 and camt."nroTurno"=vi_29) THEN
+insert into conasis."t_consolAsistMesTrab" (asistencia_id,"localInstEduc_id",turno_id,"nroTurno","motivoSuspLab_id",sigla,"siglaPers",ndias,remunerado,asusfal,created_at,created_by,"estadoUltim_id") values (vi_18,vi_19,vi_07,vi_29,vi_31,vi_32,vi_33,0,vi_34,vi_35,CURRENT_TIMESTAMP,p_ve_7,vi_45);
+end if;
+END LOOP;
+end if;
+DROP TABLE IF EXISTS "tb_temp_group3";
+insert into conasis."t_consolAsistMesTrab" (asistencia_id,"localInstEduc_id",turno_id,"nroTurno","motivoSuspLab_id",sigla,"siglaPers",ndias,remunerado,asusfal,created_at,created_by,"estadoUltim_id") select vi_18 as asistencia_id,vi_19 as "localInstEduc_id",vi_07 as turno_id,vi_06 as "nroTurno", mslx.id as "motivoSuspLab_id",mslx.abreviatura as sigla,mslx."abreviaturaPers" as "siglaPers",0 as ndias,mslx."conGoceHaber" as remunerado,mslx.asusfal as asusfal,CURRENT_TIMESTAMP as created_at,p_ve_7 as created_by,vi_45 as "estadoUltim_id" from param."t00_motivosSuspLab" as mslx where mslx.activo='t' and mslx.abreviatura in ('A','DL','F','T','3T','E','3E');
+vi_46=0;
+vi_47=0;
+FOR d IN 1..31 LOOP
+vi_28=concat('c',d::TEXT);
+execute format('select %I from conasis."t_asistenciaMesTrabajador" where id=%L and %I is not NULL limit 1;',vi_28,vi_20,vi_28) into vi_37;
+if not vi_37 is null and vi_37<>'' THEN
+if vi_37='T' THEN
+vi_46=vi_46 +1;
+if vi_46=3 THEN
+vi_37='3T';
+vi_46=0;
+end if;
+end if;
+if vi_37='E' THEN
+vi_47=vi_47 +1;
+if vi_47=3 THEN
+vi_37='3E';
+vi_47=0;
+end if;
+end if;
+UPDATE conasis."t_consolAsistMesTrab" set ndias=ndias + 1 where asistencia_id=vi_18 and turno_id=vi_07 and "nroTurno"=vi_06 and sigla=vi_37;
+if vi_37='3T' or vi_37='3E' THEN
+vi_23=vi_37;
+else
+select "abreviaturaPers" into vi_23 from param."t00_motivosSuspLab" where abreviatura=vi_37 and activo='t' ORDER BY id desc limit 1;
+end if;		
+execute format('UPDATE conasis."t_asistenciaMesTrabajador" SET %I = %L WHERE id = %s;',vi_28,vi_23,vi_20);
+end if;
+END LOOP;
+END LOOP;
+vi_17='OK';	
+ELSE
+vi_17='NO_HOR';
+end if;
+DROP TABLE IF EXISTS "tb_temp_group1";
+RETURN vi_17;
+END $function$
+

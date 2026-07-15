@@ -94,6 +94,45 @@ class ConsolidadoAsistenciaService
     }
 
     /**
+     * Reprocesa la asistencia de UN solo trabajador.
+     * Devuelve 'OK', 'NO_HOR' o un mensaje de error.
+     */
+    public function reprocesarTrabajador(
+        InstitucionesEduc $institucion,
+        int $trabajadorId,
+        int $anio,
+        int $mes,
+        string $fechaDesde,
+        string $fechaHasta,
+        int $userId,
+    ): array {
+        try {
+            $resultado = DB::selectOne(
+                'SELECT conasis.f_procesa_asismes_v1(?::bigint, ?::bigint, ?::smallint, ?::smallint, ?::date, ?::date, ?::bigint) AS resultado',
+                [$institucion->id, $trabajadorId, $anio, $mes, $fechaDesde, $fechaHasta, $userId]
+            );
+
+            $codigo = $resultado->resultado ?? 'ERROR';
+
+            return [
+                'ok'      => $codigo === 'OK',
+                'codigo'  => $codigo,
+                'mensaje' => match ($codigo) {
+                    'OK'     => 'Asistencia reprocesada correctamente.',
+                    'NO_HOR' => 'El trabajador no tiene horario asignado en el periodo.',
+                    default  => "Resultado inesperado: {$codigo}",
+                },
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'ok'      => false,
+                'codigo'  => 'ERROR',
+                'mensaje' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Obtiene el consolidado de asistencia de una IE para un mes/año.
      *
      * @return \Illuminate\Support\Collection<int, ConasisAsistencia>

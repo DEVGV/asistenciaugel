@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { Loader2, Play, Search, ChevronDown, ChevronUp, AlertTriangle, CheckCircle, XCircle } from 'lucide-vue-next';
+import { Loader2, Play, Search, ChevronDown, ChevronUp, AlertTriangle, CheckCircle, XCircle, RefreshCw } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -45,6 +45,8 @@ const consolidado = ref<Array<{
 const expandedRow = ref<number | null>(null);
 const detalleData = ref<Record<number, any[]>>({});
 const loadingDetalle = ref<number | null>(null);
+const reprocessingId = ref<number | null>(null);
+const reprocessResult = ref<{ ok: boolean; mensaje: string; trabajadorId: number } | null>(null);
 
 const meses = [
     { value: 1, label: 'Enero' },
@@ -131,6 +133,60 @@ async function consultarConsolidado() {
         consolidado.value = [];
     } finally {
         isLoading.value = false;
+    }
+}
+
+async function reprocesarTrabajador(trabajadorId: number, event?: Event) {
+    event?.stopPropagation();
+    reprocessingId.value = trabajadorId;
+    reprocessResult.value = null;
+
+    try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+        const res = await fetch(
+            `/instituciones/${props.institucionId}/consolidado-asistencia/reprocesar-trabajador`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({
+                    trabajador_id: trabajadorId,
+                    anio: anio.value,
+                    mes: mes.value,
+                }),
+            },
+        );
+
+        const data = await res.json();
+        reprocessResult.value = {
+            ok: !!data.ok,
+            mensaje: data.mensaje || (res.ok ? 'Procesado' : 'Error al reprocesar'),
+            trabajadorId,
+        };
+
+        if (data.ok) {
+            // Invalidar cache de detalle para que se recargue con los nuevos valores
+            delete detalleData.value[trabajadorId];
+            await consultarConsolidado();
+        }
+    } catch (err) {
+        reprocessResult.value = {
+            ok: false,
+            mensaje: (err as Error).message || 'Error de conexión.',
+            trabajadorId,
+        };
+    } finally {
+        reprocessingId.value = null;
+        // Auto-limpiar el aviso en 4 segundos
+        setTimeout(() => {
+            if (reprocessResult.value?.trabajadorId === trabajadorId) {
+                reprocessResult.value = null;
+            }
+        }, 4000);
     }
 }
 
@@ -301,6 +357,21 @@ consultarConsolidado();
                 </h3>
             </div>
 
+            <!-- Toast simple de reprocesamiento por trabajador -->
+            <div
+                v-if="reprocessResult"
+                :class="[
+                    'mb-3 flex items-start gap-2 rounded-md border px-3 py-2 text-xs',
+                    reprocessResult.ok
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-300'
+                        : 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-300',
+                ]"
+            >
+                <CheckCircle v-if="reprocessResult.ok" class="mt-0.5 h-4 w-4 shrink-0" />
+                <XCircle v-else class="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{{ reprocessResult.mensaje }}</span>
+            </div>
+
             <div v-if="isLoading" class="flex items-center justify-center py-12">
                 <Loader2 class="h-6 w-6 animate-spin text-muted-foreground" />
                 <span class="ml-2 text-sm text-muted-foreground">Cargando...</span>
@@ -318,6 +389,7 @@ consultarConsolidado();
                         <TableHead class="w-[100px]">Condición</TableHead>
                         <TableHead class="w-[120px]">Rol</TableHead>
                         <TableHead>Resumen de Asistencia</TableHead>
+                        <TableHead class="w-[130px] text-center">Acciones</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -357,11 +429,25 @@ consultarConsolidado();
                                     </span>
                                 </div>
                             </TableCell>
+                            <TableCell class="text-center" @click.stop>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    class="h-7 gap-1 text-[11px]"
+                                    :disabled="reprocessingId === item.trabajador.id"
+                                    :title="`Volver a procesar la asistencia del mes actual para ${item.trabajador.nombre}`"
+                                    @click.stop="reprocesarTrabajador(item.trabajador.id, $event)"
+                                >
+                                    <Loader2 v-if="reprocessingId === item.trabajador.id" class="h-3.5 w-3.5 animate-spin" />
+                                    <RefreshCw v-else class="h-3.5 w-3.5" />
+                                    Reprocesar
+                                </Button>
+                            </TableCell>
                         </TableRow>
 
                         <!-- Detalle expandido -->
                         <TableRow v-if="expandedRow === item.id">
-                            <TableCell :colspan="5" class="bg-muted/10 p-0">
+                            <TableCell :colspan="6" class="bg-muted/10 p-0">
                                 <div v-if="loadingDetalle === item.id" class="flex items-center justify-center py-6">
                                     <Loader2 class="h-5 w-5 animate-spin text-muted-foreground" />
                                 </div>
