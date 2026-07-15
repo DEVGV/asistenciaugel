@@ -78,6 +78,7 @@ class MobileController extends Controller
         $today = today();
         $altas = $this->activeAltas($trabajador, $today)->get();
         $credential = $this->credentialFor($trabajador);
+        $localesPorAlta = $this->activeLocalesMarcacionForAltas($trabajador, $altas->pluck('id'), $today);
 
         return response()->json([
             'data' => [
@@ -100,7 +101,7 @@ class MobileController extends Controller
                     'fecha_inicio' => $alta->fechaInicio,
                     'fecha_fin' => $alta->fechaFin,
                     'local_marcacion' => $this->formatLocalMarcacion(
-                        $this->activeLocalMarcacion($trabajador, $alta, $today)
+                        $localesPorAlta[$alta->id] ?? null
                     ),
                 ])->values(),
             ],
@@ -329,16 +330,11 @@ class MobileController extends Controller
             ->orderBy('fechaInicio')
             ->get();
 
-        $localesPorAlta = [];
-        foreach ($horarios as $horario) {
-            if ($horario->altaTrabajador) {
-                $localesPorAlta[$horario->altaTrabajador->id] = $this->activeLocalMarcacion(
-                    $trabajador,
-                    $horario->altaTrabajador,
-                    $today
-                );
-            }
-        }
+        $localesPorAlta = $this->activeLocalesMarcacionForAltas(
+            $trabajador,
+            $horarios->pluck('altaTrabajador_id')->filter()->unique()->values(),
+            $today
+        );
 
         $detalles = ConasisDetalleHorarios::query()
             ->with([
@@ -440,6 +436,21 @@ class MobileController extends Controller
             ->where(fn ($query) => $query->whereNull('fechaFin')->orWhereDate('fechaFin', '>=', $date))
             ->orderByDesc('fechaInicio')
             ->first();
+    }
+
+    private function activeLocalesMarcacionForAltas(Trabajador $trabajador, mixed $altaIds, mixed $date)
+    {
+        return ConasisLocalesMarcacion::query()
+            ->with('localInstEduc.local')
+            ->where('trabajador_id', $trabajador->id)
+            ->whereIn('altaTrabajador_id', collect($altaIds)->filter()->unique()->values())
+            ->whereDate('fechaInicio', '<=', $date)
+            ->where(fn ($query) => $query->whereNull('fechaFin')->orWhereDate('fechaFin', '>=', $date))
+            ->orderBy('altaTrabajador_id')
+            ->orderByDesc('fechaInicio')
+            ->get()
+            ->unique('altaTrabajador_id')
+            ->keyBy('altaTrabajador_id');
     }
 
     private function markingContext(Trabajador $trabajador, ?int $altaTrabajadorId): array
