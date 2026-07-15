@@ -11,6 +11,8 @@ use App\Models\Conasis\ConasisMarcaciones;
 use App\Models\Conasis\MobileBiometricCredential;
 use App\Models\Trabajador;
 use App\Models\User;
+use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,8 +24,6 @@ use Illuminate\Validation\Rule;
 class MobileController extends Controller
 {
     private const MARKING_DISTANCE_THRESHOLD_METERS = 20.0;
-    private const MARKING_START_GRACE_MINUTES = 10;
-    private const MARKING_END_GRACE_MINUTES = 15;
 
     public function login(Request $request): JsonResponse
     {
@@ -293,7 +293,7 @@ class MobileController extends Controller
                 'codigo' => $this->mobileMarkCode($trabajador),
                 'fechaMarcacion' => now(),
                 'fechaRegistro' => now(),
-                'tipo' => 'A',
+                'tipo' => $context['schedule']['mark_type'] ?? 'E',
                 'medioMarcacion' => 'M',
                 'procesado' => false,
                 'utm_huso' => $validated['utm_huso'] ?? null,
@@ -487,6 +487,7 @@ class MobileController extends Controller
             'alta_vigente' => filled($alta),
             'asignado_marcacion_movil' => filled($localMarcacion),
             'horario_marcacion' => (bool) ($schedule['can_mark_now'] ?? false),
+            'marca_no_duplicada' => ! (bool) ($schedule['already_marked'] ?? false),
             'biometria_facial_aprobada' => $this->faceCredentialReady($credential),
             'metodo_biometrico_habilitado' => $this->faceCredentialReady($credential) || $credential->local_biometric_enabled,
             'biometria_no_bloqueada' => ! ($credential->blocked_until && $credential->blocked_until->isFuture()),
@@ -513,6 +514,10 @@ class MobileController extends Controller
                 'has_active_schedule' => false,
                 'has_today_schedule' => false,
                 'can_mark_now' => false,
+                'already_marked' => false,
+                'mark_type' => null,
+                'mark_label' => null,
+                'active_window' => null,
                 'today_windows' => [],
             ];
         }
@@ -529,35 +534,122 @@ class MobileController extends Controller
             ->where(fn ($query) => $query->whereNull('fechaFin')->orWhereDate('fechaFin', '>=', $today))
             ->pluck('id');
 
-        $windows = ConasisDetalleHorarios::query()
+        $details = ConasisDetalleHorarios::query()
             ->whereIn('horarioTrabajador_id', $horarios)
             ->where('aplicar', true)
             ->where('nroDia', $currentDay)
-            ->get()
-            ->map(function (ConasisDetalleHorarios $detalle) use ($now): array {
-                $classStart = $now->copy()->setTimeFromTimeString($detalle->entHoraInicio);
-                $markStart = $classStart->copy()->subMinutes(self::MARKING_START_GRACE_MINUTES);
-                $markEnd = $classStart->copy()->addMinutes(self::MARKING_END_GRACE_MINUTES);
+            ->orderBy('entHoraInicio')
+            ->get();
 
-                return [
-                    'entrada_inicio' => $detalle->entHoraInicio,
-                    'entrada_fin' => $detalle->entHoraFin,
-                    'salida_inicio' => $detalle->salHoraInicio,
-                    'salida_fin' => $detalle->salHoraFin,
-                    'marcacion_inicio' => $markStart->format('H:i:s'),
-                    'marcacion_fin' => $markEnd->format('H:i:s'),
-                    'can_mark_now' => $now->betweenIncluded($markStart, $markEnd),
-                ];
+        $todayMarks = ConasisMarcaciones::query()
+            ->where('trabajador_id', $trabajador->id)
+            ->where('altaTrabajador_id', $alta->id)
+            ->where('medioMarcacion', 'M')
+            ->whereIn('tipo', ['E', 'S'])
+            ->whereDate('fechaMarcacion', $today)
+            ->get(['tipo', 'fechaMarcacion']);
+
+        $windows = $details
+            ->flatMap(function (ConasisDetalleHorarios $detalle) use ($now, $todayMarks): array {
+                return array_values(array_filter([
+                    $this->scheduleMarkingWindow(
+                        $detalle,
+                        'E',
+                        'Entrada',
+                        $detalle->entHoraInicio,
+                        $detalle->entTolerancia,
+                        $now,
+                        $todayMarks
+                    ),
+                    $this->scheduleMarkingWindow(
+                        $detalle,
+                        'S',
+                        'Salida',
+                        $detalle->salHoraInicio,
+                        $detalle->salTolerancia,
+                        $now,
+                        $todayMarks
+                    ),
+                ]));
+            })
+            ->sortBy('sort_time')
+            ->values();
+        $activeWindow = $windows->first(
+            fn (array $window): bool => (bool) $window['is_current'] && ! (bool) $window['already_marked']
+        );
+        $currentWindow = $windows->first(fn (array $window): bool => (bool) $window['is_current']);
+        $publicWindows = $windows
+            ->map(function (array $window): array {
+                unset($window['starts_at'], $window['ends_at'], $window['sort_time']);
+
+                return $window;
             })
             ->values();
+        $publicActiveWindow = $activeWindow;
+        if ($publicActiveWindow) {
+            unset($publicActiveWindow['starts_at'], $publicActiveWindow['ends_at'], $publicActiveWindow['sort_time']);
+        }
+        $maxTolerance = $publicWindows->max('tolerancia_minutos') ?? 0;
 
         return [
             'has_active_schedule' => $horarios->isNotEmpty(),
-            'has_today_schedule' => $windows->isNotEmpty(),
-            'can_mark_now' => $windows->contains(fn (array $window): bool => (bool) $window['can_mark_now']),
-            'start_grace_minutes' => self::MARKING_START_GRACE_MINUTES,
-            'end_grace_minutes' => self::MARKING_END_GRACE_MINUTES,
-            'today_windows' => $windows,
+            'has_today_schedule' => $publicWindows->isNotEmpty(),
+            'can_mark_now' => filled($activeWindow),
+            'already_marked' => $currentWindow ? (bool) $currentWindow['already_marked'] : false,
+            'mark_type' => $activeWindow['mark_type'] ?? null,
+            'mark_label' => $activeWindow['mark_label'] ?? null,
+            'active_window' => $publicActiveWindow,
+            'start_grace_minutes' => 0,
+            'end_grace_minutes' => $maxTolerance,
+            'max_tolerance_minutes' => $maxTolerance,
+            'today_windows' => $publicWindows,
+        ];
+    }
+
+    private function scheduleMarkingWindow(
+        ConasisDetalleHorarios $detalle,
+        string $markType,
+        string $markLabel,
+        ?string $startTime,
+        mixed $tolerance,
+        CarbonInterface $now,
+        mixed $todayMarks
+    ): ?array {
+        if (! filled($startTime)) {
+            return null;
+        }
+
+        $toleranceMinutes = max(0, (int) ($tolerance ?? 0));
+        $markStart = $now->copy()->setTimeFromTimeString($startTime);
+        $markEnd = $markStart->copy()->addMinutes($toleranceMinutes);
+        $alreadyMarked = $todayMarks->contains(function (ConasisMarcaciones $mark) use ($markType, $markStart, $markEnd): bool {
+            if ($mark->tipo !== $markType || ! $mark->fechaMarcacion) {
+                return false;
+            }
+
+            return Carbon::parse($mark->fechaMarcacion)->betweenIncluded($markStart, $markEnd);
+        });
+        $isCurrent = $now->betweenIncluded($markStart, $markEnd);
+
+        return [
+            'detalle_horario_id' => $detalle->id,
+            'mark_type' => $markType,
+            'mark_label' => $markLabel,
+            'entrada_inicio' => $detalle->entHoraInicio,
+            'entrada_fin' => $detalle->entHoraFin,
+            'entrada_tolerancia' => max(0, (int) ($detalle->entTolerancia ?? 0)),
+            'salida_inicio' => $detalle->salHoraInicio,
+            'salida_fin' => $detalle->salHoraFin,
+            'salida_tolerancia' => max(0, (int) ($detalle->salTolerancia ?? 0)),
+            'marcacion_inicio' => $markStart->format('H:i:s'),
+            'marcacion_fin' => $markEnd->format('H:i:s'),
+            'tolerancia_minutos' => $toleranceMinutes,
+            'can_mark_now' => $isCurrent && ! $alreadyMarked,
+            'is_current' => $isCurrent,
+            'already_marked' => $alreadyMarked,
+            'starts_at' => $markStart,
+            'ends_at' => $markEnd,
+            'sort_time' => $markStart->format('H:i:s').$markType,
         ];
     }
 
@@ -569,12 +661,11 @@ class MobileController extends Controller
         if (! ($checks['asignado_marcacion_movil'] ?? false)) {
             return 'No existe local de marcacion movil vigente para esta asignacion.';
         }
+        if (! ($checks['marca_no_duplicada'] ?? true)) {
+            return 'Ya existe una marca registrada para esta ventana horaria.';
+        }
         if (! ($checks['horario_marcacion'] ?? false)) {
-            return sprintf(
-                'La marcacion solo esta permitida desde %d minutos antes hasta %d minutos despues del inicio de clase.',
-                self::MARKING_START_GRACE_MINUTES,
-                self::MARKING_END_GRACE_MINUTES
-            );
+            return 'La marcacion solo esta permitida durante la ventana de entrada o salida del turno.';
         }
         if (! ($checks['metodo_biometrico_habilitado'] ?? false)) {
             return 'El docente no tiene un metodo biometrico habilitado para marcacion movil.';
@@ -913,6 +1004,7 @@ class MobileController extends Controller
             'id' => $mark->id,
             'fecha_marcacion' => $mark->fechaMarcacion,
             'tipo' => $mark->tipo,
+            'tipo_label' => $mark->tipo === 'S' ? 'Salida' : 'Entrada',
             'medio_marcacion' => $mark->medioMarcacion,
             'procesado' => (bool) $mark->procesado,
             'alta_trabajador_id' => $mark->altaTrabajador_id,
