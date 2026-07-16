@@ -25,7 +25,7 @@ import {
     Loader2,
     FileSpreadsheet,
 } from 'lucide-vue-next';
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, nextTick } from 'vue';
 import { usePermisos } from '@/composables/usePermisos';
 import HorarioTrabajadorController from '@/actions/App/Http/Controllers/Horario/HorarioTrabajadorController';
 import LocalController from '@/actions/App/Http/Controllers/Infraestructura/LocalController';
@@ -50,6 +50,7 @@ import PermisosIETab from '@/components/institucion-educativa/PermisosIETab.vue'
 import RelojesMasivaGrid from '@/components/institucion-educativa/RelojesMasivaGrid.vue';
 import ConfirmModal from '@/components/shared/ConfirmModal.vue';
 import FormModal from '@/components/shared/FormModal.vue';
+import LocalMapPicker from '@/components/shared/LocalMapPicker.vue';
 import GestionUsuarioModal from '@/components/shared/GestionUsuarioModal.vue';
 import ParamSelect from '@/components/shared/ParamSelect.vue';
 import StatusBadge from '@/components/shared/StatusBadge.vue';
@@ -303,6 +304,8 @@ const localForm = useForm({
     fechaFin: '',
 });
 
+const localMapRef = ref<InstanceType<typeof LocalMapPicker> | null>(null);
+
 watch(showLocalModal, (val) => {
     if (!val) {
         localForm.reset();
@@ -310,8 +313,19 @@ watch(showLocalModal, (val) => {
         localSelectedDepartamento.value = null;
         localSelectedProvincia.value = null;
         localSelectedDistrito.value = null;
+    } else {
+        nextTick(() => {
+            setTimeout(() => localMapRef.value?.invalidateSize(), 200);
+        });
     }
 });
+
+function onMapCoordinates(coords: { utm_huso: number; utm_banda: string; utm_x_este: number; utm_y_norte: number }) {
+    localForm.utm_huso = coords.utm_huso;
+    localForm.utm_banda = coords.utm_banda;
+    localForm.utm_x_este = coords.utm_x_este;
+    localForm.utm_y_norte = coords.utm_y_norte;
+}
 
 function openLocalCreate() {
     isInitializingLocal.value = false;
@@ -2033,177 +2047,197 @@ async function generarFeriados() {
         <!-- Modal Crear Local -->
         <FormModal
             v-model:show="showLocalModal"
-            title="Nuevo Local"
+            :title="isEditingLocal ? 'Editar Local' : 'Nuevo Local'"
             description="El local se creará y asignará automáticamente a esta institución."
-            max-width="4xl"
+            max-width="7xl"
             :processing="localForm.processing"
             @submit="submitLocal"
         >
-            <div class="grid gap-6">
-                <!-- Fila 1: Nombre y Domicilio -->
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div class="grid gap-2">
-                        <Label>Nombre del local *</Label>
-                        <Input
-                            v-model="localForm.nombre"
-                            placeholder="Ej: Local Principal, Anexo 01..."
-                            :class="{
-                                'border-destructive': localForm.errors.nombre,
-                            }"
-                        />
-                        <p
-                            v-if="localForm.errors.nombre"
-                            class="text-sm text-destructive"
-                        >
-                            {{ localForm.errors.nombre }}
-                        </p>
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <!-- Columna izquierda: Formulario -->
+                <div class="grid gap-5">
+                    <!-- Fila 1: Nombre y Domicilio -->
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div class="grid gap-2">
+                            <Label>Nombre del local *</Label>
+                            <Input
+                                v-model="localForm.nombre"
+                                placeholder="Ej: Local Principal, Anexo 01..."
+                                :class="{
+                                    'border-destructive': localForm.errors.nombre,
+                                }"
+                            />
+                            <p
+                                v-if="localForm.errors.nombre"
+                                class="text-sm text-destructive"
+                            >
+                                {{ localForm.errors.nombre }}
+                            </p>
+                        </div>
+                        <div class="grid gap-2">
+                            <Label>Domicilio / Dirección</Label>
+                            <Input
+                                v-model="localForm.domicilio"
+                                placeholder="Av. / Jr. / Calle..."
+                            />
+                        </div>
                     </div>
-                    <div class="grid gap-2">
-                        <Label>Domicilio / Dirección</Label>
-                        <Input
-                            v-model="localForm.domicilio"
-                            placeholder="Av. / Jr. / Calle..."
-                        />
-                    </div>
-                </div>
 
-                <!-- Fila 2: Departamento y Provincia -->
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <div class="grid gap-2">
-                        <ParamSelect
-                            type="departamentos"
-                            label="Departamento"
-                            v-model="localSelectedDepartamento"
-                            placeholder="Seleccionar..."
-                            @update:modelValue="
-                                () => {
-                                    if (!isInitializingLocal) {
-                                        localSelectedProvincia = null;
-                                        localSelectedDistrito = null;
-                                        localForm.ubigeo = '';
-                                        localForm.zona_id = null;
+                    <!-- Fila 2: Departamento, Provincia, Distrito -->
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <div class="grid gap-2">
+                            <ParamSelect
+                                type="departamentos"
+                                label="Departamento"
+                                v-model="localSelectedDepartamento"
+                                placeholder="Seleccionar..."
+                                @update:modelValue="
+                                    () => {
+                                        if (!isInitializingLocal) {
+                                            localSelectedProvincia = null;
+                                            localSelectedDistrito = null;
+                                            localForm.ubigeo = '';
+                                            localForm.zona_id = null;
+                                        }
                                     }
-                                }
-                            "
-                        />
-                    </div>
-                    <div class="grid gap-2">
-                        <ParamSelect
-                            type="provincias"
-                            label="Provincia"
-                            :parent-id="localSelectedDepartamento"
-                            v-model="localSelectedProvincia"
-                            placeholder="Seleccionar..."
-                            :disabled="!localSelectedDepartamento"
-                            @update:modelValue="
-                                () => {
-                                    if (!isInitializingLocal) {
-                                        localSelectedDistrito = null;
-                                        localForm.ubigeo = '';
-                                        localForm.zona_id = null;
+                                "
+                            />
+                        </div>
+                        <div class="grid gap-2">
+                            <ParamSelect
+                                type="provincias"
+                                label="Provincia"
+                                :parent-id="localSelectedDepartamento"
+                                v-model="localSelectedProvincia"
+                                placeholder="Seleccionar..."
+                                :disabled="!localSelectedDepartamento"
+                                @update:modelValue="
+                                    () => {
+                                        if (!isInitializingLocal) {
+                                            localSelectedDistrito = null;
+                                            localForm.ubigeo = '';
+                                            localForm.zona_id = null;
+                                        }
                                     }
-                                }
-                            "
-                        />
-                    </div>
-                    <div class="grid gap-2">
-                        <ParamSelect
-                            type="distritos"
-                            label="Distrito"
-                            :parent-id="localSelectedProvincia"
-                            v-model="localSelectedDistrito"
-                            placeholder="Seleccionar..."
-                            :disabled="!localSelectedProvincia"
-                            @update:item="
-                                (item: any) => {
-                                    if (!isInitializingLocal) {
-                                        localForm.ubigeo = item
-                                            ? item.codigo || ''
-                                            : '';
-                                        localForm.zona_id = null;
+                                "
+                            />
+                        </div>
+                        <div class="grid gap-2">
+                            <ParamSelect
+                                type="distritos"
+                                label="Distrito"
+                                :parent-id="localSelectedProvincia"
+                                v-model="localSelectedDistrito"
+                                placeholder="Seleccionar..."
+                                :disabled="!localSelectedProvincia"
+                                @update:item="
+                                    (item: any) => {
+                                        if (!isInitializingLocal) {
+                                            localForm.ubigeo = item
+                                                ? item.codigo || ''
+                                                : '';
+                                            localForm.zona_id = null;
+                                        }
                                     }
-                                }
-                            "
-                        />
+                                "
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Fila 3: Zona y Ubigeo -->
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <div class="grid gap-2 md:col-span-2">
+                            <ZonaSelect
+                                v-model="localForm.zona_id"
+                                :distrito-id="localSelectedDistrito"
+                                label="Zona (opcional)"
+                                placeholder="Seleccionar zona..."
+                                :disabled="!localSelectedDistrito"
+                            />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label
+                                class="text-xs font-bold text-muted-foreground uppercase"
+                                >Ubigeo</Label
+                            >
+                            <Input
+                                v-model="localForm.ubigeo"
+                                placeholder="000000"
+                                maxlength="6"
+                                class="h-9 bg-muted/30 font-mono font-bold"
+                                readonly
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Fila 4: Coordenadas UTM -->
+                    <div
+                        class="grid grid-cols-2 gap-4 border-t pt-4 md:grid-cols-4"
+                    >
+                        <div class="grid gap-2">
+                            <Label class="text-xs">UTM Huso</Label>
+                            <Input
+                                v-model="localForm.utm_huso"
+                                type="number"
+                                step="0.0001"
+                                placeholder="Huso"
+                                class="bg-muted/20 font-mono text-xs"
+                            />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label class="text-xs">UTM Banda</Label>
+                            <Input
+                                v-model="localForm.utm_banda"
+                                placeholder="Banda"
+                                class="bg-muted/20 font-mono text-xs"
+                            />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label class="text-xs">UTM X (Este)</Label>
+                            <Input
+                                v-model="localForm.utm_x_este"
+                                type="number"
+                                step="0.0001"
+                                placeholder="Este"
+                                class="bg-muted/20 font-mono text-xs"
+                            />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label class="text-xs">UTM Y (Norte)</Label>
+                            <Input
+                                v-model="localForm.utm_y_norte"
+                                type="number"
+                                step="0.0001"
+                                placeholder="Norte"
+                                class="bg-muted/20 font-mono text-xs"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Fila 5: Fechas -->
+                    <div class="grid grid-cols-2 gap-4 border-t pt-4">
+                        <div class="grid gap-2">
+                            <Label>Fecha Inicio</Label>
+                            <Input v-model="localForm.fechaInicio" type="date" />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label>Fecha Fin</Label>
+                            <Input v-model="localForm.fechaFin" type="date" />
+                        </div>
                     </div>
                 </div>
 
-                <!-- Fila 3: Zona y Ubigeo -->
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <div class="grid gap-2 md:col-span-2">
-                        <ZonaSelect
-                            v-model="localForm.zona_id"
-                            :distrito-id="localSelectedDistrito"
-                            label="Zona (opcional)"
-                            placeholder="Seleccionar zona..."
-                            :disabled="!localSelectedDistrito"
-                        />
-                    </div>
-                    <div class="grid gap-2">
-                        <Label
-                            class="text-xs font-bold text-muted-foreground uppercase"
-                            >Ubigeo</Label
-                        >
-                        <Input
-                            v-model="localForm.ubigeo"
-                            placeholder="000000"
-                            maxlength="6"
-                            class="h-9 bg-muted/30 font-mono font-bold"
-                            readonly
-                        />
-                    </div>
-                </div>
-
-                <!-- Fila 4: Coordenadas UTM -->
-                <div
-                    class="grid grid-cols-2 gap-4 border-t pt-4 md:grid-cols-4"
-                >
-                    <div class="grid gap-2">
-                        <Label class="text-xs">UTM Huso</Label>
-                        <Input
-                            v-model="localForm.utm_huso"
-                            type="number"
-                            step="0.0001"
-                            placeholder="Huso"
-                        />
-                    </div>
-                    <div class="grid gap-2">
-                        <Label class="text-xs">UTM Banda</Label>
-                        <Input
-                            v-model="localForm.utm_banda"
-                            placeholder="Banda"
-                        />
-                    </div>
-                    <div class="grid gap-2">
-                        <Label class="text-xs">UTM X (Este)</Label>
-                        <Input
-                            v-model="localForm.utm_x_este"
-                            type="number"
-                            step="0.0001"
-                            placeholder="Este"
-                        />
-                    </div>
-                    <div class="grid gap-2">
-                        <Label class="text-xs">UTM Y (Norte)</Label>
-                        <Input
-                            v-model="localForm.utm_y_norte"
-                            type="number"
-                            step="0.0001"
-                            placeholder="Norte"
-                        />
-                    </div>
-                </div>
-
-                <!-- Fila 5: Fechas -->
-                <div class="grid grid-cols-2 gap-4 border-t pt-4">
-                    <div class="grid gap-2">
-                        <Label>Fecha Inicio</Label>
-                        <Input v-model="localForm.fechaInicio" type="date" />
-                    </div>
-                    <div class="grid gap-2">
-                        <Label>Fecha Fin</Label>
-                        <Input v-model="localForm.fechaFin" type="date" />
-                    </div>
+                <!-- Columna derecha: Mapa -->
+                <div class="flex flex-col border-l pl-6 lg:min-h-[450px]">
+                    <LocalMapPicker
+                        v-if="showLocalModal"
+                        ref="localMapRef"
+                        :utm-huso="localForm.utm_huso"
+                        :utm-banda="localForm.utm_banda"
+                        :utm-x-este="localForm.utm_x_este"
+                        :utm-y-norte="localForm.utm_y_norte"
+                        @update:coordinates="onMapCoordinates"
+                    />
                 </div>
             </div>
         </FormModal>
