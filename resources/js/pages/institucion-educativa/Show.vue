@@ -649,6 +649,64 @@ function openCargarAsistencia(
     showCargarAsistenciaModal.value = true;
 }
 
+// ─── Locales de Marcación por Alta ────────────────────────────────────────────
+const localesIE = computed(() => {
+    return (props.institucion.locales_inst_educ || []).map((lie) => ({
+        id: lie.id,
+        nombre: lie.local?.nombre || 'Sin nombre',
+    }));
+});
+
+const localMarcOpenAltaId = ref<number | null>(null);
+const localMarcSelectedId = ref<number | null>(null);
+const localMarcProcessing = ref(false);
+
+function toggleLocalMarcDropdown(altaId: number) {
+    if (localMarcOpenAltaId.value === altaId) {
+        localMarcOpenAltaId.value = null;
+    } else {
+        localMarcOpenAltaId.value = altaId;
+        localMarcSelectedId.value = null;
+    }
+}
+
+function agregarLocalMarcacion(alta: AltaTrabajador) {
+    if (!localMarcSelectedId.value) return;
+    localMarcProcessing.value = true;
+
+    router.post(
+        LocalMarcacionController.store({ localesIe: localMarcSelectedId.value }).url,
+        {
+            trabajador_id: alta.trabajador_id,
+            altaTrabajador_id: alta.id,
+            localInstEduc_id: localMarcSelectedId.value,
+            fechaInicio: alta.fechaInicio,
+            fechaFin: alta.fechaFin,
+        },
+        {
+            preserveState: true,
+            onSuccess: () => {
+                localMarcOpenAltaId.value = null;
+                localMarcSelectedId.value = null;
+                cargarDocentes();
+            },
+            onFinish: () => {
+                localMarcProcessing.value = false;
+            },
+        },
+    );
+}
+
+function quitarLocalMarcacion(marcacionId: number) {
+    router.delete(
+        LocalMarcacionController.destroy({ marcacionesLocal: marcacionId }).url,
+        {
+            preserveState: true,
+            onSuccess: () => cargarDocentes(),
+        },
+    );
+}
+
 const tabs = [
     { key: 'datos', label: 'Datos Generales', icon: School },
     { key: 'cursos', label: 'Cursos', icon: BookOpen },
@@ -1413,6 +1471,7 @@ async function generarFeriados() {
                             <TableHead class="w-[130px]"
                                 >Área / Cargo</TableHead
                             >
+                            <TableHead>Locales de Marcación</TableHead>
                             <TableHead class="w-[100px]">Inicio</TableHead>
                             <TableHead class="w-[100px]">Fin / Baja</TableHead>
                             <TableHead class="w-[75px]">Estado</TableHead>
@@ -1512,6 +1571,80 @@ async function generarFeriados() {
                                         {{ alta.cargo?.nombre || '-' }}
                                     </div>
                                 </TableCell>
+                                <!-- Locales de Marcación -->
+                                <TableCell>
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <span
+                                            v-for="lm in (alta.localesMarcacion ?? alta.locales_marcacion ?? [])"
+                                            :key="lm.id"
+                                            class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-emerald-600/10 dark:bg-emerald-950/30 dark:text-emerald-400 dark:ring-emerald-400/20"
+                                        >
+                                            <MapPin class="h-3 w-3" />
+                                            {{ lm.localInstEduc?.local?.nombre ?? lm.local_inst_educ?.local?.nombre ?? '—' }}
+                                            <button
+                                                v-if="can('infraestructura.editar')"
+                                                type="button"
+                                                class="ml-0.5 rounded-full p-0.5 text-emerald-500 hover:bg-emerald-200 hover:text-emerald-800 dark:hover:bg-emerald-800 dark:hover:text-emerald-200"
+                                                title="Quitar local"
+                                                @click.stop="quitarLocalMarcacion(lm.id)"
+                                            >
+                                                <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                            </button>
+                                        </span>
+                                        <!-- Botón agregar -->
+                                        <div v-if="can('infraestructura.crear')" class="relative">
+                                            <button
+                                                type="button"
+                                                class="inline-flex h-6 w-6 items-center justify-center rounded-md border border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-primary"
+                                                title="Agregar local de marcación"
+                                                @click.stop="toggleLocalMarcDropdown(alta.id)"
+                                            >
+                                                <Plus class="h-3.5 w-3.5" />
+                                            </button>
+                                            <!-- Dropdown para seleccionar local -->
+                                            <div
+                                                v-if="localMarcOpenAltaId === alta.id"
+                                                class="absolute left-0 top-8 z-50 w-56 rounded-md border bg-background p-2 shadow-lg"
+                                            >
+                                                <p class="mb-1.5 text-[11px] font-semibold text-muted-foreground uppercase">Seleccionar local</p>
+                                                <div v-if="!localesIE.length" class="py-3 text-center text-xs text-muted-foreground">
+                                                    No hay locales en esta IE.
+                                                </div>
+                                                <template v-else>
+                                                    <button
+                                                        v-for="loc in localesIE"
+                                                        :key="loc.id"
+                                                        type="button"
+                                                        class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs hover:bg-accent hover:text-accent-foreground"
+                                                        :class="{ 'bg-primary/10 font-medium text-primary': localMarcSelectedId === loc.id }"
+                                                        @click="localMarcSelectedId = loc.id"
+                                                    >
+                                                        <MapPin class="h-3.5 w-3.5 text-muted-foreground" />
+                                                        {{ loc.nombre }}
+                                                    </button>
+                                                    <div class="mt-2 flex justify-end gap-1.5 border-t pt-2">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            class="h-7 text-xs"
+                                                            @click="localMarcOpenAltaId = null"
+                                                        >
+                                                            Cancelar
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            class="h-7 text-xs"
+                                                            :disabled="!localMarcSelectedId || localMarcProcessing"
+                                                            @click="agregarLocalMarcacion(alta)"
+                                                        >
+                                                            Agregar
+                                                        </Button>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </TableCell>
                                 <TableCell class="text-xs">{{
                                     alta.fechaInicio
                                 }}</TableCell>
@@ -1572,7 +1705,7 @@ async function generarFeriados() {
                             "
                         >
                             <TableCell
-                                colspan="7"
+                                colspan="8"
                                 class="h-24 text-center text-muted-foreground"
                             >
                                 No se encontraron docentes/personal con los
@@ -1581,7 +1714,7 @@ async function generarFeriados() {
                         </TableRow>
                         <TableRow v-else>
                             <TableCell
-                                colspan="7"
+                                colspan="8"
                                 class="h-16 text-center text-sm text-muted-foreground"
                             >
                                 Cargando datos...

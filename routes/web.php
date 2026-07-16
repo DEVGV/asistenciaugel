@@ -148,6 +148,8 @@ Route::middleware(['auth', 'verified', 'contexto'])->group(function () {
             ->name('trabajadores.horarios');
         Route::get('trabajadores/{trabajador}/marcaciones', [MarcacionesTrabajadorController::class, 'porTrabajador'])
             ->name('trabajadores.marcaciones');
+        Route::get('trabajadores/{trabajador}/asistencia-consolidada', [MarcacionesTrabajadorController::class, 'asistenciaConsolidada'])
+            ->name('trabajadores.asistencia-consolidada');
     });
     Route::middleware('permiso:trabajadores.crear')->group(function () {
         Route::resource('trabajadores', TrabajadorController::class)

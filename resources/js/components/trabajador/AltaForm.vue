@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 import AltaTrabajadorController from '@/actions/App/Http/Controllers/Trabajador/AltaTrabajadorController';
 import FormModal from '@/components/shared/FormModal.vue';
-import LocalMarcacionSelect from '@/components/shared/LocalMarcacionSelect.vue';
 import ParamSelect from '@/components/shared/ParamSelect.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,7 +35,6 @@ const form = useForm({
     fechaAlta: '',
     observacion: '',
     perfil_id: null as number | null,
-    localInstEduc_id: null as number | null,
 });
 
 watch(
@@ -59,8 +57,6 @@ watch(
             form.perfil_id = props.alta.perfil_ie
                 ? (props.alta.perfil_ie.perfil_id ?? null)
                 : null;
-            const lm = props.alta.localMarcacion ?? props.alta.local_marcacion;
-            form.localInstEduc_id = lm?.localInstEduc_id ?? lm?.local_inst_educ_id ?? null;
 
             // Mostrar el nombre de la IE en el input de búsqueda (sin disparar búsqueda)
             const ie = props.alta.institucionEducativa ?? props.alta.institucion_educativa;
@@ -113,13 +109,6 @@ watch(ieQuery, (q) => {
             ieLoading.value = false;
         }
     }, 300);
-});
-
-const currentLocalName = computed(() => {
-    const lm = props.alta?.localMarcacion ?? (props.alta as any)?.local_marcacion;
-    if (!lm) return undefined;
-    const lie = lm.localInstEduc ?? lm.local_inst_educ;
-    return lie?.local?.nombre ?? lie?.local?.domicilio ?? undefined;
 });
 
 function submit() {
@@ -207,22 +196,6 @@ function submit() {
                         placeholder="Ej: 28001234"
                     />
                 </div>
-            </div>
-
-            <!-- Local de marcación (depende de la IE seleccionada) -->
-            <div class="grid gap-2">
-                <LocalMarcacionSelect
-                    label="Local de Marcación"
-                    placeholder="Sin local de marcación"
-                    :institucion-id="form.institucionEducativa_id"
-                    v-model="form.localInstEduc_id"
-                    :current-name="currentLocalName"
-                    :error="form.errors.localInstEduc_id"
-                />
-                <p class="text-xs text-muted-foreground">
-                    Solo se listan los locales de la IE seleccionada. Cambiar de
-                    local crea un nuevo registro, no edita el anterior.
-                </p>
             </div>
 
             <!-- Fila 2: Condición y Tipo Contrato -->

@@ -9,7 +9,6 @@ import {
     LogIn,
     LogOut,
     RefreshCw,
-    Smartphone,
     Timer,
     XCircle,
 } from 'lucide-vue-next';
@@ -37,6 +36,18 @@ interface DiaAsistencia {
     esDiaLaboral: boolean;
 }
 
+interface ConsolidadoTurno {
+    id: number;
+    nroTurno: number;
+    turno: { id: number; nombre: string } | null;
+    [key: string]: any; // e1-e31, s1-s31, c1-c31
+}
+
+interface ConsolidadoData {
+    asistencia_id: number;
+    turnos: ConsolidadoTurno[];
+}
+
 // ── Props ──────────────────────────────────────────────────────────────────────
 const props = defineProps<{
     trabajadorId: number;
@@ -47,6 +58,7 @@ const CURRENT_DATE = new Date();
 const selectedAnio = ref<number>(CURRENT_DATE.getFullYear());
 const selectedMes = ref<number>(CURRENT_DATE.getMonth() + 1);
 const marcaciones = ref<Marcacion[]>([]);
+const consolidado = ref<ConsolidadoData | null>(null);
 const loading = ref(false);
 const error = ref(false);
 
@@ -78,20 +90,29 @@ function mesSiguiente() {
 }
 
 // ── Carga de datos ─────────────────────────────────────────────────────────────
-async function cargarMarcaciones() {
+async function cargarDatos() {
     loading.value = true;
     error.value = false;
 
     try {
-        const res = await fetch(
-            `/trabajadores/${props.trabajadorId}/marcaciones?anio=${selectedAnio.value}&mes=${selectedMes.value}`,
-            { headers: { Accept: 'application/json' } },
-        );
+        const [resMarcaciones, resConsolidado] = await Promise.all([
+            fetch(
+                `/trabajadores/${props.trabajadorId}/marcaciones?anio=${selectedAnio.value}&mes=${selectedMes.value}`,
+                { headers: { Accept: 'application/json' } },
+            ),
+            fetch(
+                `/trabajadores/${props.trabajadorId}/asistencia-consolidada?anio=${selectedAnio.value}&mes=${selectedMes.value}`,
+                { headers: { Accept: 'application/json' } },
+            ),
+        ]);
 
-        if (!res.ok) throw new Error();
+        if (!resMarcaciones.ok) throw new Error();
 
-        const result = await res.json();
-        marcaciones.value = result.data;
+        const dataMarcaciones = await resMarcaciones.json();
+        marcaciones.value = dataMarcaciones.data;
+
+        const dataConsolidado = await resConsolidado.json();
+        consolidado.value = dataConsolidado.data ?? null;
     } catch {
         error.value = true;
     } finally {
@@ -99,15 +120,76 @@ async function cargarMarcaciones() {
     }
 }
 
-onMounted(() => cargarMarcaciones());
-watch([selectedAnio, selectedMes], () => cargarMarcaciones());
+onMounted(() => cargarDatos());
+watch([selectedAnio, selectedMes], () => cargarDatos());
+
+// ── Consolidado: obtener sigla/entrada/salida del día ──────────────────────────
+/**
+ * Retorna el primer turno que tenga condición para el día dado (1-31).
+ * Prioriza el turno con condición no vacía.
+ */
+function getConsolidadoDia(dia: number): { sigla: string; entrada: string | null; salida: string | null } | null {
+    if (!consolidado.value) return null;
+    for (const turno of consolidado.value.turnos) {
+        const sigla: string = turno[`c${dia}`] ?? '';
+        if (sigla) {
+            return {
+                sigla,
+                entrada: turno[`e${dia}`] ?? null,
+                salida: turno[`s${dia}`] ?? null,
+            };
+        }
+    }
+    return null;
+}
+
+// ── Colores de sigla (igual que ConsolidadoAsistenciaTab) ──────────────────────
+function siglaColor(sigla: string): string {
+    const map: Record<string, string> = {
+        'A':   'bg-emerald-50 text-emerald-700 ring-emerald-700/20 dark:bg-emerald-950/30 dark:text-emerald-400',
+        'T':   'bg-amber-50 text-amber-700 ring-amber-700/20 dark:bg-amber-950/30 dark:text-amber-400',
+        'F':   'bg-red-50 text-red-700 ring-red-700/20 dark:bg-red-950/30 dark:text-red-400',
+        'I':   'bg-red-50 text-red-700 ring-red-700/20 dark:bg-red-950/30 dark:text-red-400',
+        'E':   'bg-orange-50 text-orange-700 ring-orange-700/20 dark:bg-orange-950/30 dark:text-orange-400',
+        'DL':  'bg-gray-50 text-gray-600 ring-gray-600/10 dark:bg-gray-950/30 dark:text-gray-400',
+        '3T':  'bg-red-50 text-red-700 ring-red-700/20 dark:bg-red-950/30 dark:text-red-400',
+        '3E':  'bg-red-50 text-red-700 ring-red-700/20 dark:bg-red-950/30 dark:text-red-400',
+        'FER': 'bg-purple-50 text-purple-700 ring-purple-700/20 dark:bg-purple-950/30 dark:text-purple-400',
+        'O':   'bg-pink-50 text-pink-700 ring-pink-700/20 dark:bg-pink-950/30 dark:text-pink-400',
+        'J':   'bg-sky-50 text-sky-700 ring-sky-700/20 dark:bg-sky-950/30 dark:text-sky-400',
+        'V':   'bg-teal-50 text-teal-700 ring-teal-700/20 dark:bg-teal-950/30 dark:text-teal-400',
+        'L':   'bg-indigo-50 text-indigo-700 ring-indigo-700/20 dark:bg-indigo-950/30 dark:text-indigo-400',
+        'P':   'bg-cyan-50 text-cyan-700 ring-cyan-700/20 dark:bg-cyan-950/30 dark:text-cyan-400',
+    };
+    return map[sigla] ?? 'bg-blue-50 text-blue-700 ring-blue-700/10 dark:bg-blue-950/30 dark:text-blue-400';
+}
+
+/** Clase de fondo de celda según sigla consolidada */
+function siglaCeldaClass(sigla: string): string {
+    const map: Record<string, string> = {
+        'A':   'bg-emerald-50/40',
+        'T':   'bg-amber-50/40',
+        'F':   'bg-red-50/30',
+        'I':   'bg-red-50/30',
+        'E':   'bg-orange-50/40',
+        '3T':  'bg-red-50/30',
+        '3E':  'bg-red-50/30',
+        'FER': 'bg-purple-50/30',
+        'O':   'bg-pink-50/30',
+        'J':   'bg-sky-50/30',
+        'V':   'bg-teal-50/30',
+        'L':   'bg-indigo-50/30',
+        'P':   'bg-cyan-50/30',
+    };
+    return map[sigla] ?? '';
+}
 
 // ── Agrupación por día ──────────────────────────────────────────────────────────
 const diasDelMes = computed<DiaAsistencia[]>(() => {
     const anio = selectedAnio.value;
     const mes = selectedMes.value;
     const diasEnMes = new Date(anio, mes, 0).getDate();
-    const DIAS_LABORABLES = [1, 2, 3, 4, 5]; // Lunes a viernes
+    const DIAS_LABORABLES = [1, 2, 3, 4, 5];
     const NOMBRES_DIA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     const NOMBRES_DIA_LARGO = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
@@ -115,7 +197,7 @@ const diasDelMes = computed<DiaAsistencia[]>(() => {
 
     for (let dia = 1; dia <= diasEnMes; dia++) {
         const fecha = new Date(anio, mes - 1, dia);
-        const diaSemana = fecha.getDay(); // 0=Dom,1=Lun...6=Sáb
+        const diaSemana = fecha.getDay();
         const esDiaLaboral = DIAS_LABORABLES.includes(diaSemana);
         const fechaStr = `${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
 
@@ -131,20 +213,15 @@ const diasDelMes = computed<DiaAsistencia[]>(() => {
         if (esDiaLaboral && entrada) {
             const horaEntrada = new Date(entrada.fechaMarcacion);
             const minutosDelta = horaEntrada.getMinutes() + horaEntrada.getHours() * 60;
-            const horaEsperadaMin = 8 * 60; // referencia genérica 08:00
+            const horaEsperadaMin = 8 * 60;
 
             if (!salida) {
                 estado = 'solo_entrada';
             } else {
                 const horaSalida = new Date(salida.fechaMarcacion);
                 const salidaMin = horaSalida.getMinutes() + horaSalida.getHours() * 60;
-                // Tardanza si entró >10 min después de la hora base del horario
                 const isLate = (minutosDelta - horaEsperadaMin) > 10;
-                // Salida temprana si salió >10 min antes de la hora base de salida
-                const salidaRef = salida ? new Date(salida.fechaMarcacion) : null;
-                const isEarlyOut = salidaRef
-                    ? (salidaMin < (11 * 60 + 20))  // antes de 11:20 es temprana
-                    : false;
+                const isEarlyOut = salidaMin < (11 * 60 + 20);
 
                 if (isLate) {
                     estado = 'tardanza';
@@ -175,10 +252,10 @@ const diasCalendario = computed(() => {
     const anio = selectedAnio.value;
     const mes = selectedMes.value;
     const firstDayDate = new Date(anio, mes - 1, 1);
-    const firstDayOfWeek = firstDayDate.getDay(); // 0 = Dom, 1 = Lun, etc.
+    const firstDayOfWeek = firstDayDate.getDay();
     const diasEnMes = new Date(anio, mes, 0).getDate();
 
-    const DIAS_LABORABLES = [1, 2, 3, 4, 5]; // Lunes a viernes
+    const DIAS_LABORABLES = [1, 2, 3, 4, 5];
     const NOMBRES_DIA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
     const totalCells = Math.ceil((firstDayOfWeek + diasEnMes) / 7) * 7;
@@ -196,6 +273,7 @@ const diasCalendario = computed(() => {
         const fechaStr = `${fAnio}-${String(fMes).padStart(2, '0')}-${String(fDia).padStart(2, '0')}`;
         const esMesActual = fAnio === anio && fMes === mes;
 
+        // Marcaciones brutas
         const marcasDia = marcaciones.value.filter((m) => {
             const f = new Date(m.fechaMarcacion);
             return f.getFullYear() === fAnio && f.getMonth() + 1 === fMes && f.getDate() === fDia;
@@ -204,11 +282,14 @@ const diasCalendario = computed(() => {
         const entrada = marcasDia.find((m) => m.tipo === 'E') ?? null;
         const salida = marcasDia.find((m) => m.tipo === 'S') ?? null;
 
+        // Consolidado para este día
+        const consol = esMesActual ? getConsolidadoDia(fDia) : null;
+
         let estado: DiaAsistencia['estado'] = 'sin_marcas';
         if (esDiaLaboral && entrada) {
             const horaEntrada = new Date(entrada.fechaMarcacion);
             const minutosDelta = horaEntrada.getMinutes() + horaEntrada.getHours() * 60;
-            const horaEsperadaMin = 8 * 60; // referencia 08:00
+            const horaEsperadaMin = 8 * 60;
 
             if (!salida) {
                 estado = 'solo_entrada';
@@ -216,7 +297,7 @@ const diasCalendario = computed(() => {
                 const horaSalida = new Date(salida.fechaMarcacion);
                 const salidaMin = horaSalida.getMinutes() + horaSalida.getHours() * 60;
                 const isLate = (minutosDelta - horaEsperadaMin) > 10;
-                const isEarlyOut = (salidaMin < (11 * 60 + 20));
+                const isEarlyOut = salidaMin < (11 * 60 + 20);
 
                 if (isLate) {
                     estado = 'tardanza';
@@ -234,6 +315,7 @@ const diasCalendario = computed(() => {
         resultado.push({
             fecha: fechaStr,
             dia: String(fDia),
+            numeroDia: fDia,
             diaNombre: NOMBRES_DIA[diaSemana],
             entrada,
             salida,
@@ -241,6 +323,7 @@ const diasCalendario = computed(() => {
             esDiaLaboral,
             esMesActual,
             esHoy,
+            consol, // datos consolidados (sigla, entrada, salida) o null
         });
     }
 
@@ -264,12 +347,10 @@ function formatDiaLabel(dia: { dia: string; fecha: string }): string {
     return dia.dia;
 }
 
-
 // ── Resumen estadístico ────────────────────────────────────────────────────────
 const resumen = computed(() => {
     const diasLab = diasDelMes.value.filter((d) => d.esDiaLaboral);
 
-    // Solo días laborables hasta hoy (para el mes actual)
     const hoy = new Date();
     const isCurrentMonth = selectedAnio.value === hoy.getFullYear() && selectedMes.value === hoy.getMonth() + 1;
     const diasContar = isCurrentMonth
@@ -287,8 +368,14 @@ const resumen = computed(() => {
 });
 
 // ── Helpers ─────────────────────────────────────────────────────────────────────
-function formatHora(fechaISO: string): string {
-    const d = new Date(fechaISO);
+function formatHora(hora: string | null): string {
+    if (!hora) return '';
+    // Si ya es HH:MM o HH:MM:SS (de t_asistenciaMesTrabajador)
+    if (!hora.includes('T') && !hora.includes(' ')) {
+        return hora.substring(0, 5);
+    }
+    // Si es ISO datetime
+    const d = new Date(hora);
     return d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
@@ -353,22 +440,25 @@ function estadoConfig(dia: DiaAsistencia): EstadoConfig {
             <div class="flex items-center gap-2">
                 <CalendarCheck2 class="h-5 w-5 text-primary" />
                 <h2 class="text-base font-bold">Registro de Asistencia</h2>
+                <!-- Indicador de consolidado -->
+                <span
+                    v-if="consolidado"
+                    class="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 ring-1 ring-indigo-700/20 dark:bg-indigo-950/30 dark:text-indigo-400"
+                >
+                    Consolidado
+                </span>
             </div>
 
             <div class="flex items-center gap-2">
                 <!-- Navegador de mes -->
-                <div
-                    class="flex items-center gap-1 rounded-lg border bg-background px-1 py-0.5"
-                >
+                <div class="flex items-center gap-1 rounded-lg border bg-background px-1 py-0.5">
                     <button
                         class="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         @click="mesAnterior"
                     >
                         <ChevronLeft class="h-4 w-4" />
                     </button>
-                    <span class="min-w-36 text-center text-sm font-semibold">
-                        {{ mesLabel }}
-                    </span>
+                    <span class="min-w-36 text-center text-sm font-semibold">{{ mesLabel }}</span>
                     <button
                         class="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         @click="mesSiguiente"
@@ -384,81 +474,43 @@ function estadoConfig(dia: DiaAsistencia): EstadoConfig {
                     class="h-8 w-8"
                     title="Recargar"
                     :disabled="loading"
-                    @click="cargarMarcaciones"
+                    @click="cargarDatos"
                 >
-                    <RefreshCw
-                        class="h-4 w-4"
-                        :class="{ 'animate-spin': loading }"
-                    />
+                    <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
                 </Button>
             </div>
         </div>
 
         <!-- Tarjetas resumen -->
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            <div
-                class="flex flex-col items-center gap-1 rounded-xl border bg-card p-3 text-center shadow-xs"
-            >
+            <div class="flex flex-col items-center gap-1 rounded-xl border bg-card p-3 text-center shadow-xs">
                 <span class="text-xs text-muted-foreground">Días laboral.</span>
-                <span class="text-2xl font-bold text-foreground">{{
-                    resumen.total
-                }}</span>
+                <span class="text-2xl font-bold text-foreground">{{ resumen.total }}</span>
             </div>
-            <div
-                class="flex flex-col items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-center dark:border-emerald-900 dark:bg-emerald-950/20"
-            >
+            <div class="flex flex-col items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-center dark:border-emerald-900 dark:bg-emerald-950/20">
                 <CheckCircle2 class="h-4 w-4 text-emerald-500" />
-                <span class="text-xs text-emerald-600 dark:text-emerald-400"
-                    >Puntual</span
-                >
-                <span class="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{{
-                    resumen.puntuales
-                }}</span>
+                <span class="text-xs text-emerald-600 dark:text-emerald-400">Puntual</span>
+                <span class="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{{ resumen.puntuales }}</span>
             </div>
-            <div
-                class="flex flex-col items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 p-3 text-center dark:border-amber-900 dark:bg-amber-950/20"
-            >
+            <div class="flex flex-col items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 p-3 text-center dark:border-amber-900 dark:bg-amber-950/20">
                 <Timer class="h-4 w-4 text-amber-500" />
-                <span class="text-xs text-amber-600 dark:text-amber-400"
-                    >Tardanza</span
-                >
-                <span class="text-2xl font-bold text-amber-700 dark:text-amber-300">{{
-                    resumen.tardanzas
-                }}</span>
+                <span class="text-xs text-amber-600 dark:text-amber-400">Tardanza</span>
+                <span class="text-2xl font-bold text-amber-700 dark:text-amber-300">{{ resumen.tardanzas }}</span>
             </div>
-            <div
-                class="flex flex-col items-center gap-1 rounded-xl border border-blue-200 bg-blue-50 p-3 text-center dark:border-blue-900 dark:bg-blue-950/20"
-            >
+            <div class="flex flex-col items-center gap-1 rounded-xl border border-blue-200 bg-blue-50 p-3 text-center dark:border-blue-900 dark:bg-blue-950/20">
                 <LogOut class="h-4 w-4 text-blue-500" />
-                <span class="text-xs text-blue-600 dark:text-blue-400"
-                    >Sal. Temprana</span
-                >
-                <span class="text-2xl font-bold text-blue-700 dark:text-blue-300">{{
-                    resumen.salidaTemprana
-                }}</span>
+                <span class="text-xs text-blue-600 dark:text-blue-400">Sal. Temprana</span>
+                <span class="text-2xl font-bold text-blue-700 dark:text-blue-300">{{ resumen.salidaTemprana }}</span>
             </div>
-            <div
-                class="flex flex-col items-center gap-1 rounded-xl border border-orange-200 bg-orange-50 p-3 text-center dark:border-orange-900 dark:bg-orange-950/20"
-            >
+            <div class="flex flex-col items-center gap-1 rounded-xl border border-orange-200 bg-orange-50 p-3 text-center dark:border-orange-900 dark:bg-orange-950/20">
                 <Clock class="h-4 w-4 text-orange-500" />
-                <span class="text-xs text-orange-600 dark:text-orange-400"
-                    >Sin salida</span
-                >
-                <span
-                    class="text-2xl font-bold text-orange-700 dark:text-orange-300"
-                    >{{ resumen.soloEntrada }}</span
-                >
+                <span class="text-xs text-orange-600 dark:text-orange-400">Sin salida</span>
+                <span class="text-2xl font-bold text-orange-700 dark:text-orange-300">{{ resumen.soloEntrada }}</span>
             </div>
-            <div
-                class="flex flex-col items-center gap-1 rounded-xl border border-red-200 bg-red-50 p-3 text-center dark:border-red-900 dark:bg-red-950/20"
-            >
+            <div class="flex flex-col items-center gap-1 rounded-xl border border-red-200 bg-red-50 p-3 text-center dark:border-red-900 dark:bg-red-950/20">
                 <XCircle class="h-4 w-4 text-red-500" />
-                <span class="text-xs text-red-600 dark:text-red-400"
-                    >No asistió</span
-                >
-                <span class="text-2xl font-bold text-red-700 dark:text-red-300">{{
-                    resumen.sinMarcas
-                }}</span>
+                <span class="text-xs text-red-600 dark:text-red-400">No asistió</span>
+                <span class="text-2xl font-bold text-red-700 dark:text-red-300">{{ resumen.sinMarcas }}</span>
             </div>
         </div>
 
@@ -498,10 +550,18 @@ function estadoConfig(dia: DiaAsistencia): EstadoConfig {
         <div v-else class="flex flex-col gap-3">
             <!-- Días de la semana headers -->
             <div class="grid grid-cols-7 text-center border-b border-muted pb-2 bg-muted/10 pt-2 rounded-t-lg">
-                <div v-for="dia in ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']" :key="dia" class="text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden md:block">
+                <div
+                    v-for="dia in ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']"
+                    :key="dia"
+                    class="text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden md:block"
+                >
                     {{ dia }}
                 </div>
-                <div v-for="dia in ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']" :key="dia" class="text-xs font-semibold text-muted-foreground uppercase tracking-wider md:hidden">
+                <div
+                    v-for="dia in ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']"
+                    :key="dia"
+                    class="text-xs font-semibold text-muted-foreground uppercase tracking-wider md:hidden"
+                >
                     {{ dia }}
                 </div>
             </div>
@@ -514,91 +574,135 @@ function estadoConfig(dia: DiaAsistencia): EstadoConfig {
                     class="border-b border-r border-muted/50 p-2 min-h-[110px] flex flex-col justify-between transition-colors relative group hover:bg-muted/5"
                     :class="[
                         !dia.esMesActual ? 'bg-muted/15 opacity-60' : '',
-                        dia.esMesActual ? estadoConfig(dia).rowClass : '',
-                        !dia.esDiaLaboral && dia.esMesActual ? 'bg-muted/5 text-muted-foreground/60' : ''
+                        dia.esMesActual && dia.consol
+                            ? siglaCeldaClass(dia.consol.sigla)
+                            : (dia.esMesActual ? estadoConfig(dia as any).rowClass : ''),
+                        !dia.esDiaLaboral && dia.esMesActual ? 'bg-muted/5 text-muted-foreground/60' : '',
                     ]"
                 >
                     <!-- Day Header -->
                     <div class="flex items-center justify-between">
                         <div>
-                            <span v-if="!dia.esDiaLaboral && dia.esMesActual" class="text-[9px] font-semibold text-muted-foreground/40 uppercase tracking-wider">
+                            <span
+                                v-if="!dia.esDiaLaboral && dia.esMesActual"
+                                class="text-[9px] font-semibold text-muted-foreground/40 uppercase tracking-wider"
+                            >
                                 Finde
                             </span>
                         </div>
-
                         <!-- Day Number -->
                         <div
                             :class="[
                                 dia.esHoy
                                     ? 'flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-xs'
                                     : 'text-xs font-semibold text-muted-foreground',
-                                dia.esMesActual && !dia.esHoy ? 'text-foreground font-bold' : ''
+                                dia.esMesActual && !dia.esHoy ? 'text-foreground font-bold' : '',
                             ]"
                         >
                             {{ formatDiaLabel(dia) }}
                         </div>
                     </div>
 
-                    <!-- Day Body (Marcaciones & status badges) -->
-                    <div class="mt-2 flex flex-col gap-1.5 grow justify-center">
-                        <template v-if="dia.esMesActual || dia.entrada || dia.salida">
-                            <!-- Entrada -->
-                            <div
-                                v-if="dia.entrada"
-                                class="flex items-center gap-1 rounded bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/30 px-1.5 py-0.5 text-[10px] sm:text-[11px] font-medium font-mono"
-                                title="Entrada"
-                            >
-                                <LogIn class="h-3 w-3 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                                <span>{{ formatHora(dia.entrada.fechaMarcacion) }}</span>
-                            </div>
+                    <!-- Day Body -->
+                    <div class="mt-2 flex flex-col gap-1 grow justify-center">
+                        <template v-if="dia.esMesActual">
 
-                            <!-- Salida -->
-                            <div
-                                v-if="dia.salida"
-                                class="flex items-center gap-1 rounded bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-100 dark:border-blue-900/30 px-1.5 py-0.5 text-[10px] sm:text-[11px] font-medium font-mono"
-                                title="Salida"
-                            >
-                                <LogOut class="h-3 w-3 shrink-0 text-blue-600 dark:text-blue-400" />
-                                <span>{{ formatHora(dia.salida.fechaMarcacion) }}</span>
-                            </div>
-
-                            <!-- Missing marks or absence for working days in the past -->
-                            <template v-if="dia.esDiaLaboral && dia.esMesActual && isPast(dia.fecha)">
-                                <!-- No asistió -->
-                                <div
-                                    v-if="dia.estado === 'sin_marcas'"
-                                    class="flex items-center gap-1 rounded bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-300 border border-red-100 dark:border-red-900/30 px-1.5 py-0.5 text-[10px] sm:text-[11px] font-medium"
+                            <!-- ── MODO CONSOLIDADO ─────────────────────────── -->
+                            <template v-if="dia.consol">
+                                <!-- Sigla consolidada -->
+                                <span
+                                    :class="[
+                                        'inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[11px] font-bold ring-1 w-full',
+                                        siglaColor(dia.consol.sigla),
+                                    ]"
                                 >
-                                    <XCircle class="h-3 w-3 shrink-0 text-red-600 dark:text-red-400" />
-                                    <span>No asistió</span>
+                                    {{ dia.consol.sigla }}
+                                </span>
+
+                                <!-- Hora entrada del consolidado -->
+                                <div
+                                    v-if="dia.consol.entrada"
+                                    class="flex items-center gap-1 rounded bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/30 px-1.5 py-0.5 text-[10px] font-medium font-mono"
+                                    title="Entrada"
+                                >
+                                    <LogIn class="h-3 w-3 shrink-0 text-emerald-600" />
+                                    <span>{{ formatHora(dia.consol.entrada) }}</span>
                                 </div>
 
-                                <!-- Sin salida -->
+                                <!-- Hora salida del consolidado -->
                                 <div
-                                    v-else-if="dia.estado === 'solo_entrada'"
-                                    class="flex items-center gap-1 rounded bg-orange-50 text-orange-800 dark:bg-orange-950/40 dark:text-orange-300 border border-orange-100 dark:border-orange-900/30 px-1.5 py-0.5 text-[10px] sm:text-[11px] font-medium"
+                                    v-if="dia.consol.salida"
+                                    class="flex items-center gap-1 rounded bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-100 dark:border-blue-900/30 px-1.5 py-0.5 text-[10px] font-medium font-mono"
+                                    title="Salida"
                                 >
-                                    <Clock class="h-3 w-3 shrink-0 text-orange-600 dark:text-orange-400" />
-                                    <span>Sin salida</span>
+                                    <LogOut class="h-3 w-3 shrink-0 text-blue-600" />
+                                    <span>{{ formatHora(dia.consol.salida) }}</span>
                                 </div>
                             </template>
+
+                            <!-- ── MODO MARCACIONES BRUTAS ─────────────────── -->
+                            <template v-else>
+                                <!-- Entrada -->
+                                <div
+                                    v-if="dia.entrada"
+                                    class="flex items-center gap-1 rounded bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-900/30 px-1.5 py-0.5 text-[10px] sm:text-[11px] font-medium font-mono"
+                                    title="Entrada"
+                                >
+                                    <LogIn class="h-3 w-3 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                                    <span>{{ formatHora(dia.entrada.fechaMarcacion) }}</span>
+                                </div>
+
+                                <!-- Salida -->
+                                <div
+                                    v-if="dia.salida"
+                                    class="flex items-center gap-1 rounded bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-100 dark:border-blue-900/30 px-1.5 py-0.5 text-[10px] sm:text-[11px] font-medium font-mono"
+                                    title="Salida"
+                                >
+                                    <LogOut class="h-3 w-3 shrink-0 text-blue-600 dark:text-blue-400" />
+                                    <span>{{ formatHora(dia.salida.fechaMarcacion) }}</span>
+                                </div>
+
+                                <!-- Estados sin marcas (días pasados laborables) -->
+                                <template v-if="dia.esDiaLaboral && isPast(dia.fecha)">
+                                    <div
+                                        v-if="dia.estado === 'sin_marcas'"
+                                        class="flex items-center gap-1 rounded bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-300 border border-red-100 dark:border-red-900/30 px-1.5 py-0.5 text-[10px] sm:text-[11px] font-medium"
+                                    >
+                                        <XCircle class="h-3 w-3 shrink-0 text-red-600 dark:text-red-400" />
+                                        <span>No asistió</span>
+                                    </div>
+                                    <div
+                                        v-else-if="dia.estado === 'solo_entrada'"
+                                        class="flex items-center gap-1 rounded bg-orange-50 text-orange-800 dark:bg-orange-950/40 dark:text-orange-300 border border-orange-100 dark:border-orange-900/30 px-1.5 py-0.5 text-[10px] sm:text-[11px] font-medium"
+                                    >
+                                        <Clock class="h-3 w-3 shrink-0 text-orange-600 dark:text-orange-400" />
+                                        <span>Sin salida</span>
+                                    </div>
+                                </template>
+                            </template>
+
                         </template>
                     </div>
 
-                    <!-- Day Footer / Status text (only for working days in the past/present with marks) -->
+                    <!-- Day Footer: label de estado (solo sin consolidado) -->
                     <div class="mt-1 flex items-center justify-between text-[10px] text-muted-foreground/80">
-                        <span v-if="dia.esMesActual && dia.esDiaLaboral && isPast(dia.fecha) && dia.estado !== 'sin_marcas' && dia.estado !== 'solo_entrada'"
-                              class="font-medium"
-                              :class="{
-                                  'text-emerald-600 dark:text-emerald-400': dia.estado === 'puntual',
-                                  'text-amber-600 dark:text-amber-400': dia.estado === 'tardanza',
-                                  'text-blue-600 dark:text-blue-400': dia.estado === 'salida_temprana'
-                              }">
-                            {{ estadoConfig(dia).label }}
-                        </span>
-                        <span v-else-if="dia.esMesActual && !dia.esDiaLaboral" class="text-[9px] opacity-60">
-                            No laboral
-                        </span>
+                        <template v-if="dia.esMesActual">
+                            <!-- Sin consolidado: mostrar label calculado -->
+                            <span
+                                v-if="!dia.consol && dia.esDiaLaboral && isPast(dia.fecha) && dia.estado !== 'sin_marcas' && dia.estado !== 'solo_entrada'"
+                                class="font-medium"
+                                :class="{
+                                    'text-emerald-600 dark:text-emerald-400': dia.estado === 'puntual',
+                                    'text-amber-600 dark:text-amber-400': dia.estado === 'tardanza',
+                                    'text-blue-600 dark:text-blue-400': dia.estado === 'salida_temprana',
+                                }"
+                            >
+                                {{ estadoConfig(dia as any).label }}
+                            </span>
+                            <span v-else-if="!dia.esDiaLaboral" class="text-[9px] opacity-60">
+                                No laboral
+                            </span>
+                        </template>
                     </div>
                 </div>
             </div>

@@ -3,7 +3,6 @@ import { useForm } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 import AltaTrabajadorController from '@/actions/App/Http/Controllers/Trabajador/AltaTrabajadorController';
 import FormModal from '@/components/shared/FormModal.vue';
-import LocalMarcacionSelect from '@/components/shared/LocalMarcacionSelect.vue';
 import ParamSelect from '@/components/shared/ParamSelect.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -86,7 +85,6 @@ const form = useForm({
     fechaAlta: '',
     observacion: '',
     perfil_id: null as number | null,
-    localInstEduc_id: null as number | null,
 });
 
 watch(
@@ -189,20 +187,6 @@ function submit() {
             <div class="grid gap-2">
                 <Label>Código AIRSP</Label>
                 <Input v-model="form.codigoAirsp" placeholder="Ej: 28001234" />
-            </div>
-
-            <!-- Local de marcación (usa la IE ya fijada) -->
-            <div class="grid gap-2">
-                <LocalMarcacionSelect
-                    label="Local de Marcación"
-                    placeholder="Sin local de marcación"
-                    :institucion-id="props.institucionId"
-                    v-model="form.localInstEduc_id"
-                    :error="form.errors.localInstEduc_id"
-                />
-                <p class="text-xs text-muted-foreground">
-                    Solo se listan los locales de esta institución.
-                </p>
             </div>
 
             <!-- Condición y Tipo Contrato -->

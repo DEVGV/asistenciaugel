@@ -76,6 +76,8 @@ export interface AltaTrabajador {
     } | null;
     localMarcacion?: LocalMarcacionData | null;
     local_marcacion?: LocalMarcacionData | null;
+    localesMarcacion?: LocalMarcacionData[];
+    locales_marcacion?: LocalMarcacionData[];
 }
 
 interface LocalMarcacionData {

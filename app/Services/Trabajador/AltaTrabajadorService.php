@@ -175,6 +175,7 @@ class AltaTrabajadorService
                 'area:id,nombre',
                 'cargo:id,nombre',
                 'motivoBaja:id,nombre',
+                'localesMarcacion.localInstEduc.local:id,nombre',
             ])
             ->where('institucionEducativa_id', $ie->id)
             ->when($request->search, function ($query, string $search) {

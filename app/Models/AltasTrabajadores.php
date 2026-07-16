@@ -9,6 +9,7 @@ use App\Models\Param\ParamSituacionLaboral;
 use App\Models\Param\ParamTipoContrato;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class AltasTrabajadores extends Model
@@ -87,6 +88,14 @@ class AltasTrabajadores extends Model
     public function localMarcacion(): HasOne
     {
         return $this->hasOne(ConasisLocalesMarcacion::class, 'altaTrabajador_id')->latestOfMany('id');
+    }
+
+    /**
+     * Todos los locales de marcación asociados a esta alta.
+     */
+    public function localesMarcacion(): HasMany
+    {
+        return $this->hasMany(ConasisLocalesMarcacion::class, 'altaTrabajador_id');
     }
 
     /**
