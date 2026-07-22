@@ -888,7 +888,7 @@ class MobileController extends Controller
     private function mobilePermissionRequestConfig(): array
     {
         return [
-            'label' => trim((string) config('mobile.permission_request.label', 'Permiso')) ?: 'Permiso',
+            'label' => trim((string) config('mobile.permission_request.label', 'Solicitar Permiso')) ?: 'Solicitar Permiso',
             'url' => trim((string) config('mobile.permission_request.url', '')),
         ];
     }

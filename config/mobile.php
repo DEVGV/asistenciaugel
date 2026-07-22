@@ -12,7 +12,7 @@ return [
     */
 
     'permission_request' => [
-        'label' => env('MOBILE_PERMISSION_REQUEST_LABEL', 'Permiso'),
+        'label' => env('MOBILE_PERMISSION_REQUEST_LABEL', 'Solicitar Permiso'),
         'url' => env('MOBILE_PERMISSION_REQUEST_URL', ''),
     ],
 ];
