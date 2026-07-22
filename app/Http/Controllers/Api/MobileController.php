@@ -71,6 +71,15 @@ class MobileController extends Controller
         return response()->json(['message' => 'Sesion movil cerrada.']);
     }
 
+    public function config(): JsonResponse
+    {
+        return response()->json([
+            'data' => [
+                'permission_request' => $this->mobilePermissionRequestConfig(),
+            ],
+        ]);
+    }
+
     public function me(Request $request): JsonResponse
     {
         $trabajador = $this->currentTrabajador($request);
@@ -874,6 +883,14 @@ class MobileController extends Controller
         $workerSuffix = str_pad((string) ($trabajador->id % 1000), 3, '0', STR_PAD_LEFT);
 
         return 'MOB'.now()->format('YmdHis').$workerSuffix;
+    }
+
+    private function mobilePermissionRequestConfig(): array
+    {
+        return [
+            'label' => trim((string) config('mobile.permission_request.label', 'Permiso')) ?: 'Permiso',
+            'url' => trim((string) config('mobile.permission_request.url', '')),
+        ];
     }
 
     private function formatCredential(MobileBiometricCredential $credential): array

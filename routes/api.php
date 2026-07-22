@@ -114,6 +114,7 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
         ->name('api.mobile.')
         ->group(function () {
             Route::get('me', [MobileController::class, 'me'])->name('me');
+            Route::get('config', [MobileController::class, 'config'])->name('config');
             Route::post('logout', [MobileController::class, 'logout'])->name('logout');
             Route::post('biometria/enrolar-rostro', [MobileController::class, 'enrollFace'])->name('biometria.enroll-face');
             Route::post('biometria/local-device/habilitar', [MobileController::class, 'enableLocalBiometric'])->name('biometria.enable-local');
